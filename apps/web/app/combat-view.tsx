@@ -698,6 +698,110 @@ export function CommandMenu({
   );
 }
 
+export function InitiativeSequence({
+  state,
+  name,
+  onContinue,
+}: {
+  state: TacticalState;
+  name: Name;
+  onContinue: () => void;
+}) {
+  const result = state.initiative;
+  const aggressors = result?.aggressorRolls ?? [];
+  const defenders = result?.defenderRolls ?? [];
+  const last = result ? aggressors.length + defenders.length + 1 : 0;
+  const [step, setStep] = useState(0);
+  const finished = step >= last;
+  useEffect(() => {
+    if (finished) return;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const timer = window.setTimeout(
+      () => setStep(reduced ? last : step + 1),
+      reduced ? 0 : 520,
+    );
+    return () => window.clearTimeout(timer);
+  }, [finished, last, step]);
+  const portrait = (id: string) => (
+    <>
+      <PixelSprite player={id === state.setup.player} />
+      <strong>
+        {name(id)}
+        {id === state.setup.player ? " (vos)" : ""}
+      </strong>
+    </>
+  );
+  return (
+    <div className="initiative-grid">
+      <p>
+        Inician la agresión:{" "}
+        {state.setup.aggressor === "player" ? "grupo jugador" : "enemigos"}.
+      </p>
+      {finished ? (
+        <>
+          <ol className="initiative-order">
+            {state.groups.map((group, index) => (
+              <li key={index}>
+                <strong>{phaseNames[index]}</strong>
+                {group.length ? (
+                  group.map((id) => (
+                    <span className="initiative-portrait" key={id}>
+                      {portrait(id)}
+                    </span>
+                  ))
+                ) : (
+                  <span>Ninguno</span>
+                )}
+              </li>
+            ))}
+          </ol>
+          <details>
+            <summary>Ver tiradas de iniciativa</summary>
+            <Initiative state={state} name={name} />
+          </details>
+          <button type="button" className="accent" onClick={onContinue}>
+            Comenzar combate
+          </button>
+        </>
+      ) : (
+        <>
+          <div aria-live="polite">
+            {aggressors.slice(0, step).map((entry) => (
+              <p className="initiative-portrait" key={entry.id}>
+                {portrait(entry.id)} <span>Tirada agresora {entry.roll}</span>
+              </p>
+            ))}
+            {step >= aggressors.length && result && (
+              <p>
+                Umbral del bando <strong>{result.aggression}</strong>
+              </p>
+            )}
+            {defenders
+              .slice(0, Math.max(0, step - aggressors.length))
+              .map((entry) => (
+                <p className="initiative-portrait" key={entry.id}>
+                  {portrait(entry.id)}
+                  <span>
+                    Alerta{" "}
+                    {state.actors.find((actor) => actor.fighter.id === entry.id)
+                      ?.fighter.alert ?? "—"}{" "}
+                    · Tirada {entry.roll} ·{" "}
+                    {entry.anticipated ? "✓ Se anticipa" : "× No se anticipa"}
+                  </span>
+                </p>
+              ))}
+          </div>
+          <button type="button" onClick={() => setStep(last)}>
+            Saltar animación
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function Initiative({
   state,
   name,

@@ -32,7 +32,7 @@ import {
   CombatDialog,
   CommandMenu,
   EnemyPanel,
-  Initiative,
+  InitiativeSequence,
   TacticalBoard,
   type Command,
   weaponControlLabels,
@@ -1310,14 +1310,11 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               title="Iniciativa del encuentro"
               onClose={() => setInitiativeOpen(false)}
             >
-              <Initiative state={session.initial} name={name} />
-              <button
-                type="button"
-                className="accent"
-                onClick={() => setInitiativeOpen(false)}
-              >
-                Continuar al combate
-              </button>
+              <InitiativeSequence
+                state={session.initial}
+                name={name}
+                onContinue={() => setInitiativeOpen(false)}
+              />
             </CombatDialog>
           )}
           {frame && latestEvent && (

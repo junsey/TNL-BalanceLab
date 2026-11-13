@@ -1568,3 +1568,9 @@ h3 {
     padding-bottom: 190px;
   }
 }
+.initiative-portrait {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
