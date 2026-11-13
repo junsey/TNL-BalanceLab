@@ -3,6 +3,7 @@ import {
   authenticate,
   cookieOptions,
   issueSession,
+  loginConfigurationIssue,
   sameOrigin,
   sessionCookie,
 } from "../../../lib/session";
@@ -23,6 +24,13 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const alias = String(form.get("alias") ?? "").trim();
   const password = String(form.get("password") ?? "");
+  const configurationIssue = loginConfigurationIssue();
+  if (configurationIssue) {
+    return NextResponse.redirect(
+      new URL(`/login?error=${configurationIssue}`, request.url),
+      303,
+    );
+  }
   if (!alias || alias.length > 60 || !(await authenticate(password))) {
     return NextResponse.redirect(new URL("/login?error=1", request.url), 303);
   }

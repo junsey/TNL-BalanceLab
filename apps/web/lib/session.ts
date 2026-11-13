@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 
 const derive = promisify(scrypt);
+const passwordHashPattern = /^scrypt\$([0-9a-f]{32})\$([0-9a-f]{128})$/;
 export const sessionCookie = "tnl_session";
 export const sessionSeconds = 8 * 60 * 60;
 const sessionSchema = z.strictObject({
@@ -27,13 +28,20 @@ export function developmentAccess() {
 
 export async function authenticate(password: string) {
   const encoded = process.env.SHARED_PASSWORD_HASH;
-  if (!encoded || !secret() || Buffer.byteLength(password) > 512) return false;
-  const match = /^scrypt\$([0-9a-f]{32})\$([0-9a-f]{128})$/.exec(encoded);
+  if (!encoded || Buffer.byteLength(password) > 512) return false;
+  const match = passwordHashPattern.exec(encoded);
   if (!match) return false;
   const salt = Buffer.from(match[1]!, "hex");
   const expected = Buffer.from(match[2]!, "hex");
   const actual = (await derive(password, salt, expected.length)) as Buffer;
   return timingSafeEqual(actual, expected);
+}
+
+export function loginConfigurationIssue() {
+  if (!secret()) return "SESSION_SECRET";
+  if (!passwordHashPattern.test(process.env.SHARED_PASSWORD_HASH ?? ""))
+    return "SHARED_PASSWORD_HASH";
+  return null;
 }
 
 export function issueSession(alias: string) {

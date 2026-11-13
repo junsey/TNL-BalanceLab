@@ -8,6 +8,12 @@ export default async function Login({
 }) {
   if (await currentSession()) redirect("/");
   const { error } = await searchParams;
+  const errorMessage =
+    error === "SESSION_SECRET"
+      ? "Revisá SESSION_SECRET en el despliegue. Debe tener al menos 32 bytes."
+      : error === "SHARED_PASSWORD_HASH"
+        ? "Revisá SHARED_PASSWORD_HASH en el despliegue. Falta o tiene un formato inválido."
+        : "Alias o contraseña inválidos.";
   return (
     <main className="shell">
       <section className="pane login">
@@ -33,7 +39,7 @@ export default async function Login({
               maxLength={256}
             />
           </label>
-          {error && <p role="alert">Alias o contraseña inválidos.</p>}
+          {error && <p role="alert">{errorMessage}</p>}
           <button className="accent" type="submit">
             Ingresar
           </button>
