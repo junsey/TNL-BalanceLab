@@ -161,9 +161,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     newSession("vigilia-01", maps[0].id),
   );
   const [selection, setSelection] = useState("vigia");
-  const [zone, setZone] = useState<string | null>(null);
   const [command, setCommand] = useState<Command | null>(null);
-  const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [animations, setAnimations] = useState(true);
   const [visual, setVisual] = useState<{
     event: Event;
@@ -308,12 +306,10 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
 
   function reset() {
     setCommand(null);
-    setSelectedTarget(null);
     setInitiativeOpen(true);
     setSheetActor(null);
     setAuto(mode === "auto");
     setReplay(null);
-    setZone(null);
     setSelection("vigia");
     if (scenario) {
       const { state } = startTacticalEncounter(
@@ -355,9 +351,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     if (next === mode) return;
     setMode(next);
     setCommand(null);
-    setSelectedTarget(null);
     setAuto(next === "auto");
-    setZone(null);
     setNotice("");
     if (
       (next === "auto" || next === "manual") &&
@@ -395,9 +389,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
         events: [...current.events, { ...step.event, reason: "manual" }],
       };
     });
-    setZone(null);
     setCommand(null);
-    setSelectedTarget(null);
   }
   function save() {
     try {
@@ -684,6 +676,12 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   const targets = choices.flatMap((action) =>
     action.kind === "attack" ? [action.target] : [],
   );
+  function attackTarget(id: string) {
+    const action = choices.find(
+      (item) => item.kind === "attack" && item.target === id,
+    );
+    if (action) take(action);
+  }
   const previousAttack =
     frame?.kind === "DEFENSE"
       ? session.events
@@ -1115,22 +1113,27 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               <TacticalBoard
                 state={displayed}
                 name={name}
-                zone={zone}
+                zone={null}
                 onZone={(id) => {
-                  if (destinations.includes(id)) setZone(id);
+                  const movement = choices.find(
+                    (action) =>
+                      (action.kind === "move" || action.kind === "run") &&
+                      action.zone === id,
+                  );
+                  if (movement) return take(movement);
                   if (targets.length) {
                     const inZone = displayed.actors.filter(
                       (actor) =>
                         actor.zone === id && targets.includes(actor.fighter.id),
                     );
                     if (inZone.length === 1)
-                      setSelectedTarget(inZone[0]!.fighter.id);
+                      attackTarget(inZone[0]!.fighter.id);
                   }
                 }}
                 destinations={destinations}
                 targets={targets}
-                selectedTarget={selectedTarget}
-                onTarget={setSelectedTarget}
+                selectedTarget={null}
+                onTarget={attackTarget}
               />
               <CommandMenu
                 key={displayed.sequence + ":" + active + ":" + mode}
@@ -1140,15 +1143,10 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                   replay === null &&
                   (mode === "manual" || active === displayed.setup.player)
                 }
-                zone={zone}
                 category={command}
                 onCategory={(value) => {
                   setCommand(value);
-                  setZone(null);
-                  setSelectedTarget(null);
                 }}
-                selectedTarget={selectedTarget}
-                onTarget={setSelectedTarget}
                 actionName={(action) => actionName(action, name)}
                 onAction={take}
                 onSheet={() => setSheetActor(active)}
@@ -1176,13 +1174,11 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               onSelect={(id) => {
                 setSelection(id);
                 setCommand(null);
-                setZone(null);
-                setSelectedTarget(null);
               }}
               selectable={mode === "manual" && replay === null}
               targets={targets}
-              selectedTarget={selectedTarget}
-              onTarget={setSelectedTarget}
+              selectedTarget={null}
+              onTarget={attackTarget}
             />
           </div>
           <div className="combat-playback">

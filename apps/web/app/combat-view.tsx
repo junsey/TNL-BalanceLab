@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   actionBlockReasons,
   armorProfile,
   attackCost,
   attackWeapon,
   getLegalActions,
-  previewAttack,
-  previewOpportunityActors,
   weaponControlCost,
   type Fighter,
   type TacticalState,
@@ -413,47 +411,6 @@ export function EnemyPanel({
   );
 }
 
-function AttackPreview({ actor, target }: { actor: Fighter; target: Fighter }) {
-  const preview = previewAttack(actor, target);
-  if (!preview) return null;
-  const { model, armor, thresholds: limits } = preview;
-  return (
-    <div className="attack-preview">
-      <h4>
-        {model.label} · {preview.cost} Vigor
-      </h4>
-      <p>
-        {damageTypes[model.damageType]} · Alcance{" "}
-        {reach[model.reach].toLowerCase()}
-      </p>
-      <p>
-        Dominio {preview.mastery} + Vulnerabilidad {armor.final} →{" "}
-        <strong>{preview.target} de umbral</strong> · Impacto{" "}
-        {preview.probability}%
-      </p>
-      <dl className="combat-thresholds">
-        <div>
-          <dt>Normal</dt>
-          <dd>{limits.normal}</dd>
-        </div>
-        <div>
-          <dt>Mitad</dt>
-          <dd>{limits.half}</dd>
-        </div>
-        <div>
-          <dt>Cuarto</dt>
-          <dd>{limits.quarter}</dd>
-        </div>
-      </dl>
-      <p>
-        Base {model.damage} · Mitad +{model.halfExtra} · Cuarto +
-        {model.quarterExtra}
-      </p>
-      <small>01 siempre crítico · 100 siempre pifia</small>
-    </div>
-  );
-}
-
 const commands = [
   { id: "attack", label: "Atacar" },
   { id: "move", label: "Mover" },
@@ -475,30 +432,23 @@ export function CommandMenu({
   state,
   active,
   manual,
-  zone,
   actionName,
   onAction,
   onSheet,
   heading,
   category,
   onCategory,
-  selectedTarget,
-  onTarget,
 }: {
   state: TacticalState;
   active: string;
   manual: boolean;
-  zone: string | null;
   actionName: (action: CombatAction) => string;
   onAction: (action: CombatAction) => void;
   onSheet: () => void;
   heading: string;
   category: Command | null;
   onCategory: (command: Command) => void;
-  selectedTarget: string | null;
-  onTarget: (id: string) => void;
 }) {
-  const [selected, setSelected] = useState<CombatAction | null>(null);
   const legal = getLegalActions(state, active);
   const current = state.actors.find((actor) => actor.fighter.id === active);
   const reason = actionBlockReasons(state, active);
@@ -509,35 +459,6 @@ export function CommandMenu({
       ? "opportunity"
       : category;
   const options = legal.filter((action) => action.kind === activeCategory);
-  const visible =
-    zone && (activeCategory === "move" || activeCategory === "run")
-      ? [...options].sort(
-          (a, b) =>
-            Number("zone" in b && b.zone === zone) -
-            Number("zone" in a && a.zone === zone),
-        )
-      : options;
-  const zoneChoice =
-    zone && (activeCategory === "move" || activeCategory === "run")
-      ? options.find((action) => "zone" in action && action.zone === zone)
-      : null;
-  const targetChoice =
-    activeCategory === "attack"
-      ? options.find(
-          (action) =>
-            action.kind === "attack" && action.target === selectedTarget,
-        )
-      : null;
-  const chosen =
-    targetChoice ??
-    (selected &&
-    legal.some((action) => JSON.stringify(action) === JSON.stringify(selected))
-      ? selected
-      : (zoneChoice ?? null));
-  const target =
-    chosen && "target" in chosen
-      ? state.actors.find((actor) => actor.fighter.id === chosen.target)
-      : null;
   const unavailable = (id: Command) => {
     if (
       !current?.major &&
@@ -647,13 +568,14 @@ export function CommandMenu({
                         disabled={blocked}
                         title={blocked ? unavailable(item.id) : undefined}
                         onClick={() => {
-                          onCategory(item.id);
-                          setSelected(
+                          if (
                             matching.length === 1 &&
-                              !["move", "run", "attack"].includes(item.id)
-                              ? matching[0]!
-                              : null,
-                          );
+                            !["move", "run", "attack"].includes(item.id)
+                          ) {
+                            onAction(matching[0]!);
+                          } else {
+                            onCategory(item.id);
+                          }
                         }}
                       >
                         <span>
@@ -680,97 +602,34 @@ export function CommandMenu({
                 <h3>
                   {commands.find((item) => item.id === activeCategory)?.label}
                 </h3>
-                {options.length === 1 && chosen && <p>{actionName(chosen)}</p>}
-                {(activeCategory === "move" || activeCategory === "run") && (
+                {activeCategory === "move" || activeCategory === "run" ? (
                   <p>
-                    {activeCategory === "move"
-                      ? "Una zona adyacente."
-                      : "Hasta dos zonas."}{" "}
-                    Elegí un destino resaltado en el mapa.
+                    Eleg� un destino resaltado. Salir del alcance enemigo puede
+                    provocar ataques de oportunidad.
                   </p>
-                )}
-                {activeCategory === "attack" && (
-                  <p>Elegí un objetivo resaltado en el mapa o en su ficha.</p>
-                )}
-                {!(options.length === 1 && chosen) &&
-                  activeCategory !== "move" &&
-                  activeCategory !== "run" && (
-                    <div className="command-options">
-                      {visible.map((action) => (
+                ) : (
+                  <div className="command-options">
+                    {options.map((action) => {
+                      const cost =
+                        current && action.kind === "weaponControl"
+                          ? weaponControlCost(current.fighter, action.operation)
+                          : null;
+                      return (
                         <button
                           type="button"
                           key={JSON.stringify(action)}
-                          aria-pressed={
-                            JSON.stringify(chosen) === JSON.stringify(action)
-                          }
-                          onClick={() =>
-                            action.kind === "attack"
-                              ? onTarget(action.target)
-                              : setSelected(action)
-                          }
+                          onClick={() => onAction(action)}
                         >
                           {actionName(action)}
+                          {cost && (
+                            <small>
+                              {actionCostLabels[cost.action]} � {cost.vigor}{" "}
+                              Vigor � {cost.energy} Energ�a
+                            </small>
+                          )}
                         </button>
-                      ))}
-                    </div>
-                  )}
-                {chosen && (
-                  <div className="command-confirm">
-                    {current && target && chosen.kind === "attack" && (
-                      <AttackPreview
-                        actor={current.fighter}
-                        target={target.fighter}
-                      />
-                    )}
-                    {current &&
-                      chosen.kind === "weaponControl" &&
-                      (() => {
-                        const cost = weaponControlCost(
-                          current.fighter,
-                          chosen.operation,
-                        );
-                        return cost ? (
-                          <p>
-                            {actionCostLabels[cost.action]} · {cost.vigor} Vigor
-                            · {cost.energy} Energía
-                          </p>
-                        ) : null;
-                      })()}
-                    {current && chosen.kind === "defend" && (
-                      <p>
-                        {chosen.defense === "none"
-                          ? "0 Vigor"
-                          : chosen.defense === "dodge"
-                            ? "2 Vigor · Esquivar " + current.fighter.dodge
-                            : chosen.defense === "parry"
-                              ? (current.fighter.weapon.model.category ===
-                                "heavy"
-                                  ? 2
-                                  : 1) +
-                                " Vigor · Parar " +
-                                current.fighter.parry
-                              : (current.fighter.shield?.model.category ===
-                                "heavy"
-                                  ? 2
-                                  : 1) + " Vigor · Bloqueo automático"}
-                      </p>
-                    )}
-                    {(chosen.kind === "move" || chosen.kind === "run") &&
-                      current && (
-                        <p>
-                          Zona {current.zone} → {chosen.zone} · Acción{" "}
-                          {chosen.kind === "move" ? "Menor" : "Mayor"}
-                          {previewOpportunityActors(state, chosen).length > 0 &&
-                            " · Puede provocar ataques de oportunidad"}
-                        </p>
-                      )}
-                    <button
-                      type="button"
-                      className="accent"
-                      onClick={() => onAction(chosen)}
-                    >
-                      Confirmar
-                    </button>
+                      );
+                    })}
                   </div>
                 )}
               </>
