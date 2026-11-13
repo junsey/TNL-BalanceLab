@@ -19,6 +19,7 @@ export function EncounterWindow({
   state,
   detail,
   attack,
+  effects,
   before,
   name,
   ready,
@@ -41,6 +42,7 @@ export function EncounterWindow({
   state: TacticalState;
   detail: TacticalDetail;
   attack?: TacticalDetail;
+  effects: readonly TacticalDetail[];
   before: readonly TacticalState["actors"][number][];
   name: (id: string) => string;
   ready: boolean;
@@ -240,6 +242,14 @@ export function EncounterWindow({
                 ]
               : [];
           })}
+        {ready && !waiting && effects.length > 0 && (
+          <section aria-label="Efectos adicionales">
+            <h3>Efectos adicionales</h3>
+            {effects.map((effect, index) => (
+              <Detail key={index} detail={effect} name={name} />
+            ))}
+          </section>
+        )}
         {waitingDefense &&
           ready &&
           (manual ? (

@@ -267,21 +267,16 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       playbackPaused
     )
       return;
-    const timer = setInterval(
+    const timer = window.setTimeout(
       () =>
-        setSession((current) => {
-          let next = current;
-          for (let index = 0; index < 1 && !next.state.outcome; index++) {
-            const step = nextAuto(next, profile);
-            if (step === next) break;
-            next = step;
-          }
-          return next;
-        }),
+        setSession((current) =>
+          current === session ? nextAuto(current, profile) : current,
+        ),
       speed === 0 ? 16 : 560 / speed,
     );
-    return () => clearInterval(timer);
+    return () => window.clearTimeout(timer);
   }, [
+    session,
     auto,
     mode,
     replay,
@@ -1331,6 +1326,15 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               state={displayed}
               detail={frame}
               attack={previousAttack}
+              effects={latestEvent.details.filter((detail) =>
+                [
+                  "CONDITION_TICK",
+                  "AGONY",
+                  "DODGE_MOVE",
+                  "PREPARATION_TRIGGERED",
+                  "PREPARED_RECOVERY",
+                ].includes(detail.kind),
+              )}
               before={beforeFrame}
               name={name}
               ready={ready}
