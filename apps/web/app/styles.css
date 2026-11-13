@@ -1574,3 +1574,15 @@ h3 {
   gap: 8px;
   flex-wrap: wrap;
 }
+.command-resources [data-used="true"] {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+.command-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.command-shortcuts button {
+  font-size: 0.72rem;
+}

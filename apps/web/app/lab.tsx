@@ -1177,7 +1177,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               paused={replay !== null || !!displayed.outcome}
             >
               <CommandMenu
-                key={displayed.sequence + ":" + active + ":" + mode}
+                key={mode}
                 state={displayed}
                 active={active}
                 manual={

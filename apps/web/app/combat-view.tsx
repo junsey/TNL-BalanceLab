@@ -459,14 +459,16 @@ export function CommandMenu({
     : reaction
       ? "opportunity"
       : category;
-  const options = legal.filter((action) => {
-    if (action.kind !== activeCategory) return false;
-    if (action.kind !== "weaponControl" || !current) return true;
-    return (
-      weaponControlCost(current.fighter, action.operation)?.action ===
-      (groupIndex === 0 ? "major" : groupIndex === 1 ? "minor" : "none")
-    );
-  });
+  const options = legal.filter((action) => action.kind === activeCategory);
+  const groups: { label: string; ids: Command[] }[] = reaction
+    ? [{ label: "Reacción", ids: [state.pending ? "defend" : "opportunity"] }]
+    : [
+        { label: "Ataque", ids: ["attack", "weaponControl"] },
+        { label: "Movimiento", ids: ["move", "run", "flee"] },
+        { label: "Habilidades y maniobras", ids: ["stabilize"] },
+        { label: "Objetos", ids: [] },
+        { label: "Preparar acción", ids: ["prepareAttack"] },
+      ];
   const unavailable = (id: Command) => {
     if (
       !current?.major &&
@@ -515,41 +517,14 @@ export function CommandMenu({
         </header>
         {manual && !state.outcome && (
           <div className="command-body">
+            {!reaction && (
+              <p className="command-resources">
+                <span data-used={!current?.major}>◆ Mayor</span>{" "}
+                <span data-used={!current?.minor}>◇ Menor</span>
+              </p>
+            )}
             <nav className="command-list" aria-label="Comandos">
-              {(reaction
-                ? [{ label: "Reacción", ids: [activeCategory] }]
-                : [
-                    {
-                      label:
-                        "Acción Mayor" + (current?.major ? "" : " · usada"),
-                      ids: [
-                        "attack",
-                        "run",
-                        "recover",
-                        "flee",
-                        "prepareAttack",
-                        "stabilize",
-                        "weaponControl",
-                      ],
-                    },
-                    {
-                      label:
-                        "Acción Menor" + (current?.minor ? "" : " · usada"),
-                      ids: [
-                        "move",
-                        "breathe",
-                        "prepareBreathe",
-                        "weaponControl",
-                      ],
-                    },
-                    {
-                      label: "Turno y equipo",
-                      ids: current?.fighter.energy?.controls
-                        ? ["weaponControl", "end"]
-                        : ["end"],
-                    },
-                  ]
-              ).map((group, index) => (
+              {groups.map((group, index) => (
                 <section key={group.label} className="command-group">
                   {!reaction && groupIndex === null && (
                     <button type="button" onClick={() => setGroupIndex(index)}>
@@ -564,28 +539,20 @@ export function CommandMenu({
                         onCategory(null);
                       }}
                     >
-                      Volver: {group.label}
+                      ← Volver
                     </button>
                   )}
                   {(reaction || groupIndex === index) &&
                     commands
                       .filter((item) => group.ids.includes(item.id))
                       .map((item) => {
-                        const matching = legal.filter((action) => {
-                          if (action.kind !== item.id) return false;
-                          if (action.kind !== "weaponControl" || !current)
-                            return true;
-                          return (
-                            weaponControlCost(current.fighter, action.operation)
-                              ?.action ===
-                            (index === 0
-                              ? "major"
-                              : index === 1
-                                ? "minor"
-                                : "none")
-                          );
-                        });
-                        if (item.id === "weaponControl" && !matching.length)
+                        const matching = legal.filter(
+                          (action) => action.kind === item.id,
+                        );
+                        if (
+                          item.id === "weaponControl" &&
+                          !current?.fighter.energy?.controls
+                        )
                           return null;
                         const blocked = !matching.length;
                         const weapon = current && attackWeapon(current.fighter);
@@ -644,6 +611,44 @@ export function CommandMenu({
                 </section>
               ))}
             </nav>
+            {!reaction && groupIndex === 3 && (
+              <p>No hay objetos utilizables.</p>
+            )}
+            {!reaction && (
+              <div className="command-shortcuts">
+                {(["breathe", "recover", "end"] as const).map((kind) => {
+                  const action = legal.find((item) => item.kind === kind);
+                  return (
+                    <button
+                      key={kind}
+                      type="button"
+                      disabled={!action}
+                      title={!action ? unavailable(kind) : undefined}
+                      onClick={() => {
+                        if (!action) return;
+                        if (
+                          kind === "recover" &&
+                          !window.confirm(
+                            "Tomar Aliento finalizará tu turno. Recuperarás Vigor al comenzar el siguiente",
+                          )
+                        )
+                          return;
+                        onAction(action);
+                      }}
+                    >
+                      {
+                        {
+                          breathe: "◇ Respirar",
+                          recover: "◆ Tomar Aliento",
+                          end: "Pasar turno",
+                        }[kind]
+                      }
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="command-detail">
               {state.pending && (
                 <p>Impacto confirmado. El daño se tira después de decidir.</p>
