@@ -1,0 +1,47 @@
+{
+  "name": "tnl-balance-lab",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && npm run build:web",
+    "build:web": "next build apps/web --webpack",
+    "dev": "next dev apps/web --webpack --hostname 127.0.0.1",
+    "start": "next start apps/web",
+    "typecheck": "tsc --noEmit && tsc -p apps/web/tsconfig.json --incremental false",
+    "test:web": "node scripts/test-web.ts",
+    "benchmark": "node scripts/benchmark.ts",
+    "migrate": "node --env-file-if-exists=apps/web/.env.local scripts/migrate.ts",
+    "test": "node --test packages/engine/tests/*.test.ts apps/web/tests/*.test.ts",
+    "lint": "eslint packages scripts apps/web/app apps/web/lib apps/web/tests",
+    "playtest": "node scripts/playtest.ts",
+    "format:check": "prettier --check \"packages/**/*.{json,ts}\" \"scripts/**/*.ts\" \"apps/web/{app,lib,tests}/**/*.{ts,tsx,css}\" \"apps/web/*.{json,ts}\" \"*.json\" \"*.mjs\" --ignore-path .gitignore",
+    "format": "prettier --write \"packages/**/*.{json,ts}\" \"scripts/**/*.ts\" \"apps/web/{app,lib,tests}/**/*.{ts,tsx,css}\" \"apps/web/*.{json,ts}\" \"*.json\" \"*.mjs\" --ignore-path .gitignore"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.4.0",
+    "fflate": "^0.8.3",
+    "next": "^16.4.6",
+    "postgres": "^4.1.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
+    "@electric-sql/pglite-socket": "^0.2.19",
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^10.14.0",
+    "prettier": "^3.10.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2"
+  }
+}

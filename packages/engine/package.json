@@ -1,0 +1,12 @@
+{
+  "name": "@tnl/engine",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "dependencies": {
+    "@tnl/schemas": "0.0.1",
+    "@noble/hashes": "^2.4.0",
+    "fflate": "^0.8.3",
+    "zod": "^4.6.7"
+  }
+}

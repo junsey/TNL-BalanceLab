@@ -1,0 +1,10 @@
+{
+  "name": "@tnl/fixtures",
+  "private": true,
+  "type": "module",
+  "version": "0.0.1",
+  "dependencies": {
+    "@tnl/engine": "0.0.1",
+    "@tnl/schemas": "0.0.1"
+  }
+}
