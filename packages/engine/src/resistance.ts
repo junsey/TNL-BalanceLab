@@ -15,7 +15,15 @@ export function compareResistanceAttack(input: unknown, naturalRoll: number) {
   const config = resistanceExperiment.parse(input);
   const natural = z.number().int().min(1).max(100).parse(naturalRoll);
   const capacity = Math.min(100, config.associatedAttribute + config.mastery);
-  const compare = (shieldBonus: number) => {
+  const compare = (
+    shieldBonus: number,
+  ): {
+    natural: number;
+    resistance: number;
+    modified: number;
+    capacity: number;
+    grade: "fumble" | "miss" | "normal" | "half" | "quarter" | "critical";
+  } => {
     const resistance =
       config.naturalResistance + config.armorBonus + shieldBonus;
     const modified = natural + resistance;

@@ -245,6 +245,15 @@ function validateSetup(setup: Setup) {
 export function startTacticalEncounter(input: unknown) {
   const setup = setupSchema.parse(input);
   validateSetup(setup);
+  const resistance = setup.rules.resistance;
+  if (resistance) {
+    for (const { fighter } of setup.participants) {
+      if (!Object.hasOwn(resistance, fighter.id))
+        throw new RangeError(
+          "Faltan parametros de Resistencia para " + fighter.id,
+        );
+    }
+  }
   setup.zones.sort((a, b) => byId(a.id, b.id));
   setup.participants.sort((a, b) => byId(a.fighter.id, b.fighter.id));
   const aggressors: string[] = [];
@@ -422,7 +431,7 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
   const { fighter } = actor;
   if (state.pending) {
     if (state.pending.defender !== id) return [];
-    return legalDefenses(fighter).map((defense) => ({
+    return legalDefenses(fighter, state.pending.resistance).map((defense) => ({
       kind: "defend",
       actor: id,
       defense,

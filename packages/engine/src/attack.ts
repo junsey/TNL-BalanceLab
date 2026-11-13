@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { armor, character, shield, weapon } from "../../schemas/src/index.ts";
+import { compareResistanceAttack, resistanceExperiment } from "./resistance.ts";
 import { attackTarget } from "./character.ts";
 import { applyDamage } from "./combat-math.ts";
 import { classify, rollDice, rollPercentile, thresholds } from "./dice.ts";
@@ -130,6 +131,7 @@ export const attackRules = z.strictObject({
   equipmentWear: z.boolean(),
   defenseOverflow: z.boolean(),
   tables: consequenceTables.optional(),
+  resistance: z.record(id, resistanceExperiment).optional(),
 });
 export const pendingImpact = z.strictObject({
   attacker: id,
@@ -139,6 +141,7 @@ export const pendingImpact = z.strictObject({
   target: percent,
   rng: rngState,
   weaponId: id.optional(),
+  resistance: resistanceExperiment.optional(),
 });
 
 export type Fighter = z.infer<typeof fighterState>;
@@ -246,7 +249,10 @@ const parryCost = (fighter: Fighter) =>
 const blockCost = (fighter: Fighter) =>
   fighter.shield?.model.category === "heavy" ? 2 : 1;
 
-export function legalDefenses(fighter: Fighter): Defense[] {
+export function legalDefenses(
+  fighter: Fighter,
+  resistance?: Impact["resistance"],
+): Defense[] {
   const choices: Defense[] = ["none"];
   if (
     fighter.health <= 0 ||
@@ -264,7 +270,9 @@ export function legalDefenses(fighter: Fighter): Defense[] {
   if (
     fighter.shield &&
     fighter.shield.remaining !== 0 &&
-    fighter.shield.model.absorption !== null &&
+    (resistance
+      ? resistance.shieldBonus > 0
+      : fighter.shield.model.absorption !== null) &&
     fighter.vigor >= blockCost(fighter)
   )
     choices.push("block");
@@ -323,7 +331,25 @@ export function declareAttack(
     };
   }
   const test = rollPercentile(rng);
-  const grade = classify(test.roll, target);
+  const offense = rules.resistance?.[attacker.id];
+  const protection = rules.resistance?.[defender.id];
+  if (rules.resistance && (!offense || !protection))
+    throw new RangeError("Faltan parametros de Resistencia para el ataque");
+  const resistance =
+    offense && protection
+      ? {
+          ...offense,
+          naturalResistance: protection.naturalResistance,
+          armorBonus:
+            defender.armor && defender.armor.remaining !== 0
+              ? protection.armorBonus
+              : 0,
+          shieldBonus: protection.shieldBonus,
+        }
+      : undefined;
+  const check =
+    resistance && compareResistanceAttack(resistance, test.roll).initial;
+  const grade = check?.grade ?? classify(test.roll, target);
   const consequence =
     grade === "fumble" && rules.fumbleConsequences
       ? applyConsequence(updated, "fumble-consequences", rules.tables, test.rng)
@@ -336,7 +362,8 @@ export function declareAttack(
           defender: defender.id,
           grade,
           roll: test.roll,
-          target,
+          target: check?.capacity ?? target,
+          ...(resistance && { resistance }),
           rng: test.rng,
           ...(energy && { weaponId: model.id }),
         };
@@ -351,14 +378,23 @@ export function declareAttack(
     event: {
       kind: impact ? "IMPACT" : "ATTACK_FAILED",
       roll: test.roll,
-      target,
+      target: check?.capacity ?? target,
       grade,
       cost,
       weapon: model.label,
-      mastery: preview.mastery,
-      vulnerability: preview.armor.final,
-      probability: preview.probability,
-      thresholds: preview.thresholds,
+      ...(check && resistance
+        ? {
+            associatedAttribute: resistance.associatedAttribute,
+            mastery: resistance.mastery,
+            resistance: check.resistance,
+            modifiedRoll: check.modified,
+          }
+        : {
+            mastery: preview.mastery,
+            vulnerability: preview.armor.final,
+            probability: preview.probability,
+            thresholds: preview.thresholds,
+          }),
       ...(energy && { weaponId: model.id, energyCost: model.energyPerAttack }),
       ...(consequence?.result && { consequence: consequence.result }),
     },
@@ -421,7 +457,7 @@ export function resolveImpact(
   if (
     impact.attacker !== attacker.id ||
     impact.defender !== defender.id ||
-    !legalDefenses(defender).includes(defense)
+    !legalDefenses(defender, impact.resistance).includes(defense)
   ) {
     throw new RangeError("Defensa ilegal");
   }
@@ -431,8 +467,12 @@ export function resolveImpact(
     defense === "dodge" || defense === "parry" ? rollPercentile(state) : null;
   const grade = test && target !== null ? classify(test.roll, target) : null;
   if (test) state = test.rng;
+  const shieldCheck =
+    defense === "block" && impact.resistance
+      ? compareResistanceAttack(impact.resistance, impact.roll).withShield
+      : undefined;
   const success =
-    defense === "block" ||
+    (defense === "block" && (!shieldCheck || shieldCheck.grade === "miss")) ||
     (grade !== null && grade !== "miss" && grade !== "fumble");
   const unresolved: string[] = [];
   let paid = { ...defender, vigor: defender.vigor - cost };
@@ -455,9 +495,10 @@ export function resolveImpact(
     target,
     grade,
     success,
+    ...(shieldCheck && { shieldCheck }),
   };
-  if (success && defense === "dodge") {
-    if (rules.dodgeDisplacement && !dodgeRouteConfigured)
+  if (success && (defense === "dodge" || shieldCheck)) {
+    if (defense === "dodge" && rules.dodgeDisplacement && !dodgeRouteConfigured)
       unresolved.push("dodge-displacement");
     return {
       defender: paid,
@@ -479,7 +520,15 @@ export function resolveImpact(
       : attacker.weapon.model;
   if (impact.weaponId && model.id !== impact.weaponId)
     throw new RangeError("Arma del impacto inválida");
-  const roll = rollWeaponDamage(model, impact.grade, state);
+  const roll = rollWeaponDamage(
+    model,
+    shieldCheck &&
+      shieldCheck.grade !== "miss" &&
+      shieldCheck.grade !== "fumble"
+      ? shieldCheck.grade
+      : impact.grade,
+    state,
+  );
   state = roll.rng;
   const reduction = armorProfile(paid).reduction;
   const damage = applyDamage(roll.total, capacity, reduction);
