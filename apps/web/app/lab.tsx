@@ -1256,7 +1256,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                 checked={autoContinue}
                 onChange={(event) => setAutoContinue(event.target.checked)}
               />
-              Continuaci�n autom�tica
+              Continuación automática
             </label>
             <label className="animation-control">
               <input

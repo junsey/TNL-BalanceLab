@@ -459,7 +459,14 @@ export function CommandMenu({
     : reaction
       ? "opportunity"
       : category;
-  const options = legal.filter((action) => action.kind === activeCategory);
+  const options = legal.filter((action) => {
+    if (action.kind !== activeCategory) return false;
+    if (action.kind !== "weaponControl" || !current) return true;
+    return (
+      weaponControlCost(current.fighter, action.operation)?.action ===
+      (groupIndex === 0 ? "major" : groupIndex === 1 ? "minor" : "none")
+    );
+  });
   const unavailable = (id: Command) => {
     if (
       !current?.major &&
@@ -522,12 +529,18 @@ export function CommandMenu({
                         "flee",
                         "prepareAttack",
                         "stabilize",
+                        "weaponControl",
                       ],
                     },
                     {
                       label:
                         "Acción Menor" + (current?.minor ? "" : " · usada"),
-                      ids: ["move", "breathe", "prepareBreathe"],
+                      ids: [
+                        "move",
+                        "breathe",
+                        "prepareBreathe",
+                        "weaponControl",
+                      ],
                     },
                     {
                       label: "Turno y equipo",
@@ -551,16 +564,29 @@ export function CommandMenu({
                         onCategory(null);
                       }}
                     >
-                      � {group.label}
+                      Volver: {group.label}
                     </button>
                   )}
                   {(reaction || groupIndex === index) &&
                     commands
                       .filter((item) => group.ids.includes(item.id))
                       .map((item) => {
-                        const matching = legal.filter(
-                          (action) => action.kind === item.id,
-                        );
+                        const matching = legal.filter((action) => {
+                          if (action.kind !== item.id) return false;
+                          if (action.kind !== "weaponControl" || !current)
+                            return true;
+                          return (
+                            weaponControlCost(current.fighter, action.operation)
+                              ?.action ===
+                            (index === 0
+                              ? "major"
+                              : index === 1
+                                ? "minor"
+                                : "none")
+                          );
+                        });
+                        if (item.id === "weaponControl" && !matching.length)
+                          return null;
                         const blocked = !matching.length;
                         const weapon = current && attackWeapon(current.fighter);
                         const cost =
@@ -590,7 +616,12 @@ export function CommandMenu({
                             onClick={() => {
                               if (
                                 matching.length === 1 &&
-                                !["move", "run", "attack"].includes(item.id)
+                                ![
+                                  "move",
+                                  "run",
+                                  "attack",
+                                  "weaponControl",
+                                ].includes(item.id)
                               ) {
                                 onAction(matching[0]!);
                               } else {
@@ -624,7 +655,7 @@ export function CommandMenu({
                   </h3>
                   {activeCategory === "move" || activeCategory === "run" ? (
                     <p>
-                      Eleg� un destino resaltado. Salir del alcance enemigo
+                      Elegí un destino resaltado. Salir del alcance enemigo
                       puede provocar ataques de oportunidad.
                     </p>
                   ) : (
@@ -646,8 +677,8 @@ export function CommandMenu({
                             {actionName(action)}
                             {cost && (
                               <small>
-                                {actionCostLabels[cost.action]} � {cost.vigor}{" "}
-                                Vigor � {cost.energy} Energ�a
+                                {actionCostLabels[cost.action]} · {cost.vigor}{" "}
+                                Vigor · {cost.energy} Energía
                               </small>
                             )}
                           </button>

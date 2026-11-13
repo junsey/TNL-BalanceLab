@@ -138,7 +138,7 @@ export function EncounterWindow({
               checked={autoContinue}
               onChange={(event) => onAutoContinue(event.target.checked)}
             />
-            Continuaci�n autom�tica
+            Continuación automática
           </label>
           <button type="button" onClick={onPause}>
             {playbackPaused ? "Reanudar" : "Pausar"}
@@ -198,7 +198,7 @@ export function EncounterWindow({
           <section data-grade={String((attack ?? detail).grade ?? "")}>
             <h3>
               Ataque
-              {typeof attackerId === "string" ? " � " + name(attackerId) : ""}
+              {typeof attackerId === "string" ? " · " + name(attackerId) : ""}
             </h3>
             {attack ? (
               <Detail detail={attack} name={name} />
@@ -215,14 +215,14 @@ export function EncounterWindow({
           >
             <h3>
               Defensa
-              {typeof defenderId === "string" ? " � " + name(defenderId) : ""}
+              {typeof defenderId === "string" ? " · " + name(defenderId) : ""}
             </h3>
             {defending && ready ? (
               <Detail detail={detail} name={name} />
             ) : ready && detail.kind === "ATTACK_FAILED" ? (
               <p>No fue necesaria.</p>
             ) : waitingDefense ? (
-              <p>Reacci�n pendiente.</p>
+              <p>Reacción pendiente.</p>
             ) : null}
           </section>
         </div>
