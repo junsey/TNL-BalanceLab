@@ -1541,3 +1541,30 @@ h3 {
 .duel-comparison [data-grade="fumble"] h3 {
   color: #f78fbe;
 }
+@media (max-width: 650px) {
+  .party-bar {
+    grid-template-columns: minmax(78px, 1fr) repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding-inline: 6px;
+  }
+  .party-toggle {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 3px;
+    overflow-wrap: anywhere;
+  }
+  .party-toggle > svg,
+  .party-actions {
+    display: none;
+  }
+  .party-bars {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: 3px;
+  }
+  .party-slot:nth-last-child(-n + 2) .party-expand {
+    left: auto;
+    right: 0;
+  }
+  .with-party {
+    padding-bottom: 190px;
+  }
+}
