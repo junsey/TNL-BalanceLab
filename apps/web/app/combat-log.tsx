@@ -78,8 +78,11 @@ export function Detail({
   switch (detail.kind) {
     case "IMPACT":
     case "ATTACK_FAILED": {
+      const resistance = typeof detail.resistance === "number";
       const limit =
-        typeof detail.target === "number" ? thresholds(detail.target) : null;
+        !resistance && typeof detail.target === "number"
+          ? thresholds(detail.target)
+          : null;
       return (
         <p>
           <strong>
@@ -90,25 +93,36 @@ export function Detail({
             d100 {print(detail.roll)} ·{" "}
             {grades[print(detail.grade)] ?? print(detail.grade)}
           </strong>
-          <span>
-            {print(detail.weapon) !== "—" ? print(detail.weapon) + " · " : ""}
-            {print(detail.cost)} Vigor ·{" "}
-            {typeof detail.mastery === "number"
-              ? "Dominio " +
-                detail.mastery +
-                " + Vulnerabilidad " +
-                print(detail.vulnerability) +
-                " → "
-              : ""}
-            Umbral {print(detail.target)} · Impacto{" "}
-            {print(
-              detail.probability ??
-                (typeof detail.target === "number"
-                  ? Math.max(1, Math.min(99, detail.target))
-                  : null),
-            )}
-            %
-          </span>
+          {resistance ? (
+            <span>
+              {print(detail.weapon)} ({print(detail.target)}) ·{" "}
+              {print(detail.cost)} Vigor. Atributo{" "}
+              {print(detail.associatedAttribute)} + Dominio{" "}
+              {print(detail.mastery)}. Tirada {print(detail.roll)} + Resistencia{" "}
+              {print(detail.resistance)} = {print(detail.modifiedRoll)} contra{" "}
+              {print(detail.target)}.
+            </span>
+          ) : (
+            <span>
+              {print(detail.weapon) !== "—" ? print(detail.weapon) + " · " : ""}
+              {print(detail.cost)} Vigor ·{" "}
+              {typeof detail.mastery === "number"
+                ? "Dominio " +
+                  detail.mastery +
+                  " + Vulnerabilidad " +
+                  print(detail.vulnerability) +
+                  " → "
+                : ""}
+              Umbral {print(detail.target)} · Impacto{" "}
+              {print(
+                detail.probability ??
+                  (typeof detail.target === "number"
+                    ? Math.max(1, Math.min(99, detail.target))
+                    : null),
+              )}
+              %
+            </span>
+          )}
           {limit && (
             <span>
               Umbrales normal {limit.normal} · mitad {limit.half} · cuarto{" "}
@@ -120,6 +134,7 @@ export function Detail({
     }
     case "DEFENSE": {
       const damage = record(detail.damage);
+      const shield = record(detail.shieldCheck);
       const limit =
         typeof detail.target === "number" ? thresholds(detail.target) : null;
       return (
@@ -135,7 +150,19 @@ export function Detail({
               {grades[print(detail.grade)] ?? print(detail.grade)}
             </span>
           )}
-          {detail.defense === "block" && <span>Bloqueo automático</span>}
+          {shield ? (
+            <span>
+              Tirada original {print(shield.natural)} + Resistencia{" "}
+              {print(shield.resistance)}
+              {" = "}
+              {print(shield.modified)} contra {print(shield.capacity)}.
+              {detail.success
+                ? " Impacto anulado."
+                : " El impacto se mantiene."}
+            </span>
+          ) : (
+            detail.defense === "block" && <span>Bloqueo automático</span>
+          )}
           {limit && (
             <span>
               Umbrales normal {limit.normal} · mitad {limit.half} · cuarto{" "}
