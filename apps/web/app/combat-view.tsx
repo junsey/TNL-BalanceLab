@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   actionBlockReasons,
   armorProfile,
@@ -447,8 +447,9 @@ export function CommandMenu({
   onSheet: () => void;
   heading: string;
   category: Command | null;
-  onCategory: (command: Command) => void;
+  onCategory: (command: Command | null) => void;
 }) {
+  const [groupIndex, setGroupIndex] = useState<number | null>(null);
   const legal = getLegalActions(state, active);
   const current = state.actors.find((actor) => actor.fighter.id === active);
   const reason = actionBlockReasons(state, active);
@@ -497,149 +498,172 @@ export function CommandMenu({
     );
   };
   return (
-    <section className="pane command-pane">
-      <header className="pane-head">
-        <h2>{heading}</h2>
-        <button type="button" onClick={onSheet}>
-          Equipo y hoja
-        </button>
-      </header>
-      {manual && !state.outcome && (
-        <div className="command-body">
-          <nav className="command-list" aria-label="Comandos">
-            {(reaction
-              ? [{ label: "Reacción", ids: [activeCategory] }]
-              : [
-                  {
-                    label: "Acción Mayor" + (current?.major ? "" : " · usada"),
-                    ids: [
-                      "attack",
-                      "run",
-                      "recover",
-                      "flee",
-                      "prepareAttack",
-                      "stabilize",
-                    ],
-                  },
-                  {
-                    label: "Acción Menor" + (current?.minor ? "" : " · usada"),
-                    ids: ["move", "breathe", "prepareBreathe"],
-                  },
-                  {
-                    label: "Turno y equipo",
-                    ids: current?.fighter.energy?.controls
-                      ? ["weaponControl", "end"]
-                      : ["end"],
-                  },
-                ]
-            ).map((group) => (
-              <section key={group.label} className="command-group">
-                <h3>{group.label}</h3>
-                {commands
-                  .filter((item) => group.ids.includes(item.id))
-                  .map((item) => {
-                    const matching = legal.filter(
-                      (action) => action.kind === item.id,
-                    );
-                    const blocked = !matching.length;
-                    const weapon = current && attackWeapon(current.fighter);
-                    const cost =
-                      item.id === "attack"
-                        ? weapon
-                          ? attackCost[weapon.category] + " Vigor"
-                          : null
-                        : [
-                              "move",
-                              "run",
-                              "breathe",
-                              "recover",
-                              "flee",
-                              "prepareAttack",
-                              "prepareBreathe",
-                              "stabilize",
-                            ].includes(item.id)
-                          ? "0 Vigor"
-                          : null;
-                    return (
-                      <button
-                        type="button"
-                        key={item.id}
-                        aria-pressed={item.id === activeCategory}
-                        disabled={blocked}
-                        title={blocked ? unavailable(item.id) : undefined}
-                        onClick={() => {
-                          if (
-                            matching.length === 1 &&
-                            !["move", "run", "attack"].includes(item.id)
-                          ) {
-                            onAction(matching[0]!);
-                          } else {
-                            onCategory(item.id);
-                          }
-                        }}
-                      >
-                        <span>
-                          {item.label}
-                          {cost && <small>{cost}</small>}
-                        </span>
-                        {blocked && (
-                          <small className="command-block">
-                            {unavailable(item.id)}
-                          </small>
-                        )}
-                      </button>
-                    );
-                  })}
-              </section>
-            ))}
-          </nav>
-          <div className="command-detail">
-            {state.pending && (
-              <p>Impacto confirmado. El daño se tira después de decidir.</p>
-            )}
-            {activeCategory ? (
-              <>
-                <h3>
-                  {commands.find((item) => item.id === activeCategory)?.label}
-                </h3>
-                {activeCategory === "move" || activeCategory === "run" ? (
-                  <p>
-                    Eleg� un destino resaltado. Salir del alcance enemigo puede
-                    provocar ataques de oportunidad.
-                  </p>
-                ) : (
-                  <div className="command-options">
-                    {options.map((action) => {
-                      const cost =
-                        current && action.kind === "weaponControl"
-                          ? weaponControlCost(current.fighter, action.operation)
-                          : null;
-                      return (
-                        <button
-                          type="button"
-                          key={JSON.stringify(action)}
-                          onClick={() => onAction(action)}
-                        >
-                          {actionName(action)}
-                          {cost && (
-                            <small>
-                              {actionCostLabels[cost.action]} � {cost.vigor}{" "}
-                              Vigor � {cost.energy} Energ�a
-                            </small>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            ) : (
-              <p>Elegí un comando para ver sus opciones.</p>
-            )}
+    <details className="dock-commands" open key={heading}>
+      <summary>{heading}</summary>
+      <section className="pane command-pane">
+        <header className="pane-head">
+          <button type="button" onClick={onSheet}>
+            Equipo y hoja
+          </button>
+        </header>
+        {manual && !state.outcome && (
+          <div className="command-body">
+            <nav className="command-list" aria-label="Comandos">
+              {(reaction
+                ? [{ label: "Reacción", ids: [activeCategory] }]
+                : [
+                    {
+                      label:
+                        "Acción Mayor" + (current?.major ? "" : " · usada"),
+                      ids: [
+                        "attack",
+                        "run",
+                        "recover",
+                        "flee",
+                        "prepareAttack",
+                        "stabilize",
+                      ],
+                    },
+                    {
+                      label:
+                        "Acción Menor" + (current?.minor ? "" : " · usada"),
+                      ids: ["move", "breathe", "prepareBreathe"],
+                    },
+                    {
+                      label: "Turno y equipo",
+                      ids: current?.fighter.energy?.controls
+                        ? ["weaponControl", "end"]
+                        : ["end"],
+                    },
+                  ]
+              ).map((group, index) => (
+                <section key={group.label} className="command-group">
+                  {!reaction && groupIndex === null && (
+                    <button type="button" onClick={() => setGroupIndex(index)}>
+                      {group.label}
+                    </button>
+                  )}
+                  {!reaction && groupIndex === index && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGroupIndex(null);
+                        onCategory(null);
+                      }}
+                    >
+                      � {group.label}
+                    </button>
+                  )}
+                  {(reaction || groupIndex === index) &&
+                    commands
+                      .filter((item) => group.ids.includes(item.id))
+                      .map((item) => {
+                        const matching = legal.filter(
+                          (action) => action.kind === item.id,
+                        );
+                        const blocked = !matching.length;
+                        const weapon = current && attackWeapon(current.fighter);
+                        const cost =
+                          item.id === "attack"
+                            ? weapon
+                              ? attackCost[weapon.category] + " Vigor"
+                              : null
+                            : [
+                                  "move",
+                                  "run",
+                                  "breathe",
+                                  "recover",
+                                  "flee",
+                                  "prepareAttack",
+                                  "prepareBreathe",
+                                  "stabilize",
+                                ].includes(item.id)
+                              ? "0 Vigor"
+                              : null;
+                        return (
+                          <button
+                            type="button"
+                            key={item.id}
+                            aria-pressed={item.id === activeCategory}
+                            disabled={blocked}
+                            title={blocked ? unavailable(item.id) : undefined}
+                            onClick={() => {
+                              if (
+                                matching.length === 1 &&
+                                !["move", "run", "attack"].includes(item.id)
+                              ) {
+                                onAction(matching[0]!);
+                              } else {
+                                onCategory(item.id);
+                              }
+                            }}
+                          >
+                            <span>
+                              {item.label}
+                              {cost && <small>{cost}</small>}
+                            </span>
+                            {blocked && (
+                              <small className="command-block">
+                                {unavailable(item.id)}
+                              </small>
+                            )}
+                          </button>
+                        );
+                      })}
+                </section>
+              ))}
+            </nav>
+            <div className="command-detail">
+              {state.pending && (
+                <p>Impacto confirmado. El daño se tira después de decidir.</p>
+              )}
+              {activeCategory ? (
+                <>
+                  <h3>
+                    {commands.find((item) => item.id === activeCategory)?.label}
+                  </h3>
+                  {activeCategory === "move" || activeCategory === "run" ? (
+                    <p>
+                      Eleg� un destino resaltado. Salir del alcance enemigo
+                      puede provocar ataques de oportunidad.
+                    </p>
+                  ) : (
+                    <div className="command-options">
+                      {options.map((action) => {
+                        const cost =
+                          current && action.kind === "weaponControl"
+                            ? weaponControlCost(
+                                current.fighter,
+                                action.operation,
+                              )
+                            : null;
+                        return (
+                          <button
+                            type="button"
+                            key={JSON.stringify(action)}
+                            onClick={() => onAction(action)}
+                          >
+                            {actionName(action)}
+                            {cost && (
+                              <small>
+                                {actionCostLabels[cost.action]} � {cost.vigor}{" "}
+                                Vigor � {cost.energy} Energ�a
+                              </small>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p>Elegí un comando para ver sus opciones.</p>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </section>
+        )}
+      </section>
+    </details>
   );
 }
 

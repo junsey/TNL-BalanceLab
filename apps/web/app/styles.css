@@ -1481,3 +1481,34 @@ h3 {
     height: 54px;
   }
 }
+.party-bar {
+  grid-template-columns: minmax(90px, 1fr) repeat(4, minmax(0, 1fr));
+}
+.dock-commands {
+  position: relative;
+  min-width: 0;
+}
+.dock-commands > summary {
+  cursor: pointer;
+  background: #14232f;
+  border: 1px solid #344c5a;
+  border-radius: 5px;
+  padding: 10px;
+  overflow-wrap: anywhere;
+}
+.dock-commands > .command-pane {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: min(280px, calc(100vw - 24px));
+  max-height: 55dvh;
+  overflow: auto;
+}
+.dock-commands .command-body,
+.dock-commands .command-options {
+  display: block;
+}
+.dock-commands .command-options button {
+  display: block;
+  width: 100%;
+}

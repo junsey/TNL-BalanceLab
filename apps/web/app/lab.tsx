@@ -1108,33 +1108,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               onSheet={setSheetActor}
               state={displayed}
               paused={replay !== null || !!displayed.outcome}
-            />
-            <div className="combat-center">
-              <TacticalBoard
-                state={displayed}
-                name={name}
-                zone={null}
-                onZone={(id) => {
-                  const movement = choices.find(
-                    (action) =>
-                      (action.kind === "move" || action.kind === "run") &&
-                      action.zone === id,
-                  );
-                  if (movement) return take(movement);
-                  if (targets.length) {
-                    const inZone = displayed.actors.filter(
-                      (actor) =>
-                        actor.zone === id && targets.includes(actor.fighter.id),
-                    );
-                    if (inZone.length === 1)
-                      attackTarget(inZone[0]!.fighter.id);
-                  }
-                }}
-                destinations={destinations}
-                targets={targets}
-                selectedTarget={null}
-                onTarget={attackTarget}
-              />
+            >
               <CommandMenu
                 key={displayed.sequence + ":" + active + ":" + mode}
                 state={displayed}
@@ -1160,6 +1134,33 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                         : (displayed.pending ? "Defensa · " : "Comandos · ") +
                           name(active)
                 }
+              />
+            </PartyBar>
+            <div className="combat-center">
+              <TacticalBoard
+                state={displayed}
+                name={name}
+                zone={null}
+                onZone={(id) => {
+                  const movement = choices.find(
+                    (action) =>
+                      (action.kind === "move" || action.kind === "run") &&
+                      action.zone === id,
+                  );
+                  if (movement) return take(movement);
+                  if (targets.length) {
+                    const inZone = displayed.actors.filter(
+                      (actor) =>
+                        actor.zone === id && targets.includes(actor.fighter.id),
+                    );
+                    if (inZone.length === 1)
+                      attackTarget(inZone[0]!.fighter.id);
+                  }
+                }}
+                destinations={destinations}
+                targets={targets}
+                selectedTarget={null}
+                onTarget={attackTarget}
               />
               <LatestResolution
                 events={session.events}

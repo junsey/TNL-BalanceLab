@@ -15,18 +15,21 @@ export function PartyBar({
   name,
   onSheet,
   paused,
+  children,
 }: {
   actors: readonly Actor[];
   state: TacticalState;
   name: (id: string) => string;
   onSheet: (id: string) => void;
   paused: boolean;
+  children: React.ReactNode;
 }) {
   const [toggle, setToggle] = useState<{ turn: string; open: boolean } | null>(
     null,
   );
   return (
     <aside className="party-bar" aria-label="Barra del grupo">
+      {children}
       {Array.from({ length: 4 }, (_, index) => {
         const actor = actors[index];
         if (!actor)
