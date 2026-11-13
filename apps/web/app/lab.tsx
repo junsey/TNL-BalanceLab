@@ -277,6 +277,39 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     hold,
     sheetActor,
   ]);
+  useEffect(() => {
+    if (
+      !showEncounter ||
+      hold ||
+      session.state.outcome ||
+      session.state.pending ||
+      session.state.opportunities?.continuation
+    )
+      return;
+    setSession((current) => {
+      if (current !== session) return current;
+      const actor = current.state.actors.find(
+        (item) =>
+          (mode === "manual" ||
+            item.fighter.id === current.state.setup.player) &&
+          !item.major &&
+          !item.minor &&
+          getLegalActions(current.state, item.fighter.id).some(
+            (action) => action.kind === "end",
+          ),
+      );
+      if (!actor) return current;
+      const step = resolveAction(current.state, {
+        kind: "end",
+        actor: actor.fighter.id,
+      });
+      return {
+        ...current,
+        state: step.state,
+        events: [...current.events, step.event],
+      };
+    });
+  }, [session, mode, showEncounter, hold]);
   useEffect(() => () => workerRef.current?.terminate(), []);
   useEffect(() => {
     if (!shared) return;
