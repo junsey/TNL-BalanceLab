@@ -14,3 +14,4 @@ export * from "./portability.ts";
 export * from "./effects.ts";
 export * from "./studies.ts";
 export * from "./metrics.ts";
+export * from "./resistance.ts";
