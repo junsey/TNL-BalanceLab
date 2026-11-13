@@ -32,11 +32,18 @@ export const tacticalZone = z.strictObject({
   overlays: z.array(id).max(8).optional(),
 });
 const participant = z.strictObject({ fighter: fighterState, zone: id });
-const preparation = z.strictObject({
+const legacyPreparation = z.strictObject({
   target: id,
   trigger: z.enum(["incomingAttack", "opponentLeaves"]),
   action: z.literal("breathe").optional(),
 });
+const preparation = z.union([
+  legacyPreparation,
+  z.strictObject({
+    trigger: z.enum(["incomingAttack", "enemyEnters", "either"]),
+    weaponId: id,
+  }),
+]);
 const combatant = participant.extend({
   major: z.boolean(),
   minor: z.boolean(),
@@ -80,6 +87,7 @@ const continuation = z.strictObject({
   ]),
   waiting: z.array(id).max(64),
   prepared: z.array(id).max(64).optional(),
+  movementFinished: z.boolean().optional(),
 });
 const opportunityState = z.strictObject({
   used: z.array(z.tuple([id, id])).max(126),
@@ -508,6 +516,15 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       }
     }
   }
+  if (
+    !state.setup.disabled.preparedActions &&
+    !actor.prepared &&
+    attackWeapon(fighter) &&
+    fighter.weapon.remaining !== 0
+  ) {
+    for (const trigger of ["incomingAttack", "enemyEnters", "either"] as const)
+      actions.push({ kind: "prepareReactive", actor: id, trigger });
+  }
   const opponents = state.actors.filter(
     (other) =>
       (other.fighter.id === state.setup.player) !== (id === state.setup.player),
@@ -757,12 +774,17 @@ function preparedCandidates(state: World, trigger: Trigger) {
   return state.actors
     .filter(
       (actor) =>
-        actor.prepared?.target === trigger.actor &&
+        actor.prepared &&
+        ("weaponId" in actor.prepared
+          ? trigger.kind === "attack" &&
+            trigger.target === actor.fighter.id &&
+            actor.prepared.trigger !== "enemyEnters"
+          : actor.prepared.target === trigger.actor) &&
         actor.zone === source.zone &&
         canSee(state, actor.zone, source.zone) &&
         alive(actor.fighter) &&
         (trigger.kind === "attack"
-          ? actor.prepared.trigger === "incomingAttack" &&
+          ? actor.prepared.trigger !== "opponentLeaves" &&
             trigger.target === actor.fighter.id
           : actor.prepared.trigger === "opponentLeaves"),
     )
@@ -837,6 +859,25 @@ function finishTrigger(
       from,
       zone: trigger.zone,
     });
+    const prepared = state.actors
+      .filter(
+        (other) =>
+          other.prepared &&
+          "weaponId" in other.prepared &&
+          other.prepared.trigger !== "incomingAttack" &&
+          other.zone === actor.zone &&
+          (other.fighter.id === state.setup.player) !==
+            (actor.fighter.id === state.setup.player) &&
+          canSee(state, other.zone, actor.zone),
+      )
+      .map((other) => other.fighter.id);
+    if (prepared.length && state.opportunities)
+      state.opportunities.continuation = {
+        action: trigger,
+        prepared,
+        waiting: [],
+        movementFinished: true,
+      };
   }
 }
 
@@ -898,6 +939,19 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       }
       break;
     }
+    case "prepareReactive":
+      actor.major = false;
+      actor.ended = true;
+      actor.prepared = {
+        trigger: decision.trigger,
+        weaponId: attackWeapon(actor.fighter)!.id,
+      };
+      details.push({
+        kind: "PREPARED_ATTACK",
+        actor: decision.actor,
+        ...actor.prepared,
+      });
+      break;
     case "prepareAttack":
     case "prepareBreathe":
       if (decision.kind === "prepareBreathe") actor.minor = false;
@@ -1053,8 +1107,12 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       break;
   }
 
-  const queued = state.opportunities?.continuation;
-  if (state.opportunities && queued && !state.pending) {
+  while (
+    state.opportunities?.continuation &&
+    !state.pending &&
+    !state.outcome
+  ) {
+    const queued = state.opportunities.continuation;
     const provoking = state.actors.find(
       (actor) => actor.fighter.id === queued.action.actor,
     )!;
@@ -1075,10 +1133,15 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         !fighter.conditions?.some(
           (condition) => condition.blocksReactions || condition.blocksActions,
         );
-      const breathing = preparation?.action === "breathe";
+      const breathing =
+        preparation &&
+        "action" in preparation &&
+        preparation.action === "breathe";
       const executed =
         !!preparation &&
         canReact &&
+        (!("weaponId" in preparation) ||
+          attackWeapon(fighter)?.id === preparation.weaponId) &&
         (breathing ? fighter.vigor < fighter.vigorMax : canAttack(fighter));
       details.push({ kind: "PREPARATION_TRIGGERED", actor: id, executed });
       if (executed && breathing) {
@@ -1086,7 +1149,7 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         details.push({ kind: "PREPARED_RECOVERY", actor: id, amount: 1 });
       } else if (executed) executeAttack(ready, provoking);
     }
-    if (!state.pending) {
+    if (!state.pending && !queued.movementFinished) {
       const eligible = new Set(opportunityCandidates(state, queued.action));
       queued.waiting = queued.waiting.filter((id) => eligible.has(id));
     }
@@ -1095,8 +1158,10 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       (!alive(provoking.fighter) || state.outcome || !queued.waiting.length)
     ) {
       state.opportunities.continuation = null;
-      if (!state.outcome)
+      if (!state.outcome && !queued.movementFinished)
         finishTrigger(state, queued.action, executeAttack, details);
+    } else {
+      break;
     }
   }
   state.outcome ??= outcomeFor(state);

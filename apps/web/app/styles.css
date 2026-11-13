@@ -1663,3 +1663,15 @@ h3 {
     }
   }
 }
+.zone-occupants > span {
+  position: relative;
+}
+.prepared-marker {
+  position: absolute;
+  inset: 0 0 auto auto;
+  padding-inline: 4px;
+  color: #171208;
+  background: #f4c875;
+  border-radius: 3px;
+  font-weight: bold;
+}

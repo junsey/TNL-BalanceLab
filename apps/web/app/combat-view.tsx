@@ -217,7 +217,7 @@ export function TacticalBoard({
                       {cell.terrain ?? "Zona"} <span>{cell.id}</span>
                     </span>
                     <span className="zone-occupants">
-                      {occupants.slice(0, 4).map(({ fighter }) => (
+                      {occupants.slice(0, 4).map(({ fighter, prepared }) => (
                         <span
                           key={fighter.id}
                           className={fighter.health <= 0 ? "down" : ""}
@@ -225,6 +225,25 @@ export function TacticalBoard({
                           <PixelSprite
                             player={fighter.id === state.setup.player}
                           />
+                          {prepared && "weaponId" in prepared && (
+                            <span
+                              className="prepared-marker"
+                              title={
+                                fighter.weapon.model.label +
+                                " / " +
+                                {
+                                  incomingAttack: "Cuando un enemigo me ataca",
+                                  enemyEnters:
+                                    "Cuando un enemigo entra en mi zona",
+                                  either:
+                                    "Cuando un enemigo entra en mi zona o me ataca",
+                                }[prepared.trigger]
+                              }
+                              aria-label="Ataque preparado"
+                            >
+                              !
+                            </span>
+                          )}
                         </span>
                       ))}
                     </span>
@@ -417,7 +436,7 @@ const commands = [
   { id: "run", label: "Correr" },
   { id: "breathe", label: "Respirar" },
   { id: "recover", label: "Tomar aliento" },
-  { id: "prepareAttack", label: "Preparar acción" },
+  { id: "prepareReactive", label: "Ataque" },
   { id: "prepareBreathe", label: "Preparar Respirar" },
   { id: "weaponControl", label: "Ajustar arma" },
   { id: "flee", label: "Escapar" },
@@ -467,7 +486,7 @@ export function CommandMenu({
         { label: "Movimiento", ids: ["move", "run", "flee"] },
         { label: "Habilidades y maniobras", ids: ["stabilize"] },
         { label: "Objetos", ids: [] },
-        { label: "Preparar acción", ids: ["prepareAttack"] },
+        { label: "Preparar acción", ids: ["prepareReactive"] },
       ];
   const unavailable = (id: Command) => {
     if (
@@ -476,7 +495,7 @@ export function CommandMenu({
         "attack",
         "run",
         "recover",
-        "prepareAttack",
+        "prepareReactive",
         "stabilize",
         "flee",
       ].includes(id)
@@ -486,12 +505,12 @@ export function CommandMenu({
       return "Acción Menor utilizada";
     if (id === "move" || id === "run") return "Sin destinos disponibles";
     if (
-      (id === "prepareAttack" || id === "prepareBreathe") &&
+      (id === "prepareReactive" || id === "prepareBreathe") &&
       state.setup.disabled.preparedActions
     )
       return "Preparación desactivada";
     if (
-      (id === "prepareAttack" || id === "prepareBreathe") &&
+      (id === "prepareReactive" || id === "prepareBreathe") &&
       current?.prepared
     )
       return "Ya hay una acción preparada";
@@ -567,7 +586,7 @@ export function CommandMenu({
                                   "breathe",
                                   "recover",
                                   "flee",
-                                  "prepareAttack",
+                                  "prepareReactive",
                                   "prepareBreathe",
                                   "stabilize",
                                 ].includes(item.id)

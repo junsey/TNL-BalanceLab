@@ -132,6 +132,11 @@ export const action = z.discriminatedUnion("kind", [
     target: id,
     trigger: z.enum(["incomingAttack", "opponentLeaves"]),
   }),
+  z.strictObject({
+    kind: z.literal("prepareReactive"),
+    actor: id,
+    trigger: z.enum(["incomingAttack", "enemyEnters", "either"]),
+  }),
   z.strictObject({ kind: z.literal("stabilize"), actor: id, target: id }),
   z.strictObject({
     kind: z.literal("opportunity"),

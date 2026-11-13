@@ -295,7 +295,14 @@ export function Detail({
         </p>
       );
     case "PREPARED_ATTACK":
-      return <p>Reservó Acción Mayor contra {name(print(detail.target))}.</p>;
+      return detail.weaponId ? (
+        <p>
+          {name(print(detail.actor))} preparó un ataque con{" "}
+          {print(detail.weaponId)}.
+        </p>
+      ) : (
+        <p>Reservó Acción Mayor contra {name(print(detail.target))}.</p>
+      );
     case "PREPARATION_TRIGGERED":
       return (
         <p>

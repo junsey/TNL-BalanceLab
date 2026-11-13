@@ -107,6 +107,12 @@ const actionName = (action: Action, name = label) => {
           ? "Respirar ante el ataque de "
           : "Respirar ante la salida de ") + name(action.target)
       );
+    case "prepareReactive":
+      return {
+        incomingAttack: "Cuando un enemigo me ataca",
+        enemyEnters: "Cuando un enemigo entra en mi zona",
+        either: "Cualquiera de los dos desencadenantes",
+      }[action.trigger];
     case "prepareAttack":
       return (
         (action.trigger === "incomingAttack"
