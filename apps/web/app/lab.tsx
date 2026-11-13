@@ -201,31 +201,45 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
             .reduce(replayTacticalEvent, session.initial),
     [replay, session],
   );
-  const latestEvent = session.events.at(-1);
+  const latestEvent =
+    replay === null ? session.events.at(-1) : session.events[replay - 1];
   const playback = visual?.event === latestEvent ? visual : null;
   const frameIndex = playback?.index ?? 0;
   const pendingManual =
+    replay === null &&
     !!displayed.pending &&
     (mode === "manual" ||
       displayed.pending.defender === displayed.setup.player);
   const showEncounter =
-    replay === null &&
-    !initiativeOpen &&
-    !sheetActor &&
-    (mode === "auto" || mode === "manual");
+    !initiativeOpen && !sheetActor && (mode === "auto" || mode === "manual");
   const { frame, waiting } = selectEncounterFrame(
     showEncounter ? (latestEvent?.details ?? []) : [],
     frameIndex,
     {
       instant: false,
-      pending: !!displayed.pending,
+      pending: replay === null && !!displayed.pending,
       manual: pendingManual,
     },
   );
   const ready = !animations || speed === 0 || playback?.ready === true;
+  const visibleEvents = replay === null ? session.events.length : replay;
   const hold = !!frame && (!waiting || !ready);
   const delay = animations && speed ? 420 / speed : 0;
   useEffect(() => {
+    if (
+      !frame &&
+      autoContinue &&
+      !playbackPaused &&
+      !initiativeOpen &&
+      replay !== null &&
+      replay < session.events.length
+    ) {
+      const timer = window.setTimeout(
+        () => setReplay(replay + 1),
+        Math.max(160, 420 / (speed || 1)),
+      );
+      return () => window.clearTimeout(timer);
+    }
     if (
       !frame ||
       !latestEvent ||
@@ -254,6 +268,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     delay,
     autoContinue,
     playbackPaused,
+    initiativeOpen,
+    replay,
+    session.events.length,
   ]);
 
   useEffect(() => {
@@ -730,7 +747,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   }
   const attackEvent =
     frame?.kind === "DEFENSE"
-      ? session.events.findLast((event) => {
+      ? session.events.slice(0, visibleEvents).findLast((event) => {
           const details =
             event === latestEvent
               ? event.details.slice(0, event.details.indexOf(frame))
@@ -763,12 +780,12 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     );
     for (const event of session.events.slice(
       0,
-      attackEvent ? session.events.indexOf(attackEvent) : -1,
+      attackEvent ? session.events.indexOf(attackEvent) : visibleEvents - 1,
     ))
       for (const actor of event.changes.actors)
         actors.set(actor.fighter.id, actor);
     return [...actors.values()];
-  }, [frame, attackEvent, session.initial, session.events]);
+  }, [frame, attackEvent, session.initial, session.events, visibleEvents]);
   const sheet = displayed.actors.find(
     (actor) => actor.fighter.id === sheetActor,
   );
@@ -1314,6 +1331,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               <InitiativeSequence
                 state={session.initial}
                 name={name}
+                replay={replay !== null}
                 onContinue={() => setInitiativeOpen(false)}
               />
             </CombatDialog>
@@ -1367,7 +1385,20 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                 setAuto(true);
               }}
               onSkip={() => {
-                if (ready && !waiting) setPlaybackPaused(false);
+                if (ready && !waiting) {
+                  setPlaybackPaused(false);
+                  if (
+                    replay !== null &&
+                    replay < session.events.length &&
+                    !selectEncounterFrame(latestEvent.details, frameIndex + 1, {
+                      instant: false,
+                      pending: false,
+                      manual: false,
+                    }).frame
+                  ) {
+                    setReplay(replay + 1);
+                  }
+                }
                 setVisual({
                   event: latestEvent,
                   index: ready && !waiting ? frameIndex + 1 : frameIndex,
@@ -1391,6 +1422,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                 disabled={session.events.length === 0}
                 onClick={() => {
                   setAuto(replay !== null && mode === "auto");
+                  setVisual(null);
+                  setPlaybackPaused(false);
+                  setInitiativeOpen(replay === null);
                   setReplay(replay === null ? 0 : null);
                 }}
               >
@@ -1405,7 +1439,10 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                   min={0}
                   max={session.events.length}
                   value={replay}
-                  onChange={(event) => setReplay(Number(event.target.value))}
+                  onChange={(event) => {
+                    setVisual(null);
+                    setReplay(Number(event.target.value));
+                  }}
                 />
               </label>
             )}

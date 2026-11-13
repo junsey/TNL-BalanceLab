@@ -707,10 +707,12 @@ export function InitiativeSequence({
   state,
   name,
   onContinue,
+  replay = false,
 }: {
   state: TacticalState;
   name: Name;
   onContinue: () => void;
+  replay?: boolean;
 }) {
   const result = state.initiative;
   const aggressors = result?.aggressorRolls ?? [];
@@ -767,7 +769,7 @@ export function InitiativeSequence({
             <Initiative state={state} name={name} />
           </details>
           <button type="button" className="accent" onClick={onContinue}>
-            Comenzar combate
+            {replay ? "Continuar replay" : "Comenzar combate"}
           </button>
         </>
       ) : (
