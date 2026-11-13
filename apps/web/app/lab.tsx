@@ -732,25 +732,47 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     );
     if (action) take(action);
   }
-  const previousAttack =
+  const attackEvent =
     frame?.kind === "DEFENSE"
-      ? session.events
-          .slice(0, -1)
-          .findLast((event) =>
-            event.details.some((detail) => detail.kind === "IMPACT"),
-          )
-          ?.details.findLast((detail) => detail.kind === "IMPACT")
+      ? session.events.findLast((event) => {
+          const details =
+            event === latestEvent
+              ? event.details.slice(0, event.details.indexOf(frame))
+              : event.details;
+          return details.some(
+            (detail) =>
+              detail.kind === "IMPACT" &&
+              detail.actor === frame.attacker &&
+              detail.targetActor === frame.actor,
+          );
+        })
       : undefined;
+  const previousAttack = attackEvent?.details
+    .slice(
+      0,
+      attackEvent === latestEvent && frame
+        ? attackEvent.details.indexOf(frame)
+        : undefined,
+    )
+    .findLast(
+      (detail) =>
+        detail.kind === "IMPACT" &&
+        detail.actor === frame?.attacker &&
+        detail.targetActor === frame?.actor,
+    );
   const beforeFrame = useMemo(() => {
     if (!frame) return [];
     const actors = new Map(
       session.initial.actors.map((actor) => [actor.fighter.id, actor]),
     );
-    for (const event of session.events.slice(0, -1))
+    for (const event of session.events.slice(
+      0,
+      attackEvent ? session.events.indexOf(attackEvent) : -1,
+    ))
       for (const actor of event.changes.actors)
         actors.set(actor.fighter.id, actor);
     return [...actors.values()];
-  }, [frame, session.initial, session.events]);
+  }, [frame, attackEvent, session.initial, session.events]);
   const sheet = displayed.actors.find(
     (actor) => actor.fighter.id === sheetActor,
   );

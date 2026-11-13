@@ -192,8 +192,38 @@ export function EncounterWindow({
         {sprite(defender, "duel-defender")}
       </div>
       <div className="duel-results" aria-live="polite">
-        {defending && attack && <Detail detail={attack} name={name} />}
-        {ready && <Detail detail={detail} name={name} />}
+        <div className="duel-comparison">
+          <section data-grade={String((attack ?? detail).grade ?? "")}>
+            <h3>
+              Ataque
+              {typeof attackerId === "string" ? " � " + name(attackerId) : ""}
+            </h3>
+            {attack ? (
+              <Detail detail={attack} name={name} />
+            ) : !defending && ready ? (
+              <Detail detail={detail} name={name} />
+            ) : null}
+          </section>
+          <section
+            data-grade={String(
+              defending
+                ? (detail.grade ?? (detail.success === false ? "miss" : ""))
+                : "",
+            )}
+          >
+            <h3>
+              Defensa
+              {typeof defenderId === "string" ? " � " + name(defenderId) : ""}
+            </h3>
+            {defending && ready ? (
+              <Detail detail={detail} name={name} />
+            ) : ready && detail.kind === "ATTACK_FAILED" ? (
+              <p>No fue necesaria.</p>
+            ) : waitingDefense ? (
+              <p>Reacci�n pendiente.</p>
+            ) : null}
+          </section>
+        </div>
         {ready &&
           [attacker, defender].flatMap((actor) => {
             if (!actor) return [];

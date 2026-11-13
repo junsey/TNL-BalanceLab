@@ -1512,3 +1512,32 @@ h3 {
   display: block;
   width: 100%;
 }
+.duel-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.duel-comparison > section {
+  min-width: 0;
+  border: 1px solid #405966;
+  border-radius: 5px;
+  padding: 8px;
+  overflow-wrap: anywhere;
+}
+.duel-comparison h3 {
+  margin: 0 0 6px;
+}
+.duel-comparison [data-grade="normal"] h3,
+.duel-comparison [data-grade="half"] h3,
+.duel-comparison [data-grade="quarter"] h3 {
+  color: #81d4c7;
+}
+.duel-comparison [data-grade="critical"] h3 {
+  color: #f4c875;
+}
+.duel-comparison [data-grade="miss"] h3 {
+  color: #ec9d90;
+}
+.duel-comparison [data-grade="fumble"] h3 {
+  color: #f78fbe;
+}
