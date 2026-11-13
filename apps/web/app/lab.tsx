@@ -162,6 +162,8 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   );
   const [selection, setSelection] = useState("vigia");
   const [command, setCommand] = useState<Command | null>(null);
+  const [autoContinue, setAutoContinue] = useState(false);
+  const [playbackPaused, setPlaybackPaused] = useState(false);
   const [animations, setAnimations] = useState(true);
   const [visual, setVisual] = useState<{
     event: Event;
@@ -215,7 +217,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     showEncounter ? (latestEvent?.details ?? []) : [],
     frameIndex,
     {
-      instant: speed === 0,
+      instant: false,
       pending: !!displayed.pending,
       manual: pendingManual,
     },
@@ -224,7 +226,13 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   const hold = !!frame && (!waiting || !ready);
   const delay = animations && speed ? 420 / speed : 0;
   useEffect(() => {
-    if (!frame || !latestEvent || speed === 0 || (waiting && ready)) return;
+    if (
+      !frame ||
+      !latestEvent ||
+      playbackPaused ||
+      (ready && (waiting || !autoContinue))
+    )
+      return;
     const timer = window.setTimeout(
       () =>
         setVisual({
@@ -232,10 +240,20 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
           index: ready ? frameIndex + 1 : frameIndex,
           ready: !ready,
         }),
-      ready ? Math.max(150, 640 / speed) : delay,
+      ready ? Math.max(350, 640 / (speed || 1)) : delay,
     );
     return () => window.clearTimeout(timer);
-  }, [frame, latestEvent, speed, waiting, ready, frameIndex, delay]);
+  }, [
+    frame,
+    latestEvent,
+    speed,
+    waiting,
+    ready,
+    frameIndex,
+    delay,
+    autoContinue,
+    playbackPaused,
+  ]);
 
   useEffect(() => {
     if (
@@ -245,18 +263,15 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       replay !== null ||
       initiativeOpen ||
       sheetActor ||
-      hold
+      hold ||
+      playbackPaused
     )
       return;
     const timer = setInterval(
       () =>
         setSession((current) => {
           let next = current;
-          for (
-            let index = 0;
-            index < (speed === 0 ? 12 : 1) && !next.state.outcome;
-            index++
-          ) {
+          for (let index = 0; index < 1 && !next.state.outcome; index++) {
             const step = nextAuto(next, profile);
             if (step === next) break;
             next = step;
@@ -276,6 +291,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     initiativeOpen,
     hold,
     sheetActor,
+    playbackPaused,
   ]);
   useEffect(() => {
     if (
@@ -338,6 +354,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   }, [shared]);
 
   function reset() {
+    setPlaybackPaused(false);
     setCommand(null);
     setInitiativeOpen(true);
     setSheetActor(null);
@@ -1216,6 +1233,14 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
             />
           </div>
           <div className="combat-playback">
+            <label>
+              <input
+                type="checkbox"
+                checked={autoContinue}
+                onChange={(event) => setAutoContinue(event.target.checked)}
+              />
+              Continuaci�n autom�tica
+            </label>
             <label className="animation-control">
               <input
                 type="checkbox"
@@ -1292,7 +1317,11 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               onAction={take}
               delay={delay}
               reduced={!animations || speed === 0}
-              paused={!auto}
+              paused={!auto || playbackPaused}
+              playbackPaused={playbackPaused}
+              onPause={() => setPlaybackPaused(!playbackPaused)}
+              autoContinue={autoContinue}
+              onAutoContinue={setAutoContinue}
               speed={speed}
               onSpeed={setSpeed}
               declaration={
@@ -1309,14 +1338,18 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                     ? "Ataque preparado"
                     : undefined
               }
-              onResume={() => setAuto(true)}
-              onSkip={() =>
+              onResume={() => {
+                setPlaybackPaused(false);
+                setAuto(true);
+              }}
+              onSkip={() => {
+                if (ready && !waiting) setPlaybackPaused(false);
                 setVisual({
                   event: latestEvent,
                   index: ready && !waiting ? frameIndex + 1 : frameIndex,
                   ready: !ready || waiting,
-                })
-              }
+                });
+              }}
             />
           )}
           {sheet && (

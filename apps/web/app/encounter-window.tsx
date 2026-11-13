@@ -29,6 +29,10 @@ export function EncounterWindow({
   delay,
   reduced,
   paused,
+  playbackPaused,
+  onPause,
+  autoContinue,
+  onAutoContinue,
   onResume,
   speed,
   onSpeed,
@@ -47,6 +51,10 @@ export function EncounterWindow({
   delay: number;
   reduced: boolean;
   paused: boolean;
+  playbackPaused: boolean;
+  onPause: () => void;
+  autoContinue: boolean;
+  onAutoContinue: (value: boolean) => void;
   onResume: () => void;
   speed: number;
   onSpeed: (speed: number) => void;
@@ -122,6 +130,17 @@ export function EncounterWindow({
               : (declaration ?? "Ataque")}
         </h2>
         <div className="duel-controls">
+          <label>
+            <input
+              type="checkbox"
+              checked={autoContinue}
+              onChange={(event) => onAutoContinue(event.target.checked)}
+            />
+            Continuaci�n autom�tica
+          </label>
+          <button type="button" onClick={onPause}>
+            {playbackPaused ? "Reanudar" : "Pausar"}
+          </button>
           <select
             aria-label="Velocidad del enfrentamiento"
             value={speed}
