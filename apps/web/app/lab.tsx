@@ -230,7 +230,8 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       !frame ||
       !latestEvent ||
       playbackPaused ||
-      (ready && (waiting || !autoContinue))
+      (!waiting && !autoContinue) ||
+      (ready && waiting)
     )
       return;
     const timer = window.setTimeout(

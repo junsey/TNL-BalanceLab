@@ -1586,3 +1586,80 @@ h3 {
 .command-shortcuts button {
   font-size: 0.72rem;
 }
+.exchange-stage {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.exchange-stage .duel-fighter {
+  padding: 6px;
+}
+.exchange-controls summary,
+.exchange-log summary {
+  cursor: pointer;
+}
+.exchange-row,
+.exchange-result {
+  padding: 9px 12px;
+  border: 1px solid #405966;
+  border-radius: 6px;
+}
+.exchange-row[data-from="right"] {
+  text-align: right;
+  border-right: 4px solid #d6a879;
+}
+.exchange-row[data-from="left"] {
+  border-left: 4px solid #81d4c7;
+}
+.exchange-row h3,
+.exchange-result h3 {
+  margin: 0 0 4px;
+}
+.exchange-roll {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  margin-inline: 8px;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  color: #81d4c7;
+}
+.exchange-roll[data-grade="half"],
+.exchange-roll[data-grade="quarter"] {
+  border-width: 2px;
+}
+.exchange-roll[data-grade="quarter"] {
+  border-style: double;
+}
+.exchange-roll[data-grade="critical"] {
+  color: #f4c875;
+}
+.exchange-roll[data-grade="miss"],
+.exchange-roll[data-grade="fumble"],
+.exchange-injury {
+  color: #f5a39b;
+}
+.exchange-grade {
+  font-size: 0.72em;
+}
+.exchange-result {
+  background: #203840;
+  border-color: #639a95;
+}
+.exchange-continue {
+  justify-self: end;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .exchange-injury {
+    animation: exchange-injury 400ms ease-out both;
+  }
+  @keyframes exchange-injury {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

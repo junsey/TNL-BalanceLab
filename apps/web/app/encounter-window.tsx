@@ -15,6 +15,28 @@ const labels = {
   parry: "Parar",
   block: "Bloquear",
 };
+const grades: Record<string, [string, string]> = {
+  normal: ["•", "Normal"],
+  half: ["◐", "Mitad"],
+  quarter: ["◆", "Cuarto"],
+  critical: ["★", "Crítico"],
+  miss: ["×", "Fallo"],
+  fumble: ["!", "Pifia"],
+};
+
+function ExchangeRoll({ detail }: { detail: TacticalDetail }) {
+  if (typeof detail.roll !== "number") return null;
+  const grade = String(detail.grade ?? "");
+  const [symbol, label] = grades[grade] ?? ["", ""];
+  return (
+    <span className="exchange-roll" data-grade={grade} title={label}>
+      <span aria-hidden="true">{symbol}</span>{" "}
+      <strong>{String(detail.roll).padStart(2, "0")}</strong>
+      {label && <span className="exchange-grade">{label}</span>}
+    </span>
+  );
+}
+
 export function EncounterWindow({
   state,
   detail,
@@ -85,12 +107,43 @@ export function EncounterWindow({
       ? getLegalActions(state, state.pending.defender)
       : [];
   const defense = defending ? String(detail.defense) : "";
+  const offense = defending ? attack : detail;
+  const playerOnLeft = defenderId === state.setup.player;
+  const attackFrom = playerOnLeft ? "right" : "left";
+  const defenseFrom = playerOnLeft ? "left" : "right";
+  const response = defending && defense !== "none";
+  const damage = detail.damage;
+  const effective =
+    damage && typeof damage === "object" && !Array.isArray(damage)
+      ? damage.effective
+      : undefined;
+  const injuries = Array.isArray(detail.consequences)
+    ? detail.consequences.filter(
+        (item) =>
+          item &&
+          typeof item === "object" &&
+          !Array.isArray(item) &&
+          String(item.key).startsWith("critical-injury"),
+      )
+    : [];
+  const result =
+    detail.kind === "ATTACK_FAILED"
+      ? "Ataque fallido"
+      : defending && detail.success && defense === "dodge"
+        ? "Esquiva exitosa"
+        : defending &&
+            detail.success &&
+            defense === "block" &&
+            detail.shieldCheck
+          ? "Impacto anulado"
+          : typeof effective === "number"
+            ? effective + " de daño efectivo"
+            : "Impacto";
   const sprite = (current: typeof attacker, side: string) => {
-    const actor =
-      !ready && defending
-        ? (before.find((item) => item.fighter.id === current?.fighter.id) ??
-          current)
-        : current;
+    const actor = !ready
+      ? (before.find((item) => item.fighter.id === current?.fighter.id) ??
+        current)
+      : current;
     return actor ? (
       <section className={"duel-fighter " + side}>
         <PixelSprite player={actor.fighter.id === state.setup.player} />
@@ -124,108 +177,86 @@ export function EncounterWindow({
       style={{ "--duel-duration": delay + "ms" } as React.CSSProperties}
     >
       <header className="pane-head">
-        <h2>
-          {waitingDefense
-            ? "Ataque confirmado"
-            : defending
-              ? "Resolución de la defensa"
-              : (declaration ?? "Ataque")}
-        </h2>
-        <div className="duel-controls">
-          <label>
-            <input
-              type="checkbox"
-              checked={autoContinue}
-              onChange={(event) => onAutoContinue(event.target.checked)}
-            />
-            Continuación automática
-          </label>
-          <button type="button" onClick={onPause}>
-            {playbackPaused ? "Reanudar" : "Pausar"}
-          </button>
-          <select
-            aria-label="Velocidad del enfrentamiento"
-            value={speed}
-            onChange={(event) => onSpeed(Number(event.target.value))}
-          >
-            <option value={1}>1×</option>
-            <option value={2}>2×</option>
-            <option value={4}>4×</option>
-            <option value={0}>Instantánea</option>
-          </select>
-          {(!ready || !waitingDefense) && (
-            <button type="button" onClick={onSkip}>
-              {ready ? "Continuar" : "Omitir animación"}
+        <h2>Intercambio de combate</h2>
+        <details className="exchange-controls">
+          <summary>Reproducción</summary>
+          <div className="duel-controls">
+            <label>
+              <input
+                type="checkbox"
+                checked={autoContinue}
+                onChange={(event) => onAutoContinue(event.target.checked)}
+              />
+              Continuación automática
+            </label>
+            <button type="button" onClick={onPause}>
+              {playbackPaused ? "Reanudar" : "Pausar"}
             </button>
-          )}
-        </div>
+            <select
+              aria-label="Velocidad del enfrentamiento"
+              value={speed}
+              onChange={(event) => onSpeed(Number(event.target.value))}
+            >
+              <option value={1}>1×</option>
+              <option value={2}>2×</option>
+              <option value={4}>4×</option>
+              <option value={0}>Instantánea</option>
+            </select>
+          </div>
+        </details>
       </header>
       <div
         className={
-          "duel-stage " +
-          (reduced ? "duel-static " : "") +
-          (defending
-            ? "duel-" + (detail.success === false ? "none" : defense)
-            : "duel-attack")
+          "duel-stage exchange-stage " + (reduced ? "duel-static" : "")
         }
       >
-        {sprite(attacker, "duel-attacker")}
-        <div
-          className="duel-die"
-          aria-label={
-            typeof detail.roll === "number" ? "d100 " + detail.roll : undefined
-          }
-        >
-          <small>
-            {typeof detail.roll === "number"
-              ? "d100"
-              : defending
-                ? "Defensa"
-                : "Ataque"}
-          </small>
-          <strong>
-            {typeof detail.roll === "number"
-              ? String(detail.roll).padStart(2, "0")
-              : defense === "block"
-                ? "◆"
-                : "—"}
-          </strong>
-        </div>
-        {sprite(defender, "duel-defender")}
+        {sprite(playerOnLeft ? defender : attacker, "duel-attacker")}
+        {sprite(playerOnLeft ? attacker : defender, "duel-defender")}
       </div>
-      <div className="duel-results" aria-live="polite">
-        <div className="duel-comparison">
-          <section data-grade={String((attack ?? detail).grade ?? "")}>
+      <div className="duel-results exchange-results" aria-live="polite">
+        {offense && (
+          <section className="exchange-row" data-from={attackFrom}>
             <h3>
-              Ataque
-              {typeof attackerId === "string" ? " · " + name(attackerId) : ""}
+              {declaration ?? "Ataque"}{" "}
+              <span aria-hidden="true">{playerOnLeft ? "←" : "→"}</span>
             </h3>
-            {attack ? (
-              <Detail detail={attack} name={name} />
-            ) : !defending && ready ? (
-              <Detail detail={detail} name={name} />
-            ) : null}
+            <p>
+              {String(offense.weapon ?? "Ataque")}
+              {typeof offense.resistance === "number" &&
+                " (" + String(offense.target) + ")"}
+              <ExchangeRoll detail={offense} />
+              {typeof offense.modifiedRoll === "number" && (
+                <span>{offense.modifiedRoll} con Resistencia</span>
+              )}
+            </p>
           </section>
-          <section
-            data-grade={String(
-              defending
-                ? (detail.grade ?? (detail.success === false ? "miss" : ""))
-                : "",
+        )}
+        {response && (
+          <section className="exchange-row" data-from={defenseFrom}>
+            <h3>
+              Defensa <span aria-hidden="true">{playerOnLeft ? "→" : "←"}</span>
+            </h3>
+            <p>
+              {labels[defense as keyof typeof labels] ?? defense}
+              {typeof detail.target === "number" && " (" + detail.target + ")"}
+              <ExchangeRoll detail={detail} />
+              {typeof detail.cost === "number" && (
+                <span>{detail.cost} Vigor</span>
+              )}
+            </p>
+          </section>
+        )}
+        {ready && !waitingDefense && (
+          <section className="exchange-result">
+            <h3>{result}</h3>
+            {injuries.length > 0 && (
+              <strong className="exchange-injury">Lesión crítica</strong>
             )}
-          >
-            <h3>
-              Defensa
-              {typeof defenderId === "string" ? " · " + name(defenderId) : ""}
-            </h3>
-            {defending && ready ? (
-              <Detail detail={detail} name={name} />
-            ) : ready && detail.kind === "ATTACK_FAILED" ? (
-              <p>No fue necesaria.</p>
-            ) : waitingDefense ? (
-              <p>Reacción pendiente.</p>
-            ) : null}
+            {defending && defense === "none" && (
+              <small>El defensor no reaccionó.</small>
+            )}
           </section>
-        </div>
+        )}
         {ready &&
           [attacker, defender].flatMap((actor) => {
             if (!actor) return [];
@@ -242,13 +273,24 @@ export function EncounterWindow({
                 ]
               : [];
           })}
-        {ready && !waiting && effects.length > 0 && (
-          <section aria-label="Efectos adicionales">
-            <h3>Efectos adicionales</h3>
-            {effects.map((effect, index) => (
+        <details className="exchange-log">
+          <summary>Ver log</summary>
+          {offense && <Detail detail={offense} name={name} />}
+          {ready && defending && <Detail detail={detail} name={name} />}
+          {ready &&
+            !waiting &&
+            effects.map((effect, index) => (
               <Detail key={index} detail={effect} name={name} />
             ))}
-          </section>
+        </details>
+        {(!ready || !waitingDefense) && (
+          <button
+            className="accent exchange-continue"
+            type="button"
+            onClick={onSkip}
+          >
+            Continuar
+          </button>
         )}
         {waitingDefense &&
           ready &&
