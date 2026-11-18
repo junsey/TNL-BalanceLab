@@ -1736,3 +1736,18 @@ h3 {
     grid-template-columns: minmax(145px, 2fr) repeat(4, minmax(0, 1fr));
   }
 }
+.party-bar .command-shortcuts {
+  position: sticky;
+  bottom: -12px;
+  margin: 8px -4px -4px;
+  padding: 6px 4px;
+  border-top: 1px solid #405966;
+  background: #14232f;
+}
+.party-bar .command-list button {
+  min-height: 30px;
+  padding-block: 3px;
+}
+.party-bar .command-detail:empty {
+  display: none;
+}

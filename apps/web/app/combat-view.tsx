@@ -692,41 +692,6 @@ export function CommandMenu({
                   ))}
               </div>
             )}
-            {!reaction && (
-              <div className="command-shortcuts">
-                {(["breathe", "recover", "end"] as const).map((kind) => {
-                  const action = legal.find((item) => item.kind === kind);
-                  return (
-                    <button
-                      key={kind}
-                      type="button"
-                      disabled={!action}
-                      title={!action ? unavailable(kind) : undefined}
-                      onClick={() => {
-                        if (!action) return;
-                        if (
-                          kind === "recover" &&
-                          !window.confirm(
-                            "Tomar Aliento finalizará tu turno. Recuperarás Vigor al comenzar el siguiente",
-                          )
-                        )
-                          return;
-                        onAction(action);
-                      }}
-                    >
-                      {
-                        {
-                          breathe: "◇ Respirar",
-                          recover: "◆ Tomar Aliento",
-                          end: "Pasar turno",
-                        }[kind]
-                      }
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
             <div className="command-detail">
               {state.pending && (
                 <p>Impacto confirmado. El daño se tira después de decidir.</p>
@@ -818,6 +783,40 @@ export function CommandMenu({
                 <p>Elegí un comando para ver sus opciones.</p>
               )}
             </div>
+            {!reaction && (
+              <div className="command-shortcuts">
+                {(["breathe", "recover", "end"] as const).map((kind) => {
+                  const action = legal.find((item) => item.kind === kind);
+                  return (
+                    <button
+                      key={kind}
+                      type="button"
+                      disabled={!action}
+                      title={!action ? unavailable(kind) : undefined}
+                      onClick={() => {
+                        if (!action) return;
+                        if (
+                          kind === "recover" &&
+                          !window.confirm(
+                            "Tomar Aliento finalizará tu turno. Recuperarás Vigor al comenzar el siguiente",
+                          )
+                        )
+                          return;
+                        onAction(action);
+                      }}
+                    >
+                      {
+                        {
+                          breathe: "◇ Respirar",
+                          recover: "◆ Tomar Aliento",
+                          end: "Pasar turno",
+                        }[kind]
+                      }
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -970,11 +969,17 @@ export function Initiative({
             <ul>
               {result.defenderRolls.map((roll) => (
                 <li key={roll.id}>
-                  {name(roll.id)} · d100 {roll.roll} /{" "}
+                  {name(roll.id)} · Alerta{" "}
                   {state.setup.participants.find(
                     ({ fighter }) => fighter.id === roll.id,
-                  )?.fighter.alert ?? "—"}{" "}
-                  · {roll.anticipated ? "Se anticipa" : "No se anticipa"}
+                  )?.fighter.alert ?? "—"}
+                  {" · Tirada "}
+                  {roll.roll} ·{" "}
+                  {roll.anticipated
+                    ? "Se anticipa"
+                    : roll.roll >= result.aggression
+                      ? "No superó el umbral del bando"
+                      : "Falló Alerta"}
                 </li>
               ))}
             </ul>
