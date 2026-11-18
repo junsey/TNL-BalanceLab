@@ -7,7 +7,8 @@ import {
   attackCost,
   attackWeapon,
   getLegalActions,
-  availableDagger,
+  equippedAttacks,
+  handLoadout,
   reserveWeapon,
   weaponControlCost,
   type Fighter,
@@ -434,7 +435,7 @@ export function EnemyPanel({
 
 const commands = [
   { id: "attack", label: "Atacar" },
-  { id: "swapWeapon", label: "Cambiar arma" },
+  { id: "equipHands", label: "Cambiar arma" },
   { id: "move", label: "Mover" },
   { id: "run", label: "Correr" },
   { id: "breathe", label: "Respirar" },
@@ -455,7 +456,7 @@ export type Command = (typeof commands)[number]["id"];
 
 const commandAction: Partial<Record<Command, "major" | "minor">> = {
   attack: "major",
-  swapWeapon: "minor",
+  equipHands: "minor",
   move: "minor",
   run: "major",
   breathe: "minor",
@@ -503,6 +504,9 @@ export function CommandMenu({
   onCategory: (command: Command | null, weaponId?: string) => void;
   attackWeaponId?: string;
 }) {
+  const [proposedHands, setProposedHands] = useState<ReturnType<
+    typeof handLoadout
+  > | null>(null);
   const [groupIndex, setGroupIndex] = useState<number | null>(null);
   const legal = getLegalActions(state, active);
   const current = state.actors.find((actor) => actor.fighter.id === active);
@@ -525,7 +529,7 @@ export function CommandMenu({
   const groups: { label: string; ids: Command[] }[] = reaction
     ? [{ label: "Reacción", ids: [state.pending ? "defend" : "opportunity"] }]
     : [
-        { label: "Ataque", ids: ["attack", "swapWeapon", "weaponControl"] },
+        { label: "Ataque", ids: ["attack", "equipHands", "weaponControl"] },
         { label: "Movimiento", ids: ["move", "run", "flee"] },
         {
           label: "Habilidades y maniobras",
@@ -613,15 +617,12 @@ export function CommandMenu({
                         );
                         if (item.id === "attack" && current) {
                           const { fighter } = current;
-                          const primary =
-                            attackWeapon(fighter) ?? fighter.weapon.model;
-                          const dagger = availableDagger(fighter);
-                          const weapons = [
-                            { model: primary, id: undefined },
-                            ...(dagger
-                              ? [{ model: dagger.model, id: dagger.model.id }]
-                              : []),
-                          ];
+                          const weapons = equippedAttacks(fighter).map(
+                            ({ item, weaponId }) => ({
+                              model: item.model,
+                              id: weaponId,
+                            }),
+                          );
                           const resistance =
                             state.setup.rules.resistance?.[fighter.id];
                           const skill = resistance
@@ -678,10 +679,7 @@ export function CommandMenu({
                           !current?.fighter.energy?.controls
                         )
                           return null;
-                        const reserve =
-                          current && reserveWeapon(current.fighter);
-                        if (item.id === "swapWeapon") {
-                          if (!reserve) return null;
+                        if (item.id === "equipHands") {
                           return (
                             <button
                               type="button"
@@ -696,11 +694,12 @@ export function CommandMenu({
                                   : undefined
                               }
                               onClick={() => {
-                                if (matching[0]) onAction(matching[0]);
+                                setProposedHands(handLoadout(current!.fighter));
+                                onCategory("equipHands");
                               }}
                             >
                               <ActionIcon cost="minor" />
-                              Cambiar a {reserve.model.label}
+                              Cambiar arma
                             </button>
                           );
                         }
@@ -826,7 +825,69 @@ export function CommandMenu({
               {state.pending && (
                 <p>Impacto confirmado. El daño se tira después de decidir.</p>
               )}
-              {activeCategory === "attack" ? (
+              {activeCategory === "equipHands" && current ? (
+                <fieldset className="command-options">
+                  <legend>Equipo de manos</legend>
+                  {(["right", "left"] as const).map((hand) => (
+                    <label key={hand}>
+                      {hand === "right" ? "Mano derecha" : "Mano izquierda"}
+                      <select
+                        value={
+                          (proposedHands ?? handLoadout(current.fighter))[
+                            hand
+                          ] ?? ""
+                        }
+                        onChange={(event) =>
+                          setProposedHands({
+                            ...(proposedHands ?? handLoadout(current.fighter)),
+                            [hand]: event.target.value || null,
+                          } as ReturnType<typeof handLoadout>)
+                        }
+                      >
+                        <option value="">Libre</option>
+                        <option value="weapon">
+                          {current.fighter.weapon.model.label}
+                        </option>
+                        {reserveWeapon(current.fighter) && (
+                          <option value="reserve">
+                            {reserveWeapon(current.fighter)!.model.label}
+                          </option>
+                        )}
+                        {current.fighter.shield && (
+                          <option value="shield">
+                            {current.fighter.shield.model.label}
+                          </option>
+                        )}
+                      </select>
+                    </label>
+                  ))}
+                  <button
+                    type="button"
+                    disabled={
+                      !options.some(
+                        (action) =>
+                          action.kind === "equipHands" &&
+                          action.right === proposedHands?.right &&
+                          action.left === proposedHands?.left,
+                      )
+                    }
+                    onClick={() => {
+                      const action = options.find(
+                        (action) =>
+                          action.kind === "equipHands" &&
+                          action.right === proposedHands?.right &&
+                          action.left === proposedHands?.left,
+                      );
+                      if (action) onAction(action);
+                    }}
+                  >
+                    Equipar
+                  </button>
+                  <button type="button" onClick={() => onCategory(null)}>
+                    Cancelar
+                  </button>
+                </fieldset>
+              ) : activeCategory === "attack" ? (
                 <p>Seleccioná un enemigo en el mapa o en el panel lateral.</p>
               ) : activeCategory ? (
                 <>

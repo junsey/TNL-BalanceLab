@@ -3,6 +3,9 @@ import { action } from "../../schemas/src/index.ts";
 import {
   attackCost,
   availableDagger,
+  handLoadout,
+  validHands,
+  equippedAttacks,
   reserveWeapon,
   attackWeapon,
   canAttack,
@@ -361,11 +364,13 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
       shield,
       energy,
       conditions,
+      hands,
       ...stats
     } = fighter;
     return (
       canonicalJson({
         ...originalStats,
+        ...(hands && { hands }),
         health,
         vigor,
         recovery,
@@ -406,6 +411,7 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
       }) !==
       canonicalJson({
         ...stats,
+        ...(hands && { hands }),
         health,
         vigor,
         recovery,
@@ -549,6 +555,17 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
         actions.push({ kind: "kick", actor: id, target: other.fighter.id });
     }
   }
+  if (actor.minor && !fighter.energy) {
+    const slots = [null, "weapon", "reserve", "shield"] as const;
+    const current = handLoadout(fighter);
+    for (const right of slots)
+      for (const left of slots)
+        if (
+          validHands(fighter, right, left) &&
+          (right !== current.right || left !== current.left)
+        )
+          actions.push({ kind: "equipHands", actor: id, right, left });
+  }
   const reserve = reserveWeapon(fighter);
   if (
     actor.minor &&
@@ -669,7 +686,6 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     canSee(state, actor.zone, actor.zone)
   )
     actions.push({ kind: "sweep", actor: id });
-  const dagger = availableDagger(fighter);
   for (const other of opponents) {
     if (
       other.zone !== actor.zone ||
@@ -677,15 +693,22 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       !canSee(state, actor.zone, other.zone)
     )
       continue;
-    if (canAttack(fighter))
-      actions.push({ kind: "attack", actor: id, target: other.fighter.id });
-    if (dagger && canAttack({ ...fighter, weapon: dagger, energy: undefined }))
-      actions.push({
-        kind: "attack",
-        actor: id,
-        target: other.fighter.id,
-        weaponId: dagger.model.id,
-      });
+    for (const { item, weaponId } of equippedAttacks(fighter)) {
+      if (
+        canAttack({
+          ...fighter,
+          weapon: item,
+          hands: undefined,
+          energy: weaponId ? undefined : fighter.energy,
+        })
+      )
+        actions.push({
+          kind: "attack",
+          actor: id,
+          target: other.fighter.id,
+          ...(weaponId && { weaponId }),
+        });
+    }
   }
   return actions;
 }
@@ -950,7 +973,12 @@ function finishTrigger(
       (trigger.weaponId && dagger?.model.id !== trigger.weaponId) ||
       !canAttack(
         dagger
-          ? { ...actor.fighter, weapon: dagger, energy: undefined }
+          ? {
+              ...actor.fighter,
+              weapon: dagger,
+              hands: undefined,
+              energy: undefined,
+            }
           : actor.fighter,
       )
     ) {
@@ -1043,9 +1071,14 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
     weaponId?: string,
   ) => {
     const original = attacker.fighter;
-    const dagger = weaponId ? availableDagger(original) : undefined;
+    const dagger = weaponId
+      ? equippedAttacks(original).find((entry) => entry.weaponId === weaponId)
+          ?.item
+      : undefined;
     const result = declareAttack(
-      dagger ? { ...original, weapon: dagger, energy: undefined } : original,
+      dagger
+        ? { ...original, weapon: dagger, hands: undefined, energy: undefined }
+        : original,
       defender.fighter,
       state.rng,
       state.setup.rules,
@@ -1054,6 +1087,7 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       ? {
           ...result.attacker,
           weapon: original.weapon,
+          ...(original.hands && { hands: original.hands }),
           ...(original.reserveWeapon
             ? { reserveWeapon: result.attacker.weapon }
             : { stowedDagger: result.attacker.weapon }),
@@ -1061,6 +1095,7 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         }
       : result.attacker;
     if (dagger && !original.energy) delete attacker.fighter.energy;
+    if (dagger && !original.hands) delete attacker.fighter.hands;
     defender.fighter = result.defender;
     state.pending =
       dagger && result.impact
@@ -1315,6 +1350,18 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
           impact.roll,
           false,
         );
+      break;
+    }
+    case "equipHands": {
+      actor.minor = false;
+      actor.fighter.hands = { right: decision.right, left: decision.left };
+      actor.prepared = null;
+      details.push({
+        kind: "EQUIP_HANDS",
+        actor: decision.actor,
+        right: decision.right,
+        left: decision.left,
+      });
       break;
     }
     case "swapWeapon": {

@@ -229,6 +229,10 @@ export function Detail({
           {print(detail.remaining)}.
         </p>
       );
+    case "EQUIP_HANDS":
+      return (
+        <p>{name(print(detail.actor))} cambió el equipo de ambas manos.</p>
+      );
     case "SWAP_WEAPON":
       return (
         <p>

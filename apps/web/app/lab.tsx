@@ -97,6 +97,8 @@ const actionName = (action: Action, name = label) => {
       return defenseNames[action.defense];
     case "opportunity":
       return action.accept ? "Atacar de oportunidad" : "Dejar pasar";
+    case "equipHands":
+      return "Equipar manos";
     case "swapWeapon":
       return "Cambiar arma";
     case "weaponControl":

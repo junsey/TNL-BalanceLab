@@ -1050,3 +1050,67 @@ test("Cambiar arma consume solo la Menor e intercambia el equipo en el replay", 
   );
   assert.deepEqual(replayTacticalEvent(state, result.event), result.state);
 });
+test("El selector aplica dos manos en una Menor y solo permite Parar con armas equipadas", () => {
+  const state = startTacticalEncounter({
+    ...setup,
+    participants: [
+      {
+        fighter: {
+          ...player,
+          stowedDagger: { model: weapons[0]!, remaining: null },
+        },
+        zone: "a",
+      },
+      setup.participants[1],
+    ],
+  }).state;
+  const result = resolveAction(state, {
+    kind: "equipHands",
+    actor: "player",
+    right: null,
+    left: "reserve",
+  });
+  const actor = result.state.actors.find(
+    ({ fighter }) => fighter.id === "player",
+  )!;
+  assert.equal(actor.major, true);
+  assert.equal(actor.minor, false);
+  assert.deepEqual(actor.fighter.hands, { right: null, left: "reserve" });
+  const attacks = getLegalActions(result.state, "player").filter(
+    (action) => action.kind === "attack",
+  );
+  assert.ok(attacks.length);
+  assert.ok(
+    attacks.every(
+      (action) => action.kind === "attack" && action.weaponId === "daga",
+    ),
+  );
+  assert.deepEqual(replayTacticalEvent(state, result.event), result.state);
+});
+
+test("Un arma de dos manos requiere ambos slots y excluye al escudo", () => {
+  const state = startTacticalEncounter({
+    ...setup,
+    participants: [
+      {
+        fighter: {
+          ...player,
+          weapon: { ...player.weapon, model: { ...model, twoHanded: true } },
+          shield: opponent.shield,
+        },
+        zone: "a",
+      },
+      setup.participants[1],
+    ],
+  }).state;
+  const options = getLegalActions(state, "player").filter(
+    (action) => action.kind === "equipHands",
+  );
+  assert.ok(
+    options.every(
+      (action) =>
+        action.kind !== "equipHands" ||
+        !((action.right === "weapon") !== (action.left === "weapon")),
+    ),
+  );
+});

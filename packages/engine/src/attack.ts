@@ -78,6 +78,12 @@ export const fighterState = z
     weapon: equippedWeapon,
     stowedDagger: equippedWeapon.optional(),
     reserveWeapon: equippedWeapon.optional(),
+    hands: z
+      .strictObject({
+        right: z.enum(["weapon", "reserve", "shield"]).nullable(),
+        left: z.enum(["weapon", "reserve", "shield"]).nullable(),
+      })
+      .optional(),
     energy: energy.optional(),
     conditions: z.array(activeCondition).max(1000).optional(),
     ai: tacticalProfile.optional(),
@@ -85,6 +91,14 @@ export const fighterState = z
     shield: equippedShield.nullable(),
   })
   .superRefine((fighter, ctx) => {
+    if (
+      fighter.hands &&
+      !validHands(fighter, fighter.hands.right, fighter.hands.left)
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Combinación de manos inválida",
+      });
     const energy = fighter.energy;
     if (
       energy &&
@@ -170,7 +184,67 @@ export const weaponOperations: readonly WeaponOperation[] = [
   "retract",
 ];
 
+export type HandItem = "weapon" | "reserve" | "shield" | null;
+
+export function handLoadout(fighter: Fighter) {
+  return (
+    fighter.hands ?? {
+      right: "weapon" as const,
+      left: fighter.weapon.model.twoHanded
+        ? ("weapon" as const)
+        : fighter.shield
+          ? ("shield" as const)
+          : null,
+    }
+  );
+}
+
+export function validHands(fighter: Fighter, right: HandItem, left: HandItem) {
+  const reserve = reserveWeapon(fighter);
+  const model = (slot: HandItem) =>
+    slot === "weapon"
+      ? fighter.weapon.model
+      : slot === "reserve"
+        ? reserve?.model
+        : undefined;
+  for (const slot of [right, left]) {
+    if (slot === "reserve" && !reserve) return false;
+    if (slot === "shield" && !fighter.shield) return false;
+  }
+  if (right && right === left)
+    return right !== "shield" && model(right)?.twoHanded === true;
+  return !model(right)?.twoHanded && !model(left)?.twoHanded;
+}
+
+export function equippedAttacks(fighter: Fighter) {
+  const hands = handLoadout(fighter);
+  const slots = new Set([hands.right, hands.left]);
+  const result: { item: Fighter["weapon"]; weaponId?: string }[] = [];
+  if (slots.has("weapon")) {
+    const model = attackWeapon(fighter);
+    if (model) result.push({ item: { ...fighter.weapon, model } });
+  }
+  const reserve = reserveWeapon(fighter);
+  if (
+    reserve &&
+    (slots.has("reserve") ||
+      (reserve.model.id === "daga" && (!hands.right || !hands.left)))
+  ) {
+    result.push({ item: reserve, weaponId: reserve.model.id });
+  }
+  return result;
+}
+
+export function activeShield(fighter: Fighter) {
+  const hands = handLoadout(fighter);
+  return hands.right === "shield" || hands.left === "shield"
+    ? fighter.shield
+    : null;
+}
+
 export function attackWeapon(fighter: Fighter) {
+  const hands = handLoadout(fighter);
+  if (hands.right !== "weapon" && hands.left !== "weapon") return null;
   const model = fighter.weapon.model;
   const energy = fighter.energy;
   const selected =
@@ -240,10 +314,14 @@ export function reserveWeapon(fighter: Fighter) {
 
 export function availableDagger(fighter: Fighter) {
   const dagger = reserveWeapon(fighter);
-  return dagger?.model.id === "daga" &&
+  const hands = handLoadout(fighter);
+  return (hands.right === "reserve" ||
+    hands.left === "reserve" ||
+    !hands.right ||
+    !hands.left) &&
+    dagger?.model.id === "daga" &&
     dagger.remaining !== 0 &&
-    !fighter.weapon.model.twoHanded &&
-    (!fighter.shield || fighter.shield.remaining === 0)
+    !(hands.right === "weapon" && hands.left === "weapon")
     ? dagger
     : undefined;
 }
@@ -271,8 +349,17 @@ export function rechargeEnergy(
   return { ...fighter, energy: { ...energy, remaining } };
 }
 
+export function parryWeapon(fighter: Fighter) {
+  const hands = handLoadout(fighter);
+  if (hands.right === "weapon" || hands.left === "weapon")
+    return fighter.weapon;
+  if (hands.right === "reserve" || hands.left === "reserve")
+    return reserveWeapon(fighter);
+  return undefined;
+}
+
 const parryCost = (fighter: Fighter) =>
-  fighter.weapon.model.category === "heavy" ? 2 : 1;
+  parryWeapon(fighter)?.model.category === "heavy" ? 2 : 1;
 const blockCost = (fighter: Fighter) =>
   fighter.shield?.model.category === "heavy" ? 2 : 1;
 
@@ -288,18 +375,20 @@ export function legalDefenses(
   )
     return choices;
   if (fighter.vigor >= 2) choices.push("dodge");
+  const weapon = parryWeapon(fighter);
   if (
-    fighter.weapon.remaining !== 0 &&
-    fighter.weapon.model.parryCapacity !== null &&
+    weapon &&
+    weapon.remaining !== 0 &&
+    weapon.model.parryCapacity !== null &&
     fighter.vigor >= parryCost(fighter)
   )
     choices.push("parry");
   if (
-    fighter.shield &&
-    fighter.shield.remaining !== 0 &&
+    activeShield(fighter) &&
+    fighter.shield!.remaining !== 0 &&
     (resistance
       ? resistance.shieldBonus > 0
-      : fighter.shield.model.absorption !== null) &&
+      : fighter.shield!.model.absorption !== null) &&
     fighter.vigor >= blockCost(fighter)
   )
     choices.push("block");
@@ -564,7 +653,7 @@ export function resolveImpact(
   const capacity = !success
     ? 0
     : defense === "parry"
-      ? (defender.weapon.model.parryCapacity ?? 0)
+      ? (parryWeapon(defender)?.model.parryCapacity ?? 0)
       : (defender.shield?.model.absorption ?? 0);
   const model =
     impact.alternateWeapon ??
@@ -593,13 +682,13 @@ export function resolveImpact(
   );
   let updated = { ...paid, health: paid.health - damage.effective };
   if (rules.equipmentWear) {
-    if (success && defense === "parry")
-      updated.weapon = wear(
-        updated.weapon,
-        damage.intercepted,
-        "weapon-wear",
-        unresolved,
-      );
+    if (success && defense === "parry") {
+      const weapon = parryWeapon(updated)!;
+      const worn = wear(weapon, damage.intercepted, "weapon-wear", unresolved);
+      if (weapon === updated.weapon) updated.weapon = worn;
+      else if (updated.reserveWeapon) updated.reserveWeapon = worn;
+      else updated.stowedDagger = worn;
+    }
     if (success && defense === "block" && updated.shield)
       updated.shield = wear(
         updated.shield,
