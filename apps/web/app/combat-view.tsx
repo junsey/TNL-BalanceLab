@@ -453,6 +453,35 @@ const commands = [
 ] as const;
 export type Command = (typeof commands)[number]["id"];
 
+const commandAction: Partial<Record<Command, "major" | "minor">> = {
+  attack: "major",
+  swapWeapon: "minor",
+  move: "minor",
+  run: "major",
+  breathe: "minor",
+  recover: "major",
+  prepareReactive: "major",
+  prepareBreathe: "minor",
+  flee: "major",
+  sneak: "major",
+  sweep: "major",
+  kick: "minor",
+  stabilize: "major",
+};
+
+function ActionIcon({ cost }: { cost?: "major" | "minor" | "none" }) {
+  if (!cost || cost === "none") return null;
+  return (
+    <span
+      className="command-action-icon"
+      role="img"
+      aria-label={actionCostLabels[cost]}
+    >
+      {cost === "major" ? "◆" : "◇"}
+    </span>
+  );
+}
+
 export function CommandMenu({
   state,
   active,
@@ -624,7 +653,10 @@ export function CommandMenu({
                                 onClick={() => onCategory("attack", id)}
                               >
                                 <span>
-                                  Atacar con {model.label}
+                                  <span>
+                                    <ActionIcon cost="major" />
+                                    Atacar con {model.label}
+                                  </span>
                                   <small>
                                     {attackCost[model.category]} Vigor
                                   </small>
@@ -667,8 +699,8 @@ export function CommandMenu({
                                 if (matching[0]) onAction(matching[0]);
                               }}
                             >
+                              <ActionIcon cost="minor" />
                               Cambiar a {reserve.model.label}
-                              <small>Acción Menor</small>
                             </button>
                           );
                         }
@@ -719,7 +751,10 @@ export function CommandMenu({
                             }}
                           >
                             <span>
-                              {item.label}
+                              <span>
+                                <ActionIcon cost={commandAction[item.id]} />
+                                {item.label}
+                              </span>
                               {cost && <small>{cost}</small>}
                             </span>
                             {blocked && (
@@ -846,6 +881,7 @@ export function CommandMenu({
                           if (action) onAction(action);
                         }}
                       >
+                        <ActionIcon cost="major" />
                         Preparar ataque
                       </button>
                     </fieldset>
@@ -865,11 +901,11 @@ export function CommandMenu({
                             key={JSON.stringify(action)}
                             onClick={() => onAction(action)}
                           >
+                            <ActionIcon cost={cost?.action} />
                             {actionName(action)}
                             {cost && (
                               <small>
-                                {actionCostLabels[cost.action]} · {cost.vigor}{" "}
-                                Vigor · {cost.energy} Energía
+                                {cost.vigor} Vigor · {cost.energy} Energía
                               </small>
                             )}
                           </button>

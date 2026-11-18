@@ -1773,3 +1773,8 @@ h3 {
 .command-attack-stats span:last-child {
   font-variant-numeric: tabular-nums;
 }
+.command-action-icon {
+  display: inline-block;
+  margin-inline-end: 5px;
+  color: #c0dbe0;
+}
