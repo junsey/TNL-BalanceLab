@@ -1235,7 +1235,6 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                 }}
                 actionName={(action) => actionName(action, name)}
                 onAction={take}
-                onSheet={() => setSheetActor(active)}
                 heading={
                   displayed.outcome
                     ? outcomeNames[displayed.outcome]

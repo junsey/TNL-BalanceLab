@@ -455,7 +455,6 @@ export function CommandMenu({
   manual,
   actionName,
   onAction,
-  onSheet,
   heading,
   category,
   onCategory,
@@ -465,7 +464,6 @@ export function CommandMenu({
   manual: boolean;
   actionName: (action: CombatAction) => string;
   onAction: (action: CombatAction) => void;
-  onSheet: () => void;
   heading: string;
   category: Command | null;
   onCategory: (command: Command | null) => void;
@@ -542,11 +540,6 @@ export function CommandMenu({
     <details className="dock-commands" open key={heading}>
       <summary>{heading}</summary>
       <section className="pane command-pane">
-        <header className="pane-head">
-          <button type="button" onClick={onSheet}>
-            Equipo y hoja
-          </button>
-        </header>
         {manual && !state.outcome && (
           <div className="command-body">
             {!reaction && (
