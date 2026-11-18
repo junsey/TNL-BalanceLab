@@ -1018,3 +1018,35 @@ test("La daga guardada ataca con una mano libre y la espada sigue equipada", () 
   assert.equal(result.state.pending?.alternateWeapon?.id, "daga");
   assert.deepEqual(replayTacticalEvent(state, result.event), result.state);
 });
+test("Cambiar arma consume solo la Menor e intercambia el equipo en el replay", () => {
+  const state = startTacticalEncounter({
+    ...setup,
+    participants: [
+      {
+        fighter: {
+          ...player,
+          stowedDagger: { model: weapons[0]!, remaining: null },
+        },
+        zone: "a",
+      },
+      setup.participants[1],
+    ],
+  }).state;
+  const action = { kind: "swapWeapon", actor: "player" };
+  const result = resolveAction(state, action);
+  const actor = result.state.actors.find(
+    ({ fighter }) => fighter.id === "player",
+  )!;
+  assert.equal(actor.minor, false);
+  assert.equal(actor.major, true);
+  assert.equal(actor.fighter.weapon.model.id, "daga");
+  assert.deepEqual(actor.fighter.reserveWeapon, player.weapon);
+  assert.equal(actor.fighter.vigor, player.vigor);
+  assert.equal(
+    getLegalActions(result.state, "player").some(
+      (item) => item.kind === "swapWeapon",
+    ),
+    false,
+  );
+  assert.deepEqual(replayTacticalEvent(state, result.event), result.state);
+});

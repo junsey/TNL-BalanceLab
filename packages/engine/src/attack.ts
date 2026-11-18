@@ -77,6 +77,7 @@ export const fighterState = z
     recovery: z.enum(["none", "resting", "interrupted"]),
     weapon: equippedWeapon,
     stowedDagger: equippedWeapon.optional(),
+    reserveWeapon: equippedWeapon.optional(),
     energy: energy.optional(),
     conditions: z.array(activeCondition).max(1000).optional(),
     ai: tacticalProfile.optional(),
@@ -115,6 +116,7 @@ export const fighterState = z
     for (const item of [
       fighter.weapon,
       fighter.stowedDagger,
+      fighter.reserveWeapon,
       fighter.armor,
       fighter.shield,
     ]) {
@@ -232,8 +234,12 @@ export function operateWeapon(fighter: Fighter, operation: WeaponOperation) {
   };
 }
 
+export function reserveWeapon(fighter: Fighter) {
+  return fighter.reserveWeapon ?? fighter.stowedDagger;
+}
+
 export function availableDagger(fighter: Fighter) {
-  const dagger = fighter.stowedDagger;
+  const dagger = reserveWeapon(fighter);
   return dagger?.model.id === "daga" &&
     dagger.remaining !== 0 &&
     !fighter.weapon.model.twoHanded &&

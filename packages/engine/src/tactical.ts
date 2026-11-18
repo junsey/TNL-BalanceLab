@@ -3,6 +3,7 @@ import { action } from "../../schemas/src/index.ts";
 import {
   attackCost,
   availableDagger,
+  reserveWeapon,
   attackWeapon,
   canAttack,
   rechargeEnergy,
@@ -333,6 +334,25 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
     const original = participants.get(fighter.id);
     if (!original || !zones.has(zone)) return true;
     const {
+      reserveWeapon: originalStorage,
+      stowedDagger: originalDagger,
+      ...originalStats
+    } = original;
+    const originalReserve = originalStorage ?? originalDagger;
+    const currentReserve = reserveWeapon(fighter);
+    const switched =
+      canonicalJson(fighter.weapon.model) !==
+      canonicalJson(original.weapon.model);
+    if (
+      (switched && (!originalReserve || original.energy)) ||
+      Boolean(originalReserve) !== Boolean(currentReserve) ||
+      (fighter.stowedDagger && fighter.reserveWeapon)
+    )
+      return true;
+    const expectedWeapon = switched ? originalReserve! : original.weapon;
+    const expectedReserve = switched ? original.weapon : originalReserve;
+    const storageKey = fighter.reserveWeapon ? "reserveWeapon" : "stowedDagger";
+    const {
       health,
       vigor,
       recovery,
@@ -345,12 +365,19 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
     } = fighter;
     return (
       canonicalJson({
-        ...original,
+        ...originalStats,
         health,
         vigor,
         recovery,
         ...(conditions && { conditions }),
-        weapon: { ...original.weapon, remaining: weapon.remaining },
+        weapon: { ...expectedWeapon, remaining: weapon.remaining },
+        ...(expectedReserve &&
+          currentReserve && {
+            [storageKey]: {
+              ...expectedReserve,
+              remaining: currentReserve.remaining,
+            },
+          }),
         ...(original.energy && {
           energy: {
             ...original.energy,
@@ -521,6 +548,17 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       )
         actions.push({ kind: "kick", actor: id, target: other.fighter.id });
     }
+  }
+  const reserve = reserveWeapon(fighter);
+  if (
+    actor.minor &&
+    reserve &&
+    reserve.remaining !== 0 &&
+    !fighter.energy &&
+    reserve.model.energyPerAttack === 0 &&
+    (!reserve.model.twoHanded || !fighter.shield)
+  ) {
+    actions.push({ kind: "swapWeapon", actor: id });
   }
   const nearby = zonesWithin(state.setup.zones, actor.zone, 2);
   if (actor.minor && !state.setup.disabled.preparedActions && !actor.prepared) {
@@ -1016,7 +1054,9 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       ? {
           ...result.attacker,
           weapon: original.weapon,
-          stowedDagger: result.attacker.weapon,
+          ...(original.reserveWeapon
+            ? { reserveWeapon: result.attacker.weapon }
+            : { stowedDagger: result.attacker.weapon }),
           ...(original.energy ? { energy: original.energy } : {}),
         }
       : result.attacker;
@@ -1275,6 +1315,21 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
           impact.roll,
           false,
         );
+      break;
+    }
+    case "swapWeapon": {
+      const previous = actor.fighter.weapon;
+      const next = reserveWeapon(actor.fighter)!;
+      actor.fighter.weapon = next;
+      actor.fighter.reserveWeapon = previous;
+      delete actor.fighter.stowedDagger;
+      actor.minor = false;
+      details.push({
+        kind: "SWAP_WEAPON",
+        actor: decision.actor,
+        from: previous.model.label,
+        to: next.model.label,
+      });
       break;
     }
     case "weaponControl": {

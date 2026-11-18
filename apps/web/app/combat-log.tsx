@@ -229,6 +229,13 @@ export function Detail({
           {print(detail.remaining)}.
         </p>
       );
+    case "SWAP_WEAPON":
+      return (
+        <p>
+          {name(print(detail.actor))} cambió de {print(detail.from)} a{" "}
+          {print(detail.to)}.
+        </p>
+      );
     case "MOVE":
       return (
         <p>

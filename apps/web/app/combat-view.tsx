@@ -8,6 +8,7 @@ import {
   attackWeapon,
   getLegalActions,
   availableDagger,
+  reserveWeapon,
   weaponControlCost,
   type Fighter,
   type TacticalState,
@@ -433,6 +434,7 @@ export function EnemyPanel({
 
 const commands = [
   { id: "attack", label: "Atacar" },
+  { id: "swapWeapon", label: "Cambiar arma" },
   { id: "move", label: "Mover" },
   { id: "run", label: "Correr" },
   { id: "breathe", label: "Respirar" },
@@ -494,7 +496,7 @@ export function CommandMenu({
   const groups: { label: string; ids: Command[] }[] = reaction
     ? [{ label: "Reacción", ids: [state.pending ? "defend" : "opportunity"] }]
     : [
-        { label: "Ataque", ids: ["attack", "weaponControl"] },
+        { label: "Ataque", ids: ["attack", "swapWeapon", "weaponControl"] },
         { label: "Movimiento", ids: ["move", "run", "flee"] },
         {
           label: "Habilidades y maniobras",
@@ -626,6 +628,31 @@ export function CommandMenu({
                           !current?.fighter.energy?.controls
                         )
                           return null;
+                        const reserve =
+                          current && reserveWeapon(current.fighter);
+                        if (item.id === "swapWeapon") {
+                          if (!reserve) return null;
+                          return (
+                            <button
+                              type="button"
+                              key={item.id}
+                              disabled={!matching.length}
+                              title={
+                                !matching.length
+                                  ? !current?.minor
+                                    ? "Acción Menor usada"
+                                    : "Arma o equipo incompatible"
+                                  : undefined
+                              }
+                              onClick={() => {
+                                if (matching[0]) onAction(matching[0]);
+                              }}
+                            >
+                              Cambiar a {reserve.model.label}
+                              <small>Acción Menor</small>
+                            </button>
+                          );
+                        }
                         const blocked = !matching.length;
                         const weapon = current && attackWeapon(current.fighter);
                         const cost =
