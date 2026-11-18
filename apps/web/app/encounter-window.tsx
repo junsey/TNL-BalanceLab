@@ -114,6 +114,7 @@ export function EncounterWindow({
   const attackFrom = playerOnLeft ? "right" : "left";
   const defenseFrom = playerOnLeft ? "left" : "right";
   const response = defending && defense !== "none";
+  const showAttackRoll = defending || ready;
   const damage =
     detail.damage &&
     typeof detail.damage === "object" &&
@@ -164,22 +165,41 @@ export function EncounterWindow({
       ? (before.find((item) => item.fighter.id === current?.fighter.id) ??
         current)
       : current;
+    const prior = before.find(
+      (entry) => entry.fighter.id === actor?.fighter.id,
+    );
+    const delta = (key: "health" | "vigor") => {
+      if (!ready || !actor || !prior) return null;
+      const change = actor.fighter[key] - prior.fighter[key];
+      return change ? (
+        <output className="exchange-resource-delta" data-resource={key}>
+          {change > 0 ? "+" : ""}
+          {change}
+        </output>
+      ) : null;
+    };
     return actor ? (
       <section className={"duel-fighter " + side}>
         <PixelSprite player={actor.fighter.id === state.setup.player} />
         <h3>{name(actor.fighter.id)}</h3>
-        <Resource
-          label="Salud"
-          value={actor.fighter.health}
-          max={actor.fighter.healthMax}
-          kind="hp"
-        />
-        <Resource
-          label="Vigor"
-          value={actor.fighter.vigor}
-          max={actor.fighter.vigorMax}
-          kind="vp"
-        />
+        <div className="exchange-resource">
+          <Resource
+            label="Salud"
+            value={actor.fighter.health}
+            max={actor.fighter.healthMax}
+            kind="hp"
+          />
+          {delta("health")}
+        </div>
+        <div className="exchange-resource">
+          <Resource
+            label="Vigor"
+            value={actor.fighter.vigor}
+            max={actor.fighter.vigorMax}
+            kind="vp"
+          />
+          {delta("vigor")}
+        </div>
       </section>
     ) : (
       <div />
@@ -235,17 +255,13 @@ export function EncounterWindow({
       </div>
       <div className="duel-results exchange-results" aria-live="polite">
         {offense && (
-          <section className="exchange-row" data-from={attackFrom}>
-            <h3>
-              {declaration ?? "Ataque"}{" "}
-              <span aria-hidden="true">{playerOnLeft ? "←" : "→"}</span>
-            </h3>
-            <p>
-              {String(offense.weapon ?? "Ataque")}
+          <section className="exchange-strip" data-from={attackFrom}>
+            <h3 className="exchange-strip-label">{declaration ?? "Ataque"}</h3>
+            <div className="exchange-strip-info">
+              <strong>{String(offense.weapon ?? "Ataque")}</strong>
               {typeof offense.mastery === "number" && (
                 <span>
-                  {" "}
-                  · Habilidad{" "}
+                  Habilidad{" "}
                   {typeof offense.associatedAttribute === "number"
                     ? Math.min(
                         100,
@@ -256,74 +272,77 @@ export function EncounterWindow({
                 </span>
               )}
               {typeof offense.cost === "number" && (
-                <span> · {offense.cost} Vigor</span>
+                <span>{offense.cost} Vigor</span>
               )}
-              <ExchangeRoll detail={offense} />
-              {typeof offense.modifiedRoll === "number" && (
-                <span>{offense.modifiedRoll} con Resistencia</span>
+              {ready && dice.length > 0 && (
+                <span>
+                  Dados{" "}
+                  {dice.map((die) => die.expression.toUpperCase()).join(" + ")}
+                </span>
               )}
-            </p>
+            </div>
+            {showAttackRoll && (
+              <div className="exchange-strip-value">
+                <small>Tirada</small>
+                <ExchangeRoll detail={offense} />
+                {typeof offense.modifiedRoll === "number" && (
+                  <small>{offense.modifiedRoll} con Resistencia</small>
+                )}
+              </div>
+            )}
+            {ready && dice.length > 0 && (
+              <div className="exchange-strip-value">
+                <small>Daño obtenido</small>
+                <strong className="exchange-damage-value">
+                  {typeof damage?.intercepted === "number" &&
+                  typeof damage.residual === "number"
+                    ? damage.intercepted + damage.residual
+                    : dice.reduce((sum, die) => sum + Number(die.total), 0)}
+                </strong>
+                <small>{dice.map((die) => die.faces).join(" + ")}</small>
+              </div>
+            )}
           </section>
         )}
         {response && (
-          <section className="exchange-row" data-from={defenseFrom}>
-            <h3>
-              Defensa <span aria-hidden="true">{playerOnLeft ? "→" : "←"}</span>
-            </h3>
-            <p>
-              {labels[defense as keyof typeof labels] ?? defense}
-              {typeof detail.target === "number" &&
-                " · Habilidad " + detail.target + "%"}
-              {typeof detail.cost === "number" && (
-                <span> · {detail.cost} Vigor</span>
+          <section
+            className="exchange-strip exchange-defense"
+            data-from={defenseFrom}
+            data-resolved={ready}
+          >
+            <h3 className="exchange-strip-label">Defensa</h3>
+            <div className="exchange-strip-info">
+              <strong>
+                {labels[defense as keyof typeof labels] ?? defense}
+              </strong>
+              {typeof detail.target === "number" && (
+                <span>Habilidad {detail.target}%</span>
               )}
-              <ExchangeRoll detail={detail} />
-            </p>
-          </section>
-        )}
-        {ready && !waitingDefense && (
-          <section className="exchange-result">
-            <h3>{result}</h3>
-            {dice.length > 0 && (
-              <ul className="exchange-damage-dice" aria-label="Dados de daño">
-                {dice.map((die, index) => (
-                  <li key={index}>
-                    <strong>{die.expression.toUpperCase()}</strong> · Dados{" "}
-                    {die.faces} · Total {String(die.total)}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {damage && (
-              <small>
-                Intercepción {String(damage.intercepted ?? 0)} · Reducción{" "}
-                {String(damage.reduction ?? 0)}
-              </small>
-            )}
-            {injuries.length > 0 && (
-              <strong className="exchange-injury">Lesión crítica</strong>
-            )}
-            {defending && defense === "none" && (
-              <small>El defensor no reaccionó.</small>
+              {typeof detail.cost === "number" && (
+                <span>{detail.cost} Vigor</span>
+              )}
+            </div>
+            {ready && (
+              <div className="exchange-strip-value">
+                {typeof detail.roll === "number" ? (
+                  <>
+                    <small>Tirada</small>
+                    <ExchangeRoll detail={detail} />
+                  </>
+                ) : (
+                  <strong>
+                    {detail.success
+                      ? "Bloqueo efectivo"
+                      : "El impacto se mantiene"}
+                  </strong>
+                )}
+              </div>
             )}
           </section>
         )}
-        {ready &&
-          [attacker, defender].flatMap((actor) => {
-            if (!actor) return [];
-            const prior = before.find(
-              (item) => item.fighter.id === actor.fighter.id,
-            );
-            if (!prior) return [];
-            const delta = changes(prior, actor);
-            return delta.length
-              ? [
-                  <p className="duel-delta" key={actor.fighter.id}>
-                    {name(actor.fighter.id)} · {delta.join(" · ")}
-                  </p>,
-                ]
-              : [];
-          })}
+        {ready && injuries.length > 0 && (
+          <strong className="exchange-injury">Lesión crítica</strong>
+        )}
         <details className="exchange-log">
           <summary>Ver log</summary>
           {offense && <Detail detail={offense} name={name} />}
@@ -333,16 +352,23 @@ export function EncounterWindow({
             effects.map((effect, index) => (
               <Detail key={index} detail={effect} name={name} />
             ))}
+          {ready &&
+            [attacker, defender].flatMap((actor) => {
+              if (!actor) return [];
+              const prior = before.find(
+                (item) => item.fighter.id === actor.fighter.id,
+              );
+              if (!prior) return [];
+              const delta = changes(prior, actor);
+              return delta.length
+                ? [
+                    <p className="duel-delta" key={actor.fighter.id}>
+                      {name(actor.fighter.id)} · {delta.join(" · ")}
+                    </p>,
+                  ]
+                : [];
+            })}
         </details>
-        {canContinue && (
-          <button
-            className="accent exchange-continue"
-            type="button"
-            onClick={onSkip}
-          >
-            Continuar
-          </button>
-        )}
         {waitingDefense &&
           ready &&
           (manual ? (
@@ -377,6 +403,14 @@ export function EncounterWindow({
             <p>La IA elige la defensa.</p>
           ))}
       </div>
+      <footer className="exchange-footer">
+        {ready && !waitingDefense && <strong>{result}</strong>}
+        {canContinue && (
+          <button className="accent" type="button" onClick={onSkip}>
+            Continuar
+          </button>
+        )}
+      </footer>
     </dialog>
   );
 }
