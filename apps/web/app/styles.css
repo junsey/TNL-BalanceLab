@@ -1759,3 +1759,17 @@ h3 {
 .party-bar .command-pane:empty {
   display: none;
 }
+.party-bar .command-list .command-attack-option {
+  padding-block: 7px;
+  border-bottom: 1px solid #344c5a;
+}
+.command-attack-option .command-attack-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 3px 8px;
+  margin-top: 4px;
+}
+.command-attack-stats span:last-child {
+  font-variant-numeric: tabular-nums;
+}

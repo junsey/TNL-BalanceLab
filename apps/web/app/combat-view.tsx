@@ -593,6 +593,15 @@ export function CommandMenu({
                               ? [{ model: dagger.model, id: dagger.model.id }]
                               : []),
                           ];
+                          const resistance =
+                            state.setup.rules.resistance?.[fighter.id];
+                          const skill = resistance
+                            ? Math.min(
+                                100,
+                                resistance.associatedAttribute +
+                                  resistance.mastery,
+                              )
+                            : fighter.mastery;
                           return weapons.map(({ model, id }) => {
                             const enabled = matching.some(
                               (action) =>
@@ -602,6 +611,7 @@ export function CommandMenu({
                             return (
                               <button
                                 type="button"
+                                className="command-attack-option"
                                 key={model.id}
                                 aria-pressed={
                                   activeCategory === "attack" &&
@@ -619,6 +629,14 @@ export function CommandMenu({
                                     {attackCost[model.category]} Vigor
                                   </small>
                                 </span>
+                                <small className="command-attack-stats">
+                                  <span>Habilidad {skill}%</span>
+                                  <span aria-label="Daño base, adicional a mitad y adicional a cuarto">
+                                    {model.damage.toUpperCase()} | +
+                                    {model.halfExtra.toUpperCase()} | +
+                                    {model.quarterExtra.toUpperCase()}
+                                  </span>
+                                </small>
                               </button>
                             );
                           });
@@ -635,6 +653,7 @@ export function CommandMenu({
                           return (
                             <button
                               type="button"
+                              className="command-attack-option"
                               key={item.id}
                               disabled={!matching.length}
                               title={
