@@ -115,6 +115,8 @@ export const scenario = z.strictObject({
   stopAtIncapacitation: z.boolean(),
 });
 export const action = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("sneak"), actor: id, zone: id }),
+  z.strictObject({ kind: z.literal("kick"), actor: id, target: id }),
   z.strictObject({
     kind: z.literal("inject"),
     actor: id,

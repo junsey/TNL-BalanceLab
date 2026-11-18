@@ -107,6 +107,10 @@ const actionName = (action: Action, name = label) => {
           ? "Respirar ante el ataque de "
           : "Respirar ante la salida de ") + name(action.target)
       );
+    case "kick":
+      return name(action.target);
+    case "sneak":
+      return "Escabullirse a " + action.zone;
     case "inject":
       return name(action.target);
     case "prepareReactive":
@@ -140,6 +144,7 @@ function newSession(seed: string, map: string, roundLimit?: number): Session {
   const setup = tacticalDemo(seed, map);
   const { state } = startTacticalEncounter({
     ...setup,
+    maneuvers: { version: 1, sneakVigor: 1, kickVigor: 1 },
     participants: setup.participants.map((entry) =>
       entry.fighter.id === setup.player
         ? {
@@ -753,14 +758,17 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
         )
       : [];
   const destinations = choices.flatMap((action) =>
-    action.kind === "move" || action.kind === "run" ? [action.zone] : [],
+    action.kind === "move" || action.kind === "run" || action.kind === "sneak"
+      ? [action.zone]
+      : [],
   );
   const targets = choices.flatMap((action) =>
-    action.kind === "attack" ? [action.target] : [],
+    action.kind === "attack" || action.kind === "kick" ? [action.target] : [],
   );
   function attackTarget(id: string) {
     const action = choices.find(
-      (item) => item.kind === "attack" && item.target === id,
+      (item) =>
+        (item.kind === "attack" || item.kind === "kick") && item.target === id,
     );
     if (action) take(action);
   }
@@ -1248,7 +1256,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                 onZone={(id) => {
                   const movement = choices.find(
                     (action) =>
-                      (action.kind === "move" || action.kind === "run") &&
+                      (action.kind === "move" ||
+                        action.kind === "run" ||
+                        action.kind === "sneak") &&
                       action.zone === id,
                   );
                   if (movement) return take(movement);

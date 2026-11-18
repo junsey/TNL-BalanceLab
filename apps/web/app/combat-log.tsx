@@ -200,6 +200,21 @@ export function Detail({
         </p>
       );
     }
+    case "SNEAK":
+      return (
+        <p>
+          {name(print(detail.actor))} intentó escabullirse. Tirada{" "}
+          {print(detail.roll)} contra Esquivar {print(detail.target)}.{" "}
+          {grades[print(detail.grade)]}. Coste {print(detail.cost)} Vigor.
+        </p>
+      );
+    case "KICK":
+      return (
+        <p>
+          {name(print(detail.actor))} pateó a {name(print(detail.target))}.
+          Coste {print(detail.cost)} Vigor.
+        </p>
+      );
     case "INJECTION":
       return (
         <p>

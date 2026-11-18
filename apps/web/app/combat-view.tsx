@@ -440,6 +440,8 @@ const commands = [
   { id: "prepareBreathe", label: "Preparar Respirar" },
   { id: "weaponControl", label: "Ajustar arma" },
   { id: "flee", label: "Escapar" },
+  { id: "sneak", label: "Escabullirse" },
+  { id: "kick", label: "Patear" },
   { id: "stabilize", label: "Estabilizar" },
   { id: "defend", label: "Defender" },
   { id: "opportunity", label: "Reaccionar" },
@@ -492,7 +494,10 @@ export function CommandMenu({
     : [
         { label: "Ataque", ids: ["attack", "weaponControl"] },
         { label: "Movimiento", ids: ["move", "run", "flee"] },
-        { label: "Habilidades y maniobras", ids: ["stabilize"] },
+        {
+          label: "Habilidades y maniobras",
+          ids: ["sneak", "kick", "stabilize"],
+        },
         { label: "Objetos", ids: [] },
         { label: "Preparar acción", ids: ["prepareReactive"] },
       ];
@@ -584,22 +589,26 @@ export function CommandMenu({
                         const blocked = !matching.length;
                         const weapon = current && attackWeapon(current.fighter);
                         const cost =
-                          item.id === "attack"
-                            ? weapon
-                              ? attackCost[weapon.category] + " Vigor"
-                              : null
-                            : [
-                                  "move",
-                                  "run",
-                                  "breathe",
-                                  "recover",
-                                  "flee",
-                                  "prepareReactive",
-                                  "prepareBreathe",
-                                  "stabilize",
-                                ].includes(item.id)
-                              ? "0 Vigor"
-                              : null;
+                          item.id === "sneak"
+                            ? state.setup.maneuvers?.sneakVigor + " Vigor"
+                            : item.id === "kick"
+                              ? state.setup.maneuvers?.kickVigor + " Vigor"
+                              : item.id === "attack"
+                                ? weapon
+                                  ? attackCost[weapon.category] + " Vigor"
+                                  : null
+                                : [
+                                      "move",
+                                      "run",
+                                      "breathe",
+                                      "recover",
+                                      "flee",
+                                      "prepareReactive",
+                                      "prepareBreathe",
+                                      "stabilize",
+                                    ].includes(item.id)
+                                  ? "0 Vigor"
+                                  : null;
                         return (
                           <button
                             type="button"
@@ -701,7 +710,9 @@ export function CommandMenu({
                   <h3>
                     {commands.find((item) => item.id === activeCategory)?.label}
                   </h3>
-                  {activeCategory === "move" || activeCategory === "run" ? (
+                  {activeCategory === "move" ||
+                  activeCategory === "run" ||
+                  activeCategory === "sneak" ? (
                     <p>
                       Elegí un destino resaltado. Salir del alcance enemigo
                       puede provocar ataques de oportunidad.

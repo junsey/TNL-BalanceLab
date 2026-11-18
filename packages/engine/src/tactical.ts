@@ -50,6 +50,7 @@ const combatant = participant.extend({
   ended: z.boolean(),
   stabilized: z.boolean().optional(),
   prepared: preparation.nullable().optional(),
+  kicked: id.optional(),
 });
 export const setupSchema = z.strictObject({
   schemaVersion: z.literal(1),
@@ -63,6 +64,13 @@ export const setupSchema = z.strictObject({
   light: z.enum(["sufficient", "low", "dim", "dark"]).optional(),
   stopAtIncapacitation: z.boolean(),
   rules: attackRules,
+  maneuvers: z
+    .strictObject({
+      version: z.literal(1),
+      sneakVigor: count,
+      kickVigor: count,
+    })
+    .optional(),
   disabled: z.strictObject({
     opportunities: z.boolean(),
     preparedActions: z.boolean(),
@@ -83,11 +91,16 @@ const outcomes = z.enum([
 const continuation = z.strictObject({
   action: z.union([
     z.strictObject({ kind: z.literal("attack"), actor: id, target: id }),
-    z.strictObject({ kind: z.enum(["move", "run"]), actor: id, zone: id }),
+    z.strictObject({
+      kind: z.enum(["move", "run", "sneak"]),
+      actor: id,
+      zone: id,
+    }),
   ]),
   waiting: z.array(id).max(64),
   prepared: z.array(id).max(64).optional(),
   movementFinished: z.boolean().optional(),
+  avoidsOpportunity: z.boolean().optional(),
 });
 const opportunityState = z.strictObject({
   used: z.array(z.tuple([id, id])).max(126),
@@ -490,6 +503,18 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       }
     }
   }
+  const maneuvers = state.setup.maneuvers;
+  if (maneuvers && actor.minor && fighter.vigor >= maneuvers.kickVigor) {
+    for (const other of state.actors) {
+      if (
+        other.zone === actor.zone &&
+        alive(other.fighter) &&
+        (other.fighter.id === state.setup.player) !==
+          (id === state.setup.player)
+      )
+        actions.push({ kind: "kick", actor: id, target: other.fighter.id });
+    }
+  }
   const nearby = zonesWithin(state.setup.zones, actor.zone, 2);
   if (actor.minor && !state.setup.disabled.preparedActions && !actor.prepared) {
     for (const other of state.actors) {
@@ -518,6 +543,13 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       actions.push({ kind: "move", actor: id, zone });
     if (distance > 0 && actor.major)
       actions.push({ kind: "run", actor: id, zone });
+    if (
+      maneuvers &&
+      distance > 0 &&
+      actor.major &&
+      fighter.vigor >= maneuvers.sneakVigor
+    )
+      actions.push({ kind: "sneak", actor: id, zone });
   }
   if (!actor.major) return actions;
   actions.push({ kind: "recover", actor: id });
@@ -715,6 +747,7 @@ function advance(state: World, details: Detail[]) {
         actor.major = true;
         actor.minor = true;
         actor.ended = false;
+        delete actor.kicked;
       }
     } else {
       state.phase++;
@@ -770,6 +803,7 @@ function opportunityCandidates(state: World, trigger: Trigger) {
     .filter(
       ({ fighter, zone }) =>
         zone === provoking.zone &&
+        (trigger.kind === "attack" || provoking.kicked !== fighter.id) &&
         (fighter.id === state.setup.player) !==
           (trigger.actor === state.setup.player) &&
         canAttack(fighter) &&
@@ -944,14 +978,36 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
   switch (decision.kind) {
     case "attack":
     case "move":
-    case "run": {
-      const waiting = opportunityCandidates(state, decision);
+    case "run":
+    case "sneak": {
+      let avoidOpportunity = false;
+      if (decision.kind === "sneak") {
+        const cost = state.setup.maneuvers!.sneakVigor;
+        actor.fighter.vigor -= cost;
+        const target = actor.fighter.dodge;
+        const test = rollPercentile(state.rng);
+        state.rng = test.rng;
+        const grade = classify(test.roll, target);
+        avoidOpportunity = grade !== "miss" && grade !== "fumble";
+        details.push({
+          kind: "SNEAK",
+          actor: decision.actor,
+          roll: test.roll,
+          target,
+          grade,
+          cost,
+        });
+      }
+      const waiting = avoidOpportunity
+        ? []
+        : opportunityCandidates(state, decision);
       const prepared = preparedCandidates(state, decision);
       if ((waiting.length || prepared.length) && state.opportunities) {
         state.opportunities.continuation = {
           action: decision,
           waiting,
           prepared,
+          ...(avoidOpportunity && { avoidsOpportunity: true }),
         };
         if (waiting.length)
           details.push({ kind: "OPPORTUNITY_WINDOW", waiting: [...waiting] });
@@ -1110,6 +1166,19 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       });
       break;
     }
+    case "kick": {
+      const cost = state.setup.maneuvers!.kickVigor;
+      actor.minor = false;
+      actor.fighter.vigor -= cost;
+      actor.kicked = decision.target;
+      details.push({
+        kind: "KICK",
+        actor: decision.actor,
+        target: decision.target,
+        cost,
+      });
+      break;
+    }
     case "inject": {
       const recipient = state.actors.find(
         (entry) => entry.fighter.id === decision.target,
@@ -1211,7 +1280,11 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         details.push({ kind: "PREPARED_RECOVERY", actor: id, amount: 1 });
       } else if (executed) executeAttack(ready, provoking);
     }
-    if (!state.pending && !queued.movementFinished) {
+    if (
+      !state.pending &&
+      !queued.movementFinished &&
+      !queued.avoidsOpportunity
+    ) {
       const eligible = new Set(opportunityCandidates(state, queued.action));
       queued.waiting = queued.waiting.filter((id) => eligible.has(id));
     }
