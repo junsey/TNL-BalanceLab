@@ -1279,3 +1279,42 @@ test("Usar consumibles conserva stock y recursos al restaurar un replay", () => 
   assert.deepEqual(fighter.injections, { stamina: 1, medical: 2 });
   assert.deepEqual(replayTacticalEvent(initial, result.event), result.state);
 });
+test("El replay valida el grado con la misma Resistencia aplicada al ataque", () => {
+  const config = {
+    version: "resistance-experiment-v1",
+    associatedAttribute: 30,
+    mastery: 20,
+    naturalResistance: 20,
+    armorBonus: 0,
+    shieldBonus: 0,
+    naturalOne: "requiresImpact",
+    gradeBasis: "modifiedRoll",
+  };
+  let verified = false;
+  for (let index = 0; index < 100; index++) {
+    const initial = startTacticalEncounter({
+      ...setup,
+      seed: "resistance-replay-" + index,
+      participants: [
+        { fighter: player, zone: "a" },
+        { fighter: fighter("opponent"), zone: "a" },
+      ],
+      rules: {
+        ...setup.rules,
+        equipmentWear: false,
+        resistance: { player: config, opponent: config },
+      },
+    }).state;
+    const result = resolveAction(initial, attack);
+    const impact = result.state.pending;
+    if (impact && impact.roll <= 25 && impact.grade === "normal") {
+      assert.deepEqual(
+        replayTacticalEvent(initial, JSON.parse(JSON.stringify(result.event))),
+        result.state,
+      );
+      verified = true;
+      break;
+    }
+  }
+  assert.ok(verified);
+});

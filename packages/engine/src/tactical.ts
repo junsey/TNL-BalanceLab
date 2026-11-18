@@ -25,6 +25,7 @@ import { recoverVigor, rollInitiative } from "./combat-math.ts";
 import { classify, parseDice, rollPercentile } from "./dice.ts";
 import { rngVersion, rollDie, seedRng } from "./rng.ts";
 import { canonicalJson, rngState, stateHash } from "./state.ts";
+import { compareResistanceAttack } from "./resistance.ts";
 import { applyConsequence, tickConditions } from "./effects.ts";
 
 const id = z.string().min(1);
@@ -502,7 +503,10 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
             !state.groups[state.phase]?.includes(striker.fighter.id))) ||
         (striker.fighter.id === state.setup.player) ===
           (target.fighter.id === state.setup.player) ||
-        classify(pending.roll, pending.target) !== pending.grade ||
+        (pending.resistance
+          ? compareResistanceAttack(pending.resistance, pending.roll).initial
+              .grade
+          : classify(pending.roll, pending.target)) !== pending.grade ||
         state.rng.word !== pending.rng.word ||
         state.rng.draws !== pending.rng.draws))
   ) {
