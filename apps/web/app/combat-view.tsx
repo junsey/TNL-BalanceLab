@@ -7,6 +7,7 @@ import {
   attackCost,
   attackWeapon,
   getLegalActions,
+  previewAttack,
   weaponControlCost,
   type Fighter,
   type TacticalState,
@@ -764,6 +765,19 @@ export function CommandMenu({
                                 action.operation,
                               )
                             : null;
+                        const defender =
+                          action.kind === "attack" &&
+                          state.actors.find(
+                            ({ fighter }) => fighter.id === action.target,
+                          );
+                        const quote =
+                          current &&
+                          defender &&
+                          previewAttack(
+                            current.fighter,
+                            defender.fighter,
+                            state.setup.rules,
+                          );
                         return (
                           <button
                             type="button"
@@ -771,6 +785,22 @@ export function CommandMenu({
                             onClick={() => onAction(action)}
                           >
                             {actionName(action)}
+                            {quote && (
+                              <small>
+                                {quote.model.label} · {quote.cost} Vigor ·{" "}
+                                {quote.model.damage}
+                                {quote.resistance && (
+                                  <>
+                                    {" · Capacidad "}
+                                    {quote.resistance.associatedAttribute +
+                                      quote.resistance.mastery}
+                                    {" · Resistencia "}
+                                    {quote.resistance.naturalResistance +
+                                      quote.resistance.armorBonus}
+                                  </>
+                                )}
+                              </small>
+                            )}
                             {cost && (
                               <small>
                                 {actionCostLabels[cost.action]} · {cost.vigor}{" "}

@@ -292,13 +292,34 @@ export function armorProfile(fighter: Fighter) {
   };
 }
 
-export function previewAttack(attacker: Fighter, defender: Fighter) {
+export function previewAttack(
+  attacker: Fighter,
+  defender: Fighter,
+  rules?: AttackRules,
+) {
   const model = attackWeapon(attacker);
   if (!model) return null;
+  const offense = rules?.resistance?.[attacker.id];
+  const protection = rules?.resistance?.[defender.id];
+  if (rules?.resistance && (!offense || !protection))
+    throw new RangeError("Faltan parametros de Resistencia para el ataque");
+  const resistance =
+    offense && protection
+      ? {
+          ...offense,
+          naturalResistance: protection.naturalResistance,
+          armorBonus:
+            defender.armor && defender.armor.remaining !== 0
+              ? protection.armorBonus
+              : 0,
+          shieldBonus: protection.shieldBonus,
+        }
+      : undefined;
   const armor = armorProfile(defender);
   const target = attackTarget(attacker.mastery, armor.final);
   return {
     model,
+    resistance,
     armor,
     target,
     probability: Math.max(1, Math.min(99, target)),
@@ -314,7 +335,7 @@ export function declareAttack(
   rng: Impact["rng"],
   rules: AttackRules,
 ) {
-  const preview = previewAttack(attacker, defender);
+  const preview = previewAttack(attacker, defender, rules);
   if (
     attacker.id === defender.id ||
     defender.health <= 0 ||
@@ -332,22 +353,7 @@ export function declareAttack(
     };
   }
   const test = rollPercentile(rng);
-  const offense = rules.resistance?.[attacker.id];
-  const protection = rules.resistance?.[defender.id];
-  if (rules.resistance && (!offense || !protection))
-    throw new RangeError("Faltan parametros de Resistencia para el ataque");
-  const resistance =
-    offense && protection
-      ? {
-          ...offense,
-          naturalResistance: protection.naturalResistance,
-          armorBonus:
-            defender.armor && defender.armor.remaining !== 0
-              ? protection.armorBonus
-              : 0,
-          shieldBonus: protection.shieldBonus,
-        }
-      : undefined;
+  const resistance = preview.resistance;
   const check =
     resistance && compareResistanceAttack(resistance, test.roll).initial;
   const grade = check?.grade ?? classify(test.roll, target);
