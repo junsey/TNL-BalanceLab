@@ -1709,3 +1709,30 @@ h3 {
   width: min(200px, 100%);
   min-height: 42px;
 }
+.party-bar {
+  grid-template-columns: clamp(260px, 22vw, 290px) repeat(4, minmax(0, 1fr));
+}
+.party-bar .dock-commands > .command-pane {
+  width: 100%;
+  max-height: min(350px, 65dvh);
+  padding: 12px;
+}
+.party-bar .party-expand {
+  position: static;
+  min-width: 0;
+  max-height: 42dvh;
+  overflow: auto;
+  box-shadow: none;
+  overflow-wrap: anywhere;
+}
+.party-bar .party-expand p {
+  margin: 0;
+}
+.party-bar .party-active {
+  transform: translateY(-4px);
+}
+@media (max-width: 840px) {
+  .party-bar {
+    grid-template-columns: minmax(145px, 2fr) repeat(4, minmax(0, 1fr));
+  }
+}

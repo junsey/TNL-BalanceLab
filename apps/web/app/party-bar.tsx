@@ -54,7 +54,7 @@ export function PartyBar({
                 ? "Turno utilizado"
                 : "En espera";
         const turn = state.round + ":" + state.phase + ":" + id;
-        const expanded = toggle?.turn === turn ? toggle.open : active;
+        const expanded = toggle?.turn === turn ? toggle.open : false;
         const armor = armorProfile(fighter);
         const weapon = attackWeapon(fighter) ?? fighter.weapon.model;
         const durability = (
@@ -93,10 +93,17 @@ export function PartyBar({
                   {durability(fighter.shield)}
                 </p>
               )}
-              <p>
-                Vulnerabilidad {armor.base} → {armor.final} · Protección{" "}
-                {armor.protection}
-              </p>
+              {state.setup.rules.resistance?.[id] && (
+                <p>
+                  Resistencia natural{" "}
+                  {state.setup.rules.resistance[id].naturalResistance}
+                  {" + "}
+                  {fighter.armor && fighter.armor.remaining !== 0
+                    ? state.setup.rules.resistance[id].armorBonus
+                    : 0}{" "}
+                  de armadura
+                </p>
+              )}
               {armor.reduction > 0 && (
                 <p>Reducción directa {armor.reduction}</p>
               )}
@@ -113,7 +120,7 @@ export function PartyBar({
                 {fighter.endurance}
               </p>
               <button type="button" onClick={() => onSheet(id)}>
-                Ver hoja completa
+                Equipo y hoja
               </button>
             </div>
             <button
