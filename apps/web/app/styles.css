@@ -1675,3 +1675,37 @@ h3 {
   border-radius: 3px;
   font-weight: bold;
 }
+.initiative-dialog {
+  width: min(760px, calc(100% - 32px));
+  max-height: 85dvh;
+  padding: 20px;
+  overflow-x: hidden;
+}
+.initiative-dialog .dialog-body {
+  padding: 0;
+}
+.initiative-dialog .initiative-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.initiative-dialog .initiative-order {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  padding-inline-start: 26px;
+}
+.initiative-dialog .initiative-portrait {
+  min-height: 40px;
+}
+.initiative-audit ul {
+  margin: 4px 0;
+}
+.initiative-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+.initiative-footer button {
+  width: min(200px, 100%);
+  min-height: 42px;
+}

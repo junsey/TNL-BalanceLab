@@ -842,11 +842,13 @@ export function InitiativeSequence({
           </ol>
           <details>
             <summary>Ver tiradas de iniciativa</summary>
-            <Initiative state={state} name={name} />
+            <Initiative state={state} name={name} showOrder={false} />
           </details>
-          <button type="button" className="accent" onClick={onContinue}>
-            {replay ? "Continuar replay" : "Comenzar combate"}
-          </button>
+          <footer className="initiative-footer">
+            <button type="button" className="accent" onClick={onContinue}>
+              {replay ? "Continuar replay" : "Comenzar combate"}
+            </button>
+          </footer>
         </>
       ) : (
         <>
@@ -888,13 +890,15 @@ export function InitiativeSequence({
 export function Initiative({
   state,
   name,
+  showOrder = true,
 }: {
   state: TacticalState;
   name: Name;
+  showOrder?: boolean;
 }) {
   const result = state.initiative;
   return (
-    <div className="initiative-grid">
+    <div className="initiative-audit">
       <p>
         Semilla <code>{state.setup.seed}</code> ·{" "}
         {state.setup.mapLabel ?? "Mapa del escenario"} · Agresores{" "}
@@ -933,14 +937,16 @@ export function Initiative({
       ) : (
         <p>Las tiradas de apertura no están disponibles en este guardado.</p>
       )}
-      <ol className="initiative-order">
-        {state.groups.map((group, index) => (
-          <li key={index}>
-            <strong>{phaseNames[index]}</strong>
-            <span>{group.map(name).join(", ") || "—"}</span>
-          </li>
-        ))}
-      </ol>
+      {showOrder && (
+        <ol className="initiative-order">
+          {state.groups.map((group, index) => (
+            <li key={index}>
+              <strong>{phaseNames[index]}</strong>
+              <span>{group.map(name).join(", ") || "—"}</span>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }
@@ -949,10 +955,12 @@ export function CombatDialog({
   title,
   onClose,
   children,
+  className = "",
 }: {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
+  className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -961,7 +969,7 @@ export function CombatDialog({
   return (
     <dialog
       ref={ref}
-      className="combat-dialog"
+      className={"combat-dialog " + className}
       aria-label={title}
       onCancel={(event) => {
         event.preventDefault();

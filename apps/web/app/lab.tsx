@@ -1345,6 +1345,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
           {initiativeOpen && (
             <CombatDialog
               title="Iniciativa del encuentro"
+              className="initiative-dialog"
               onClose={() => setInitiativeOpen(false)}
             >
               <InitiativeSequence
