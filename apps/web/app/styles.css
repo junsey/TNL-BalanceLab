@@ -1782,6 +1782,7 @@ h3 {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   width: min(760px, calc(100% - 24px));
+  height: min(84dvh, 650px);
   max-height: min(90dvh, 760px);
   overflow: hidden;
 }
