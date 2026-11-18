@@ -4,6 +4,15 @@ export const resistanceExperiment = z.strictObject({
   version: z.literal("resistance-experiment-v1"),
   associatedAttribute: z.number().int().min(5).max(50),
   mastery: z.number().int().min(0).max(50),
+  weaponSkills: z
+    .record(
+      z.string().min(1),
+      z.strictObject({
+        attribute: z.number().int().min(5).max(50),
+        mastery: z.number().int().min(0).max(50),
+      }),
+    )
+    .optional(),
   naturalResistance: z.number().int().nonnegative().safe(),
   armorBonus: z.number().int().nonnegative().safe(),
   shieldBonus: z.number().int().nonnegative().safe(),

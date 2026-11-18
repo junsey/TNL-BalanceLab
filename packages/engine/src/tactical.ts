@@ -120,6 +120,7 @@ const opportunityState = z.strictObject({
 const stateSchema = z.strictObject({
   setup: setupSchema,
   engineVersion: z.enum([
+    "0.6.0-resistance-experimental",
     "0.1.0-tactical",
     "0.2.0-tactical",
     "0.3.0-tactical",
@@ -302,7 +303,9 @@ export function startTacticalEncounter(input: unknown) {
   );
   const state: TacticalState = {
     setup,
-    engineVersion: tacticalVersion,
+    engineVersion: setup.rules.resistance
+      ? "0.6.0-resistance-experimental"
+      : tacticalVersion,
     rngVersion,
     rng,
     round: 1,
@@ -1475,11 +1478,13 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
           ...state.setup.rules.resistance!,
           [decision.actor]: {
             ...state.setup.rules.resistance![decision.actor]!,
+            weaponSkills: undefined,
             associatedAttribute: original.throwing!.attribute,
             mastery: original.throwing!.mastery,
           },
         },
       };
+      delete rules.resistance[decision.actor]!.weaponSkills;
       const projection = {
         ...original,
         weapon: { ...item, model },

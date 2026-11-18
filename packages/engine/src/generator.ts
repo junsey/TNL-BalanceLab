@@ -228,10 +228,21 @@ export function generateTacticalSetup(
   const [placement, afterPlacement] = pick(map.placements, afterMap, () => 1);
   let rng = afterPlacement;
   const participants = [{ ...player, zone: placement.origin.id }];
+  const resistance = base.rules.resistance
+    ? { ...base.rules.resistance }
+    : undefined;
   for (const [index, species] of config.species.entries()) {
     for (let number = 1; number <= group.counts[index]!; number++) {
       const [target, next] = pick(placement.targets, rng, () => 1);
       rng = next;
+      if (resistance) {
+        const config = resistance[species.fighter.id];
+        if (!config)
+          throw new RangeError(
+            "Faltan parámetros de Resistencia para " + species.id,
+          );
+        resistance[species.id + ":" + number] = config;
+      }
       participants.push({
         fighter: { ...species.fighter, id: species.id + ":" + number },
         zone: target.id,
@@ -248,6 +259,7 @@ export function generateTacticalSetup(
       : aggression.kind;
   return startTacticalEncounter({
     ...base,
+    ...(resistance && { rules: { ...base.rules, resistance } }),
     seed,
     aggressor,
     mapLabel: map.label ?? map.id,

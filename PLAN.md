@@ -1,3 +1,5 @@
+> Actualización de reglas del 18/11/2026: las fórmulas de Vulnerabilidad que aparecen más abajo describen el modelo histórico. El combate vigente compara d100 + Resistencia con Atributo asociado + Dominio (máximo 100). La Resistencia natural, las bonificaciones de armadura/escudo y las políticas de ensayo para 01 y grados deben configurarse expresamente. Los historiales previos conservan su versión y sus resultados.
+
 # PLAN.md | The Night Land Combat Simulator v0
 
 **Estado:** alcance funcional cerrado y aprobado (40 decisiones).  

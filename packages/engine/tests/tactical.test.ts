@@ -1218,3 +1218,64 @@ test("Arrojar deja el arma en destino, añade 1d6 y permite recogerla sin regene
     [],
   );
 });
+test("La habilidad de cada arma se toma de sus parámetros de Resistencia", () => {
+  const base = {
+    version: "resistance-experiment-v1" as const,
+    associatedAttribute: 30,
+    mastery: 20,
+    naturalResistance: 10,
+    armorBonus: 2,
+    shieldBonus: 0,
+    naturalOne: "requiresImpact" as const,
+    gradeBasis: "modifiedRoll" as const,
+    weaponSkills: {
+      [player.weapon.model.id]: { attribute: 25, mastery: 20 },
+      [weapons[1]!.id]: { attribute: 30, mastery: 40 },
+    },
+  };
+  const defender = { ...opponent, armor: null };
+  assert.equal(
+    previewAttack(player, defender, {
+      ...setup.rules,
+      resistance: { player: base, opponent: base },
+    })?.resistance?.mastery,
+    20,
+  );
+  const sword = { ...player, weapon: { model: weapons[1]!, remaining: null } };
+  assert.equal(
+    previewAttack(sword, defender, {
+      ...setup.rules,
+      resistance: { player: base, opponent: base },
+    })?.resistance?.mastery,
+    40,
+  );
+});
+
+test("Usar consumibles conserva stock y recursos al restaurar un replay", () => {
+  const initial = startTacticalEncounter({
+    ...setup,
+    participants: [
+      {
+        fighter: {
+          ...player,
+          vigor: 1,
+          injections: { stamina: 2, medical: 2 },
+        },
+        zone: "a",
+      },
+      setup.participants[1],
+    ],
+  }).state;
+  const result = resolveAction(initial, {
+    kind: "inject",
+    actor: "player",
+    target: "player",
+    item: "stamina",
+  });
+  const fighter = result.state.actors.find(
+    ({ fighter }) => fighter.id === "player",
+  )!.fighter;
+  assert.equal(fighter.vigor, fighter.vigorMax);
+  assert.deepEqual(fighter.injections, { stamina: 1, medical: 2 });
+  assert.deepEqual(replayTacticalEvent(initial, result.event), result.state);
+});

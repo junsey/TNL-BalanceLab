@@ -316,7 +316,11 @@ export function TacticalBoard({
         <span>
           <i className="legend enemy" /> Enemigos
         </span>
-        <span className="model-label">Modelo reducido</span>
+        <span className="model-label">
+          {state.setup.rules.resistance
+            ? "Resistencia experimental v1"
+            : "Modelo histórico anterior a Resistencia"}
+        </span>
       </footer>
     </section>
   );
@@ -681,14 +685,15 @@ export function CommandMenu({
                           );
                           const resistance =
                             state.setup.rules.resistance?.[fighter.id];
-                          const skill = resistance
-                            ? Math.min(
-                                100,
-                                resistance.associatedAttribute +
-                                  resistance.mastery,
-                              )
-                            : fighter.mastery;
                           return weapons.map(({ model, id }) => {
+                            const weaponSkill =
+                              resistance?.weaponSkills?.[model.id];
+                            const skill = weaponSkill
+                              ? weaponSkill.attribute + weaponSkill.mastery
+                              : resistance
+                                ? resistance.associatedAttribute +
+                                  resistance.mastery
+                                : fighter.mastery;
                             const enabled = matching.some(
                               (action) =>
                                 action.kind === "attack" &&

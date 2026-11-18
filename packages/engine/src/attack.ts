@@ -433,10 +433,17 @@ export function previewAttack(
   const protection = rules?.resistance?.[defender.id];
   if (rules?.resistance && (!offense || !protection))
     throw new RangeError("Faltan parametros de Resistencia para el ataque");
+  const weaponSkill = offense?.weaponSkills?.[model.id];
+  if (offense?.weaponSkills && !weaponSkill)
+    throw new RangeError("Falta la habilidad de ataque para " + model.label);
   const resistance =
     offense && protection
       ? {
           ...offense,
+          ...(weaponSkill && {
+            associatedAttribute: weaponSkill.attribute,
+            mastery: weaponSkill.mastery,
+          }),
           naturalResistance: protection.naturalResistance,
           armorBonus:
             defender.armor && defender.armor.remaining !== 0

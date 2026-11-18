@@ -1913,3 +1913,21 @@ h3 {
   padding: 2px 5px;
   font-size: 0.62rem;
 }
+.resistance-form {
+  display: grid;
+  gap: 10px;
+}
+.resistance-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+.resistance-form fieldset {
+  min-width: 0;
+  border: 1px solid #405966;
+  padding: 10px;
+}
+.resistance-form input,
+.resistance-form select {
+  max-width: 100%;
+}

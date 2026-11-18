@@ -46,6 +46,7 @@ import {
   withFieldSources,
   type ConfigurationSource,
 } from "../lib/provenance";
+import { ResistanceSetup } from "./resistance-setup";
 import { ConfigurationDetails } from "./configuration-details";
 
 type Event = ReturnType<typeof resolveAction>["event"] & { reason?: string };
@@ -191,6 +192,7 @@ function nextAuto(session: Session, profile: TacticalProfile) {
 }
 
 export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
+  const [resistanceOpen, setResistanceOpen] = useState(true);
   const [seed, setSeed] = useState("vigilia-01");
   const [fixedSeed, setFixedSeed] = useState(false);
   const [map, setMap] = useState<string>(maps[0].id);
@@ -253,7 +255,10 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     (mode === "manual" ||
       displayed.pending.defender === displayed.setup.player);
   const showEncounter =
-    !initiativeOpen && !sheetActor && (mode === "auto" || mode === "manual");
+    !initiativeOpen &&
+    !resistanceOpen &&
+    !sheetActor &&
+    (mode === "auto" || mode === "manual");
   const { frame, waiting } = selectEncounterFrame(
     showEncounter ? (latestEvent?.details ?? []) : [],
     frameIndex,
@@ -322,6 +327,8 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
 
   useEffect(() => {
     if (
+      !session.state.setup.rules.resistance ||
+      resistanceOpen ||
       !auto ||
       session.state.outcome ||
       mode !== "auto" ||
@@ -342,6 +349,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     return () => window.clearTimeout(timer);
   }, [
     session,
+    resistanceOpen,
     auto,
     mode,
     replay,
@@ -414,6 +422,10 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   }, [shared]);
 
   function reset() {
+    if (!session.initial.setup.rules.resistance) {
+      setResistanceOpen(true);
+      return;
+    }
     const encounterSeed = fixedSeed ? seed : crypto.randomUUID();
     setSeed(encounterSeed);
     setPlaybackPaused(false);
@@ -485,6 +497,10 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     }
   }
   function take(action: Action) {
+    if (!session.state.setup.rules.resistance) {
+      setResistanceOpen(true);
+      return;
+    }
     setSession((current) => {
       if (
         (mode === "auto" && action.actor !== current.state.setup.player) ||
@@ -524,6 +540,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       const initial = restoreTacticalEncounter(saved.initial);
       const state = saved.events.reduce(replayTacticalEvent, initial);
       setSession({ ...saved, initial, state });
+      setResistanceOpen(false);
       setScenario(initial.setup);
       setSeed(initial.setup.seed);
       setInitiativeOpen(state.sequence === 0);
@@ -561,6 +578,12 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
           ...tacticalDemo(seed, map),
           ...(general && { roundLimit: general.roundLimit }),
         };
+    if (!setup.rules.resistance) {
+      setMode("auto");
+      setResistanceOpen(true);
+      setNotice("Configurá Resistencia antes de iniciar simulaciones nuevas.");
+      return;
+    }
     const plan: BatchPlan = {
       setup,
       ...(scenario && "kind" in scenario && { generator: scenario.generator }),
@@ -925,6 +948,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               onChange={(event) => {
                 setMap(event.target.value);
                 setScenario(null);
+                setResistanceOpen(true);
               }}
             >
               {scenario && (
@@ -949,6 +973,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               </label>
               <button className="accent" onClick={reset}>
                 Nuevo encuentro
+              </button>
+              <button onClick={() => setResistanceOpen(true)}>
+                Configurar Resistencia
               </button>
               <button onClick={save}>Guardar</button>
               <button onClick={load}>Cargar</button>
@@ -1012,6 +1039,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               materializeScenario(source),
             );
             setScenario(source);
+            setResistanceOpen(!state.setup.rules.resistance);
             setInitiativeOpen(true);
             setSession({
               initial: state,
@@ -1415,7 +1443,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
             )}
             <ConfigurationDetails state={displayed} source={session.source} />
           </div>
-          {initiativeOpen && (
+          {initiativeOpen && !resistanceOpen && (
             <CombatDialog
               title="Iniciativa del encuentro"
               className="initiative-dialog"
@@ -1504,6 +1532,44 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                 });
               }}
             />
+          )}
+          {resistanceOpen && (
+            <CombatDialog
+              title="Parámetros experimentales de Resistencia"
+              onClose={() => setResistanceOpen(false)}
+            >
+              <ResistanceSetup
+                setup={
+                  scenario
+                    ? materializeScenario(scenario, seed)
+                    : {
+                        ...newSession(seed, map, general?.roundLimit).initial
+                          .setup,
+                        ...(session.initial.setup.rules.resistance && {
+                          rules: session.initial.setup.rules,
+                          participants: session.initial.setup.participants,
+                        }),
+                      }
+                }
+                onApply={(setup) => {
+                  const initial = startTacticalEncounter(setup).state;
+                  setScenario(setup);
+                  setSession({
+                    initial,
+                    state: initial,
+                    events: [],
+                    source: { kind: "scenario" },
+                  });
+                  setSelection(initial.setup.player);
+                  setSeed(initial.setup.seed);
+                  setReplay(null);
+                  setVisual(null);
+                  setResistanceOpen(false);
+                  setInitiativeOpen(true);
+                  setAuto(mode === "auto");
+                }}
+              />
+            </CombatDialog>
           )}
           {pickupSlot && (
             <CombatDialog
