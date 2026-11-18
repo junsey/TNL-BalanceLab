@@ -229,6 +229,15 @@ export function Detail({
           {print(detail.remaining)}.
         </p>
       );
+    case "WEAPON_THROWN":
+      return (
+        <p>
+          {name(print(detail.actor))} arrojó {print(detail.weapon)} a la zona{" "}
+          {print(detail.zone)}.
+        </p>
+      );
+    case "WEAPON_PICKED_UP":
+      return <p>{name(print(detail.actor))} recogió su arma.</p>;
     case "EQUIP_HANDS":
       return (
         <p>{name(print(detail.actor))} cambió el equipo de ambas manos.</p>

@@ -333,6 +333,15 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
   const participants = new Map(
     state.setup.participants.map((actor) => [actor.fighter.id, actor.fighter]),
   );
+  const groundWeaponsInvalid = (fighter: Fighter) =>
+    !!fighter.groundWeapons &&
+    (new Set(fighter.groundWeapons.map((entry) => entry.slot)).size !==
+      fighter.groundWeapons.length ||
+      fighter.groundWeapons.some(
+        (entry) =>
+          !zones.has(entry.zone) ||
+          (entry.slot === "reserve" && !reserveWeapon(fighter)),
+      ));
   const invalidActor = state.actors.some(({ fighter, zone }) => {
     const original = participants.get(fighter.id);
     if (!original || !zones.has(zone)) return true;
@@ -352,6 +361,14 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
       (fighter.stowedDagger && fighter.reserveWeapon)
     )
       return true;
+    if (
+      groundWeaponsInvalid(fighter) ||
+      (fighter.injections &&
+        (!original.injections ||
+          fighter.injections.stamina > original.injections.stamina ||
+          fighter.injections.medical > original.injections.medical))
+    )
+      return true;
     const expectedWeapon = switched ? originalReserve! : original.weapon;
     const expectedReserve = switched ? original.weapon : originalReserve;
     const storageKey = fighter.reserveWeapon ? "reserveWeapon" : "stowedDagger";
@@ -365,12 +382,16 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
       energy,
       conditions,
       hands,
+      groundWeapons,
+      injections,
       ...stats
     } = fighter;
     return (
       canonicalJson({
         ...originalStats,
         ...(hands && { hands }),
+        ...(groundWeapons && { groundWeapons }),
+        ...(injections && { injections }),
         health,
         vigor,
         recovery,
@@ -412,6 +433,8 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
       canonicalJson({
         ...stats,
         ...(hands && { hands }),
+        ...(groundWeapons && { groundWeapons }),
+        ...(injections && { injections }),
         health,
         vigor,
         recovery,
@@ -467,7 +490,7 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
         pending.attacker === pending.defender ||
         !striker ||
         !target ||
-        striker.zone !== target.zone ||
+        (!pending.thrown && striker.zone !== target.zone) ||
         !alive(striker.fighter) ||
         !alive(target.fighter) ||
         (!state.opportunities?.continuation &&
@@ -569,6 +592,7 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
   const reserve = reserveWeapon(fighter);
   if (
     actor.minor &&
+    !fighter.groundWeapons?.length &&
     reserve &&
     reserve.remaining !== 0 &&
     !fighter.energy &&
@@ -576,6 +600,44 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     (!reserve.model.twoHanded || !fighter.shield)
   ) {
     actions.push({ kind: "swapWeapon", actor: id });
+  }
+  if (actor.minor) {
+    const hands = handLoadout(fighter);
+    for (const dropped of fighter.groundWeapons ?? []) {
+      if (dropped.zone !== actor.zone) continue;
+      actions.push({
+        kind: "pickUpWeapon",
+        actor: id,
+        slot: dropped.slot,
+        destination: "stowed",
+      });
+      const available = {
+        ...fighter,
+        groundWeapons: fighter.groundWeapons!.filter(
+          (entry) => entry.slot !== dropped.slot,
+        ),
+      };
+      for (const hand of ["right", "left"] as const) {
+        if (hands[hand]) continue;
+        const proposed = { ...hands, [hand]: dropped.slot };
+        const item =
+          dropped.slot === "weapon" ? fighter.weapon : reserveWeapon(fighter)!;
+        if (item.model.twoHanded && !hands.right && !hands.left) {
+          actions.push({
+            kind: "pickUpWeapon",
+            actor: id,
+            slot: dropped.slot,
+            destination: hand,
+          });
+        } else if (validHands(available, proposed.right, proposed.left))
+          actions.push({
+            kind: "pickUpWeapon",
+            actor: id,
+            slot: dropped.slot,
+            destination: hand,
+          });
+      }
+    }
   }
   const nearby = zonesWithin(state.setup.zones, actor.zone, 2);
   if (actor.minor && !state.setup.disabled.preparedActions && !actor.prepared) {
@@ -673,6 +735,42 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     )
   )
     actions.push({ kind: "flee", actor: id });
+  if (
+    fighter.throwing &&
+    state.setup.rules.resistance &&
+    fighter.recovery === "none"
+  ) {
+    const hands = handLoadout(fighter);
+    for (const slot of ["weapon", "reserve"] as const) {
+      const item = slot === "weapon" ? fighter.weapon : reserveWeapon(fighter);
+      if (
+        !item?.model.throwable ||
+        item.remaining === 0 ||
+        item.model.energyPerAttack ||
+        fighter.groundWeapons?.some((entry) => entry.slot === slot) ||
+        fighter.vigor < attackCost[item.model.category] ||
+        (!(hands.right === slot || hands.left === slot) &&
+          hands.right &&
+          hands.left)
+      )
+        continue;
+      for (const other of opponents) {
+        const distance = nearby.get(other.zone);
+        if (
+          distance &&
+          distance <= 2 &&
+          alive(other.fighter) &&
+          canSee(state, actor.zone, other.zone)
+        )
+          actions.push({
+            kind: "throwWeapon",
+            actor: id,
+            target: other.fighter.id,
+            slot,
+          });
+      }
+    }
+  }
   const sweepWeapon = attackWeapon(fighter);
   const surcharge = maneuvers?.sweepSurcharge;
   if (
@@ -1077,7 +1175,13 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       : undefined;
     const result = declareAttack(
       dagger
-        ? { ...original, weapon: dagger, hands: undefined, energy: undefined }
+        ? {
+            ...original,
+            weapon: dagger,
+            groundWeapons: undefined,
+            hands: undefined,
+            energy: undefined,
+          }
         : original,
       defender.fighter,
       state.rng,
@@ -1087,6 +1191,9 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       ? {
           ...result.attacker,
           weapon: original.weapon,
+          ...(original.groundWeapons && {
+            groundWeapons: original.groundWeapons,
+          }),
           ...(original.hands && { hands: original.hands }),
           ...(original.reserveWeapon
             ? { reserveWeapon: result.attacker.weapon }
@@ -1096,6 +1203,8 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       : result.attacker;
     if (dagger && !original.energy) delete attacker.fighter.energy;
     if (dagger && !original.hands) delete attacker.fighter.hands;
+    if (dagger && !original.groundWeapons)
+      delete attacker.fighter.groundWeapons;
     defender.fighter = result.defender;
     state.pending =
       dagger && result.impact
@@ -1350,6 +1459,102 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
           impact.roll,
           false,
         );
+      break;
+    }
+    case "throwWeapon": {
+      const original = actor.fighter;
+      const item =
+        decision.slot === "weapon" ? original.weapon : reserveWeapon(original)!;
+      const target = state.actors.find(
+        (entry) => entry.fighter.id === decision.target,
+      )!;
+      const model = { ...item.model, damage: item.model.damage };
+      const rules = {
+        ...state.setup.rules,
+        resistance: {
+          ...state.setup.rules.resistance!,
+          [decision.actor]: {
+            ...state.setup.rules.resistance![decision.actor]!,
+            associatedAttribute: original.throwing!.attribute,
+            mastery: original.throwing!.mastery,
+          },
+        },
+      };
+      const projection = {
+        ...original,
+        weapon: { ...item, model },
+        hands: undefined,
+        groundWeapons: undefined,
+        energy: undefined,
+      };
+      const result = declareAttack(
+        projection,
+        target.fighter,
+        state.rng,
+        rules,
+      );
+      actor.fighter = {
+        ...original,
+        health: result.attacker.health,
+        recovery: result.attacker.recovery,
+        vigor: result.attacker.vigor,
+        ...(result.attacker.conditions && {
+          conditions: result.attacker.conditions,
+        }),
+      };
+      const hands = handLoadout(original);
+      actor.fighter.hands = {
+        right: hands.right === decision.slot ? null : hands.right,
+        left: hands.left === decision.slot ? null : hands.left,
+      };
+      actor.fighter.groundWeapons = [
+        ...(original.groundWeapons ?? []),
+        { slot: decision.slot, zone: target.zone },
+      ];
+      actor.prepared = null;
+      actor.major = false;
+      target.fighter = result.defender;
+      state.rng = result.rng;
+      state.pending = result.impact
+        ? { ...result.impact, alternateWeapon: model, thrown: true }
+        : null;
+      details.push({
+        ...result.event,
+        actor: decision.actor,
+        targetActor: decision.target,
+        maneuver: "throw",
+      });
+      details.push({
+        kind: "WEAPON_THROWN",
+        actor: decision.actor,
+        slot: decision.slot,
+        weapon: model.label,
+        zone: target.zone,
+      });
+      reportUnresolved(state, details, result.unresolved);
+      break;
+    }
+    case "pickUpWeapon": {
+      actor.minor = false;
+      actor.fighter.groundWeapons = actor.fighter.groundWeapons!.filter(
+        (entry) => entry.slot !== decision.slot,
+      );
+      const hands = handLoadout(actor.fighter);
+      if (decision.destination !== "stowed") {
+        const item =
+          decision.slot === "weapon"
+            ? actor.fighter.weapon
+            : reserveWeapon(actor.fighter)!;
+        actor.fighter.hands = item.model.twoHanded
+          ? { right: decision.slot, left: decision.slot }
+          : { ...hands, [decision.destination]: decision.slot };
+      }
+      details.push({
+        kind: "WEAPON_PICKED_UP",
+        actor: decision.actor,
+        slot: decision.slot,
+        destination: decision.destination,
+      });
       break;
     }
     case "equipHands": {

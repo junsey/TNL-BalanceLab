@@ -78,6 +78,13 @@ export const fighterState = z
     weapon: equippedWeapon,
     stowedDagger: equippedWeapon.optional(),
     reserveWeapon: equippedWeapon.optional(),
+    groundWeapons: z
+      .array(z.strictObject({ slot: z.enum(["weapon", "reserve"]), zone: id }))
+      .max(2)
+      .optional(),
+    throwing: z
+      .strictObject({ attribute: count.min(5).max(50), mastery: count.max(50) })
+      .optional(),
     hands: z
       .strictObject({
         right: z.enum(["weapon", "reserve", "shield"]).nullable(),
@@ -165,6 +172,7 @@ export const pendingImpact = z.strictObject({
   rng: rngState,
   weaponId: id.optional(),
   alternateWeapon: weapon.optional(),
+  thrown: z.boolean().optional(),
   sweep: z
     .strictObject({ model: weapon, remaining: z.array(id).max(64) })
     .optional(),
@@ -208,6 +216,8 @@ export function validHands(fighter: Fighter, right: HandItem, left: HandItem) {
         ? reserve?.model
         : undefined;
   for (const slot of [right, left]) {
+    if (fighter.groundWeapons?.some((entry) => entry.slot === slot))
+      return false;
     if (slot === "reserve" && !reserve) return false;
     if (slot === "shield" && !fighter.shield) return false;
   }
@@ -227,6 +237,7 @@ export function equippedAttacks(fighter: Fighter) {
   const reserve = reserveWeapon(fighter);
   if (
     reserve &&
+    !fighter.groundWeapons?.some((entry) => entry.slot === "reserve") &&
     (slots.has("reserve") ||
       (reserve.model.id === "daga" && (!hands.right || !hands.left)))
   ) {
@@ -244,6 +255,8 @@ export function activeShield(fighter: Fighter) {
 
 export function attackWeapon(fighter: Fighter) {
   const hands = handLoadout(fighter);
+  if (fighter.groundWeapons?.some((entry) => entry.slot === "weapon"))
+    return null;
   if (hands.right !== "weapon" && hands.left !== "weapon") return null;
   const model = fighter.weapon.model;
   const energy = fighter.energy;
@@ -319,6 +332,7 @@ export function availableDagger(fighter: Fighter) {
     hands.left === "reserve" ||
     !hands.right ||
     !hands.left) &&
+    !fighter.groundWeapons?.some((entry) => entry.slot === "reserve") &&
     dagger?.model.id === "daga" &&
     dagger.remaining !== 0 &&
     !(hands.right === "weapon" && hands.left === "weapon")
@@ -548,11 +562,13 @@ export function rollWeaponDamage(
   model: Fighter["weapon"]["model"],
   grade: Impact["grade"],
   rng: Impact["rng"],
+  thrown = false,
 ) {
   const expressions = [model.damage];
   if (grade === "half") expressions.push(model.halfExtra);
   if (grade === "quarter" || grade === "critical")
     expressions.push(model.quarterExtra);
+  if (thrown) expressions.push("1d6");
   let state = rng;
   let total = 0;
   const dice = expressions.map((expression) => {
@@ -672,6 +688,7 @@ export function resolveImpact(
       ? shieldCheck.grade
       : impact.grade,
     state,
+    impact.thrown === true,
   );
   state = roll.rng;
   const reduction = armorProfile(paid).reduction;

@@ -138,6 +138,7 @@ export function TacticalBoard({
   targets = [],
   selectedTarget,
   onTarget,
+  onPickup,
 }: {
   state: TacticalState;
   name: Name;
@@ -147,6 +148,7 @@ export function TacticalBoard({
   targets?: string[];
   selectedTarget?: string | null;
   onTarget?: (id: string) => void;
+  onPickup?: (actor: string, slot: "weapon" | "reserve") => void;
 }) {
   const coordinates = state.setup.zones.map((cell) => ({
     ...cell,
@@ -263,6 +265,23 @@ export function TacticalBoard({
                     </span>
                   </span>
                 </button>
+                {state.actors.flatMap(({ fighter }) =>
+                  (fighter.groundWeapons ?? [])
+                    .filter((entry) => entry.zone === cell.id)
+                    .map((entry) => (
+                      <button
+                        type="button"
+                        className="ground-weapon"
+                        key={fighter.id + entry.slot}
+                        onClick={() => onPickup?.(fighter.id, entry.slot)}
+                        title="Recoger arma (Acción Menor)"
+                      >
+                        {entry.slot === "weapon"
+                          ? fighter.weapon.model.label
+                          : reserveWeapon(fighter)?.model.label}
+                      </button>
+                    )),
+                )}
                 {occupants.some(({ fighter }) =>
                   targets.includes(fighter.id),
                 ) && (
@@ -445,6 +464,7 @@ const commands = [
   { id: "weaponControl", label: "Ajustar arma" },
   { id: "flee", label: "Escapar" },
   { id: "sneak", label: "Escabullirse" },
+  { id: "throwWeapon", label: "Arrojar arma" },
   { id: "sweep", label: "Barrido" },
   { id: "kick", label: "Patear" },
   { id: "stabilize", label: "Estabilizar" },
@@ -466,6 +486,7 @@ const commandAction: Partial<Record<Command, "major" | "minor">> = {
   flee: "major",
   sneak: "major",
   sweep: "major",
+  throwWeapon: "major",
   kick: "minor",
   stabilize: "major",
 };
@@ -533,7 +554,7 @@ export function CommandMenu({
         { label: "Movimiento", ids: ["move", "run", "flee"] },
         {
           label: "Habilidades y maniobras",
-          ids: ["sneak", "kick", "sweep", "stabilize"],
+          ids: ["sneak", "kick", "sweep", "throwWeapon", "stabilize"],
         },
         { label: "Objetos", ids: [] },
         { label: "Preparar acción", ids: ["prepareReactive"] },
@@ -564,6 +585,8 @@ export function CommandMenu({
       current?.prepared
     )
       return "Ya hay una acción preparada";
+    if (id === "throwWeapon")
+      return "Requiere Arrojadiza, habilidad y Resistencia configuradas, Vigor y un blanco Cerca o Lejos";
     if (id === "sweep")
       return "Requiere un arma a dos manos, Vigor y un enemigo en la zona";
     if (id === "stabilize")
@@ -615,6 +638,39 @@ export function CommandMenu({
                         const matching = legal.filter(
                           (action) => action.kind === item.id,
                         );
+                        if (item.id === "throwWeapon" && current) {
+                          const slots = ["weapon", "reserve"] as const;
+                          return slots.map((slot) => {
+                            const weapon =
+                              slot === "weapon"
+                                ? current.fighter.weapon
+                                : reserveWeapon(current.fighter);
+                            if (!weapon?.model.throwable) return null;
+                            const enabled = matching.some(
+                              (action) =>
+                                action.kind === "throwWeapon" &&
+                                action.slot === slot,
+                            );
+                            return (
+                              <button
+                                type="button"
+                                key={item.id + slot}
+                                disabled={!enabled}
+                                title={
+                                  !enabled ? unavailable(item.id) : undefined
+                                }
+                                onClick={() => onCategory("throwWeapon", slot)}
+                              >
+                                <ActionIcon cost="major" />
+                                Arrojar {weapon.model.label}
+                                <small>
+                                  {attackCost[weapon.model.category]} Vigor ·{" "}
+                                  {weapon.model.damage.toUpperCase()} + 1D6
+                                </small>
+                              </button>
+                            );
+                          });
+                        }
                         if (item.id === "attack" && current) {
                           const { fighter } = current;
                           const weapons = equippedAttacks(fighter).map(
@@ -887,7 +943,8 @@ export function CommandMenu({
                     Cancelar
                   </button>
                 </fieldset>
-              ) : activeCategory === "attack" ? (
+              ) : activeCategory === "attack" ||
+                activeCategory === "throwWeapon" ? (
                 <p>Seleccioná un enemigo en el mapa o en el panel lateral.</p>
               ) : activeCategory ? (
                 <>

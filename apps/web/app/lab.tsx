@@ -97,6 +97,13 @@ const actionName = (action: Action, name = label) => {
       return defenseNames[action.defense];
     case "opportunity":
       return action.accept ? "Atacar de oportunidad" : "Dejar pasar";
+    case "throwWeapon":
+      return "Arrojar arma a " + name(action.target);
+    case "pickUpWeapon":
+      return action.destination === "stowed"
+        ? "Recoger y guardar"
+        : "Recoger en mano " +
+            (action.destination === "right" ? "derecha" : "izquierda");
     case "equipHands":
       return "Equipar manos";
     case "swapWeapon":
@@ -193,6 +200,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   );
   const [selection, setSelection] = useState("vigia");
   const [attackWeaponId, setAttackWeaponId] = useState<string | undefined>();
+  const [pickupSlot, setPickupSlot] = useState<"weapon" | "reserve" | null>(
+    null,
+  );
   const [command, setCommand] = useState<Command | null>(null);
   const [autoContinue, setAutoContinue] = useState(false);
   const [playbackPaused, setPlaybackPaused] = useState(false);
@@ -492,6 +502,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       };
     });
     setCommand(null);
+    setPickupSlot(null);
     setAttackWeaponId(undefined);
   }
   function save() {
@@ -772,7 +783,8 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       ? getLegalActions(displayed, active).filter(
           (action) =>
             action.kind === command &&
-            (action.kind !== "attack" || action.weaponId === attackWeaponId),
+            (action.kind !== "attack" || action.weaponId === attackWeaponId) &&
+            (action.kind !== "throwWeapon" || action.slot === attackWeaponId),
         )
       : [];
   const destinations = choices.flatMap((action) =>
@@ -781,12 +793,19 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       : [],
   );
   const targets = choices.flatMap((action) =>
-    action.kind === "attack" || action.kind === "kick" ? [action.target] : [],
+    action.kind === "attack" ||
+    action.kind === "kick" ||
+    action.kind === "throwWeapon"
+      ? [action.target]
+      : [],
   );
   function attackTarget(id: string) {
     const action = choices.find(
       (item) =>
-        (item.kind === "attack" || item.kind === "kick") && item.target === id,
+        (item.kind === "attack" ||
+          item.kind === "kick" ||
+          item.kind === "throwWeapon") &&
+        item.target === id,
     );
     if (action) take(action);
   }
@@ -1310,6 +1329,15 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                 targets={targets}
                 selectedTarget={null}
                 onTarget={attackTarget}
+                onPickup={(owner, slot) => {
+                  if (owner !== active || !manualBoard) return;
+                  const actions = getLegalActions(displayed, active).filter(
+                    (action) =>
+                      action.kind === "pickUpWeapon" && action.slot === slot,
+                  );
+                  if (actions.length === 1) take(actions[0]!);
+                  else if (actions.length) setPickupSlot(slot);
+                }}
               />
               <LatestResolution
                 events={session.events}
@@ -1476,6 +1504,28 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                 });
               }}
             />
+          )}
+          {pickupSlot && (
+            <CombatDialog
+              title="Recoger arma"
+              onClose={() => setPickupSlot(null)}
+            >
+              {getLegalActions(displayed, active)
+                .filter(
+                  (action) =>
+                    action.kind === "pickUpWeapon" &&
+                    action.slot === pickupSlot,
+                )
+                .map((action) => (
+                  <button
+                    type="button"
+                    key={JSON.stringify(action)}
+                    onClick={() => take(action)}
+                  >
+                    {actionName(action, name)}
+                  </button>
+                ))}
+            </CombatDialog>
           )}
           {sheet && (
             <CombatDialog

@@ -1114,3 +1114,107 @@ test("Un arma de dos manos requiere ambos slots y excluye al escudo", () => {
     ),
   );
 });
+test("Arrojar deja el arma en destino, añade 1d6 y permite recogerla sin regenerarla", () => {
+  const participants = [
+    {
+      fighter: {
+        ...player,
+        weapon: { ...player.weapon, model: { ...model, throwable: true } },
+        throwing: { attribute: 30, mastery: 20 },
+      },
+      zone: "a",
+    },
+    {
+      fighter: { ...fighter("opponent"), health: 100, healthMax: 100 },
+      zone: "b",
+    },
+  ];
+  const config = {
+    version: "resistance-experiment-v1",
+    associatedAttribute: 30,
+    mastery: 20,
+    naturalResistance: 0,
+    armorBonus: 0,
+    shieldBonus: 0,
+    naturalOne: "alwaysCritical",
+    gradeBasis: "modifiedRoll",
+  };
+  let state = startTacticalEncounter({
+    ...setup,
+    participants,
+    rules: {
+      ...setup.rules,
+      equipmentWear: false,
+      resistance: { player: config, opponent: config },
+    },
+  }).state;
+  const initial = state;
+  const thrown = resolveAction(state, {
+    kind: "throwWeapon",
+    actor: "player",
+    target: "opponent",
+    slot: "weapon",
+  });
+  state = thrown.state;
+  const attacker = state.actors.find(({ fighter }) => fighter.id === "player")!;
+  assert.deepEqual(attacker.fighter.groundWeapons, [
+    { slot: "weapon", zone: "b" },
+  ]);
+  assert.deepEqual(attacker.fighter.hands, { right: null, left: null });
+  assert.equal(
+    getLegalActions(state, "player").some(
+      (action) => action.kind === "throwWeapon",
+    ),
+    false,
+  );
+  assert.deepEqual(replayTacticalEvent(initial, thrown.event), state);
+  if (state.pending) {
+    const defended = resolveAction(state, {
+      kind: "defend",
+      actor: "opponent",
+      defense: "none",
+    });
+    const damage = defended.event.details.find(
+      (detail) => detail.kind === "DEFENSE",
+    )?.damage as { dice: { expression: string }[] };
+    assert.ok(damage.dice.some((die) => die.expression === "1d6"));
+    assert.deepEqual(
+      replayTacticalEvent(state, defended.event),
+      defended.state,
+    );
+    state = defended.state;
+  }
+  const moved = resolveAction(state, {
+    kind: "move",
+    actor: "player",
+    zone: "b",
+  });
+  state = moved.state;
+  // Complete the round to restore the minor action used to reach the weapon.
+  for (
+    let i = 0;
+    i < 10 &&
+    !getLegalActions(state, "player").some(
+      (action) => action.kind === "pickUpWeapon",
+    );
+    i++
+  ) {
+    const action = state.actors
+      .flatMap(({ fighter }) => getLegalActions(state, fighter.id))
+      .find((action) => action.kind === "end");
+    assert.ok(action);
+    state = resolveAction(state, action).state;
+  }
+  const pickup = getLegalActions(state, "player").find(
+    (action) =>
+      action.kind === "pickUpWeapon" && action.destination === "right",
+  );
+  assert.ok(pickup);
+  const result = resolveAction(state, pickup);
+  assert.deepEqual(replayTacticalEvent(state, result.event), result.state);
+  assert.deepEqual(
+    result.state.actors.find(({ fighter }) => fighter.id === "player")!.fighter
+      .groundWeapons,
+    [],
+  );
+});
