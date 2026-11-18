@@ -181,6 +181,7 @@ function nextAuto(session: Session, profile: TacticalProfile) {
 
 export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   const [seed, setSeed] = useState("vigilia-01");
+  const [fixedSeed, setFixedSeed] = useState(false);
   const [map, setMap] = useState<string>(maps[0].id);
   const [mode, setMode] = useState<Mode>("auto");
   const [session, setSession] = useState(() =>
@@ -394,6 +395,8 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   }, [shared]);
 
   function reset() {
+    const encounterSeed = fixedSeed ? seed : crypto.randomUUID();
+    setSeed(encounterSeed);
     setPlaybackPaused(false);
     setCommand(null);
     setInitiativeOpen(true);
@@ -403,7 +406,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     setSelection("vigia");
     if (scenario) {
       const { state } = startTacticalEncounter(
-        materializeScenario(scenario, seed),
+        materializeScenario(scenario, encounterSeed),
       );
       setSession({
         initial: state,
@@ -419,7 +422,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               ),
       });
     } else {
-      const next = newSession(seed, map, general?.roundLimit);
+      const next = newSession(encounterSeed, map, general?.roundLimit);
       const source: ConfigurationSource = generalSource
         ? {
             ...generalSource,
@@ -430,7 +433,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       setSession({
         ...next,
         source:
-          seed === "vigilia-01"
+          encounterSeed === "vigilia-01"
             ? source
             : withFieldSources(source, ["/seed"], { kind: "encounter" }),
       });
@@ -880,7 +883,10 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
             Semilla{" "}
             <input
               value={seed}
-              onChange={(event) => setSeed(event.target.value)}
+              onChange={(event) => {
+                setSeed(event.target.value);
+                if (mode !== "batch") setFixedSeed(true);
+              }}
               maxLength={120}
             />
           </label>
@@ -905,6 +911,14 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
           </label>
           {mode !== "batch" && (
             <>
+              <label className="animation-control">
+                <input
+                  type="checkbox"
+                  checked={fixedSeed}
+                  onChange={(event) => setFixedSeed(event.target.checked)}
+                />
+                Reutilizar semilla
+              </label>
               <button className="accent" onClick={reset}>
                 Nuevo encuentro
               </button>
