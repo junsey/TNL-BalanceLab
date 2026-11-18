@@ -107,6 +107,8 @@ const actionName = (action: Action, name = label) => {
           ? "Respirar ante el ataque de "
           : "Respirar ante la salida de ") + name(action.target)
       );
+    case "inject":
+      return name(action.target);
     case "prepareReactive":
       return {
         incomingAttack: "Cuando un enemigo me ataca",
@@ -138,6 +140,17 @@ function newSession(seed: string, map: string, roundLimit?: number): Session {
   const setup = tacticalDemo(seed, map);
   const { state } = startTacticalEncounter({
     ...setup,
+    participants: setup.participants.map((entry) =>
+      entry.fighter.id === setup.player
+        ? {
+            ...entry,
+            fighter: {
+              ...entry.fighter,
+              injections: { stamina: 2, medical: 2 },
+            },
+          }
+        : entry,
+    ),
     roundLimit: roundLimit ?? setup.roundLimit,
   });
   return {

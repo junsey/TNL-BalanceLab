@@ -73,6 +73,7 @@ export const fighterState = z
     alert: percent,
     firstAid: percent.optional(),
     endurance: percent,
+    injections: z.strictObject({ stamina: count, medical: count }).optional(),
     recovery: z.enum(["none", "resting", "interrupted"]),
     weapon: equippedWeapon,
     energy: energy.optional(),

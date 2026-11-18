@@ -200,6 +200,20 @@ export function Detail({
         </p>
       );
     }
+    case "INJECTION":
+      return (
+        <p>
+          {name(print(detail.actor))} usó una inyección de{" "}
+          {detail.item === "medical" ? "Salud" : "Vigor"} en{" "}
+          {name(print(detail.target))}. {print(detail.before)} {"→"}{" "}
+          {print(detail.after)}.
+          {Array.isArray(detail.faces) &&
+            detail.faces.length > 0 &&
+            " Dados: " + detail.faces.join(" + ") + " + 4."}
+          {" Quedan "}
+          {print(detail.remaining)}.
+        </p>
+      );
     case "MOVE":
       return (
         <p>

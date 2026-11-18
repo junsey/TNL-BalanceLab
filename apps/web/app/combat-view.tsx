@@ -478,6 +478,12 @@ export function CommandMenu({
     : reaction
       ? "opportunity"
       : category;
+  const [injection, setInjection] = useState<"stamina" | "medical" | null>(
+    null,
+  );
+  const injectionOptions = legal.filter(
+    (action) => action.kind === "inject" && action.item === injection,
+  );
   const options = legal.filter((action) => action.kind === activeCategory);
   const groups: { label: string; ids: Command[] }[] = reaction
     ? [{ label: "Reacción", ids: [state.pending ? "defend" : "opportunity"] }]
@@ -631,7 +637,58 @@ export function CommandMenu({
               ))}
             </nav>
             {!reaction && groupIndex === 3 && (
-              <p>No hay objetos utilizables.</p>
+              <div className="command-options">
+                {(["stamina", "medical"] as const).map((item) => {
+                  const stock = current?.fighter.injections?.[item] ?? 0;
+                  const choices = legal.filter(
+                    (action) =>
+                      action.kind === "inject" && action.item === item,
+                  );
+                  return (
+                    <button
+                      key={item}
+                      type="button"
+                      disabled={!choices.length}
+                      title={
+                        !stock
+                          ? "Sin unidades"
+                          : !current?.minor
+                            ? "Acción Menor usada"
+                            : undefined
+                      }
+                      onClick={() => {
+                        if (choices.length === 1) onAction(choices[0]!);
+                        else setInjection(item);
+                      }}
+                    >
+                      {"◇ "}
+                      {item === "stamina"
+                        ? "Inyección de estamina"
+                        : "Inyección médica"}{" "}
+                      {"×"}
+                      {stock}
+                      <small>
+                        {item === "stamina"
+                          ? "Recupera todo el Vigor"
+                          : "Recupera 2d6 + 4 Salud"}
+                      </small>
+                    </button>
+                  );
+                })}
+                {injectionOptions.length > 1 &&
+                  injectionOptions.map((action) => (
+                    <button
+                      type="button"
+                      key={JSON.stringify(action)}
+                      onClick={() => {
+                        setInjection(null);
+                        onAction(action);
+                      }}
+                    >
+                      {actionName(action)}
+                    </button>
+                  ))}
+              </div>
             )}
             {!reaction && (
               <div className="command-shortcuts">

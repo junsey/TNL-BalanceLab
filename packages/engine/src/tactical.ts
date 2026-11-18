@@ -469,6 +469,27 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     if (cost && (cost.action === "none" || actor[cost.action]))
       actions.push({ kind: "weaponControl", actor: id, operation });
   }
+  if (actor.minor && fighter.injections) {
+    for (const item of ["stamina", "medical"] as const) {
+      if (!fighter.injections[item]) continue;
+      for (const ally of state.actors) {
+        if (
+          ally.zone !== actor.zone ||
+          dead(ally.fighter) ||
+          (ally.fighter.id === state.setup.player) !==
+            (id === state.setup.player)
+        )
+          continue;
+        if (item === "stamina" && !alive(ally.fighter)) continue;
+        actions.push({
+          kind: "inject",
+          actor: id,
+          target: ally.fighter.id,
+          item,
+        });
+      }
+    }
+  }
   const nearby = zonesWithin(state.setup.zones, actor.zone, 2);
   if (actor.minor && !state.setup.disabled.preparedActions && !actor.prepared) {
     for (const other of state.actors) {
@@ -1086,6 +1107,47 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         actionCost: cost.action,
         vigorCost: cost.vigor,
         energyCost: cost.energy,
+      });
+      break;
+    }
+    case "inject": {
+      const recipient = state.actors.find(
+        (entry) => entry.fighter.id === decision.target,
+      )!;
+      const resource = decision.item === "medical" ? "health" : "vigor";
+      const before = recipient.fighter[resource];
+      const faces: number[] = [];
+      if (decision.item === "medical") {
+        for (let index = 0; index < 2; index++) {
+          const [face, rng] = rollDie(state.rng, 6);
+          state.rng = rng;
+          faces.push(face);
+        }
+        recipient.fighter.health = Math.min(
+          recipient.fighter.healthMax,
+          before + faces[0]! + faces[1]! + 4,
+        );
+        if (before <= 0 && alive(recipient.fighter))
+          recipient.stabilized = false;
+      } else {
+        recipient.fighter.vigor = recipient.fighter.vigorMax;
+      }
+      actor.minor = false;
+      const inventory = actor.fighter.injections!;
+      actor.fighter.injections = {
+        ...inventory,
+        [decision.item]: inventory[decision.item] - 1,
+      };
+      details.push({
+        kind: "INJECTION",
+        actor: decision.actor,
+        target: decision.target,
+        item: decision.item,
+        resource,
+        before,
+        after: recipient.fighter[resource],
+        faces,
+        remaining: actor.fighter.injections[decision.item],
       });
       break;
     }

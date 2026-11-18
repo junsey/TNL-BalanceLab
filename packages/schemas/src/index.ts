@@ -116,6 +116,12 @@ export const scenario = z.strictObject({
 });
 export const action = z.discriminatedUnion("kind", [
   z.strictObject({
+    kind: z.literal("inject"),
+    actor: id,
+    target: id,
+    item: z.enum(["stamina", "medical"]),
+  }),
+  z.strictObject({
     kind: z.literal("prepareBreathe"),
     actor: id,
     target: id,
