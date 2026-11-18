@@ -45,6 +45,7 @@ export function EncounterWindow({
   before,
   name,
   ready,
+  canContinue,
   manual,
   waiting,
   onAction,
@@ -68,6 +69,7 @@ export function EncounterWindow({
   before: readonly TacticalState["actors"][number][];
   name: (id: string) => string;
   ready: boolean;
+  canContinue: boolean;
   manual: boolean;
   waiting: boolean;
   onAction: (action: CombatAction) => void;
@@ -112,11 +114,29 @@ export function EncounterWindow({
   const attackFrom = playerOnLeft ? "right" : "left";
   const defenseFrom = playerOnLeft ? "left" : "right";
   const response = defending && defense !== "none";
-  const damage = detail.damage;
-  const effective =
-    damage && typeof damage === "object" && !Array.isArray(damage)
-      ? damage.effective
-      : undefined;
+  const damage =
+    detail.damage &&
+    typeof detail.damage === "object" &&
+    !Array.isArray(detail.damage)
+      ? detail.damage
+      : null;
+  const effective = damage?.effective;
+  const dice = Array.isArray(damage?.dice)
+    ? damage.dice.flatMap((die) =>
+        die &&
+        typeof die === "object" &&
+        !Array.isArray(die) &&
+        typeof die.expression === "string"
+          ? [
+              {
+                expression: die.expression,
+                faces: Array.isArray(die.faces) ? die.faces.join(", ") : "",
+                total: die.total,
+              },
+            ]
+          : [],
+      )
+    : [];
   const injuries = Array.isArray(detail.consequences)
     ? detail.consequences.filter(
         (item) =>
@@ -172,7 +192,7 @@ export function EncounterWindow({
       aria-label="Resolución del enfrentamiento"
       onCancel={(event) => {
         event.preventDefault();
-        onSkip();
+        if (canContinue) onSkip();
       }}
       style={{ "--duel-duration": delay + "ms" } as React.CSSProperties}
     >
@@ -222,8 +242,22 @@ export function EncounterWindow({
             </h3>
             <p>
               {String(offense.weapon ?? "Ataque")}
-              {typeof offense.resistance === "number" &&
-                " (" + String(offense.target) + ")"}
+              {typeof offense.mastery === "number" && (
+                <span>
+                  {" "}
+                  · Habilidad{" "}
+                  {typeof offense.associatedAttribute === "number"
+                    ? Math.min(
+                        100,
+                        offense.associatedAttribute + offense.mastery,
+                      )
+                    : offense.mastery}
+                  %
+                </span>
+              )}
+              {typeof offense.cost === "number" && (
+                <span> · {offense.cost} Vigor</span>
+              )}
               <ExchangeRoll detail={offense} />
               {typeof offense.modifiedRoll === "number" && (
                 <span>{offense.modifiedRoll} con Resistencia</span>
@@ -238,17 +272,34 @@ export function EncounterWindow({
             </h3>
             <p>
               {labels[defense as keyof typeof labels] ?? defense}
-              {typeof detail.target === "number" && " (" + detail.target + ")"}
-              <ExchangeRoll detail={detail} />
+              {typeof detail.target === "number" &&
+                " · Habilidad " + detail.target + "%"}
               {typeof detail.cost === "number" && (
-                <span>{detail.cost} Vigor</span>
+                <span> · {detail.cost} Vigor</span>
               )}
+              <ExchangeRoll detail={detail} />
             </p>
           </section>
         )}
         {ready && !waitingDefense && (
           <section className="exchange-result">
             <h3>{result}</h3>
+            {dice.length > 0 && (
+              <ul className="exchange-damage-dice" aria-label="Dados de daño">
+                {dice.map((die, index) => (
+                  <li key={index}>
+                    <strong>{die.expression.toUpperCase()}</strong> · Dados{" "}
+                    {die.faces} · Total {String(die.total)}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {damage && (
+              <small>
+                Intercepción {String(damage.intercepted ?? 0)} · Reducción{" "}
+                {String(damage.reduction ?? 0)}
+              </small>
+            )}
             {injuries.length > 0 && (
               <strong className="exchange-injury">Lesión crítica</strong>
             )}
@@ -283,7 +334,7 @@ export function EncounterWindow({
               <Detail key={index} detail={effect} name={name} />
             ))}
         </details>
-        {(!ready || !waitingDefense) && (
+        {canContinue && (
           <button
             className="accent exchange-continue"
             type="button"

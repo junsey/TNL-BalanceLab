@@ -252,6 +252,11 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     },
   );
   const ready = !animations || speed === 0 || playback?.ready === true;
+  const hasNextFrame = !!selectEncounterFrame(
+    latestEvent?.details ?? [],
+    frameIndex + 1,
+    { instant: false, pending: false, manual: false },
+  ).frame;
   const visibleEvents = replay === null ? session.events.length : replay;
   const hold = !!frame && (!waiting || !ready);
   const delay = animations && speed ? 420 / speed : 0;
@@ -274,8 +279,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       !frame ||
       !latestEvent ||
       playbackPaused ||
-      (!waiting && !autoContinue) ||
-      (ready && waiting)
+      (ready && (waiting || (!hasNextFrame && !autoContinue)))
     )
       return;
     const timer = window.setTimeout(
@@ -297,6 +301,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     frameIndex,
     delay,
     autoContinue,
+    hasNextFrame,
     playbackPaused,
     initiativeOpen,
     replay,
@@ -1412,6 +1417,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               before={beforeFrame}
               name={name}
               ready={ready}
+              canContinue={ready && !waiting && !hasNextFrame}
               waiting={waiting}
               manual={pendingManual}
               onAction={take}
