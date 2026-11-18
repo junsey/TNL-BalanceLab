@@ -7,7 +7,7 @@ import {
   attackCost,
   attackWeapon,
   getLegalActions,
-  previewAttack,
+  availableDagger,
   weaponControlCost,
   type Fighter,
   type TacticalState,
@@ -460,6 +460,7 @@ export function CommandMenu({
   heading,
   category,
   onCategory,
+  attackWeaponId,
 }: {
   state: TacticalState;
   active: string;
@@ -468,7 +469,8 @@ export function CommandMenu({
   onAction: (action: CombatAction) => void;
   heading: string;
   category: Command | null;
-  onCategory: (command: Command | null) => void;
+  onCategory: (command: Command | null, weaponId?: string) => void;
+  attackWeaponId?: string;
 }) {
   const [groupIndex, setGroupIndex] = useState<number | null>(null);
   const legal = getLegalActions(state, active);
@@ -578,6 +580,47 @@ export function CommandMenu({
                         const matching = legal.filter(
                           (action) => action.kind === item.id,
                         );
+                        if (item.id === "attack" && current) {
+                          const { fighter } = current;
+                          const primary =
+                            attackWeapon(fighter) ?? fighter.weapon.model;
+                          const dagger = availableDagger(fighter);
+                          const weapons = [
+                            { model: primary, id: undefined },
+                            ...(dagger
+                              ? [{ model: dagger.model, id: dagger.model.id }]
+                              : []),
+                          ];
+                          return weapons.map(({ model, id }) => {
+                            const enabled = matching.some(
+                              (action) =>
+                                action.kind === "attack" &&
+                                action.weaponId === id,
+                            );
+                            return (
+                              <button
+                                type="button"
+                                key={model.id}
+                                aria-pressed={
+                                  activeCategory === "attack" &&
+                                  attackWeaponId === id
+                                }
+                                disabled={!enabled}
+                                title={
+                                  !enabled ? unavailable("attack") : undefined
+                                }
+                                onClick={() => onCategory("attack", id)}
+                              >
+                                <span>
+                                  Atacar con {model.label}
+                                  <small>
+                                    {attackCost[model.category]} Vigor
+                                  </small>
+                                </span>
+                              </button>
+                            );
+                          });
+                        }
                         if (
                           item.id === "weaponControl" &&
                           !current?.fighter.energy?.controls
@@ -702,7 +745,9 @@ export function CommandMenu({
               {state.pending && (
                 <p>Impacto confirmado. El daño se tira después de decidir.</p>
               )}
-              {activeCategory ? (
+              {activeCategory === "attack" ? (
+                <p>Seleccioná un enemigo en el mapa o en el panel lateral.</p>
+              ) : activeCategory ? (
                 <>
                   <h3>
                     {commands.find((item) => item.id === activeCategory)?.label}
@@ -768,19 +813,6 @@ export function CommandMenu({
                                 action.operation,
                               )
                             : null;
-                        const defender =
-                          action.kind === "attack" &&
-                          state.actors.find(
-                            ({ fighter }) => fighter.id === action.target,
-                          );
-                        const quote =
-                          current &&
-                          defender &&
-                          previewAttack(
-                            current.fighter,
-                            defender.fighter,
-                            state.setup.rules,
-                          );
                         return (
                           <button
                             type="button"
@@ -788,22 +820,6 @@ export function CommandMenu({
                             onClick={() => onAction(action)}
                           >
                             {actionName(action)}
-                            {quote && (
-                              <small>
-                                {quote.model.label} · {quote.cost} Vigor ·{" "}
-                                {quote.model.damage}
-                                {quote.resistance && (
-                                  <>
-                                    {" · Capacidad "}
-                                    {quote.resistance.associatedAttribute +
-                                      quote.resistance.mastery}
-                                    {" · Resistencia "}
-                                    {quote.resistance.naturalResistance +
-                                      quote.resistance.armorBonus}
-                                  </>
-                                )}
-                              </small>
-                            )}
                             {cost && (
                               <small>
                                 {actionCostLabels[cost.action]} · {cost.vigor}{" "}

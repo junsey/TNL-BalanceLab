@@ -153,7 +153,12 @@ export const action = z.discriminatedUnion("kind", [
     actor: id,
     accept: z.boolean(),
   }),
-  z.strictObject({ kind: z.literal("attack"), actor: id, target: id }),
+  z.strictObject({
+    kind: z.literal("attack"),
+    actor: id,
+    target: id,
+    weaponId: id.optional(),
+  }),
   z.strictObject({ kind: z.enum(["move", "run"]), actor: id, zone: id }),
   z.strictObject({
     kind: z.enum(["breathe", "recover", "flee", "end"]),

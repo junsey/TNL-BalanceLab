@@ -992,3 +992,29 @@ test("Barrido conserva un d100 para dos defensas y cobra Vigor una sola vez", ()
     Math.floor(damage.dice.reduce((total, die) => total + die.total, 0) / 2),
   );
 });
+test("La daga guardada ataca con una mano libre y la espada sigue equipada", () => {
+  const armed = {
+    ...player,
+    stowedDagger: { model: weapons[0]!, remaining: null },
+  };
+  const state = startTacticalEncounter({
+    ...setup,
+    participants: [{ fighter: armed, zone: "a" }, setup.participants[1]],
+  }).state;
+  const dagger = getLegalActions(state, "player").find(
+    (action) => action.kind === "attack" && action.weaponId === "daga",
+  );
+  assert.ok(dagger);
+  const result = resolveAction(state, dagger);
+  const attacker = result.state.actors.find(
+    ({ fighter }) => fighter.id === "player",
+  )!.fighter;
+  assert.equal(attacker.weapon.model.id, armed.weapon.model.id);
+  assert.equal(attacker.stowedDagger?.model.id, "daga");
+  assert.equal(
+    result.event.details.find((detail) => detail.kind === "IMPACT")?.weapon,
+    "Daga",
+  );
+  assert.equal(result.state.pending?.alternateWeapon?.id, "daga");
+  assert.deepEqual(replayTacticalEvent(state, result.event), result.state);
+});

@@ -187,6 +187,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     newSession("vigilia-01", maps[0].id),
   );
   const [selection, setSelection] = useState("vigia");
+  const [attackWeaponId, setAttackWeaponId] = useState<string | undefined>();
   const [command, setCommand] = useState<Command | null>(null);
   const [autoContinue, setAutoContinue] = useState(false);
   const [playbackPaused, setPlaybackPaused] = useState(false);
@@ -479,6 +480,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       };
     });
     setCommand(null);
+    setAttackWeaponId(undefined);
   }
   function save() {
     try {
@@ -756,7 +758,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   const choices =
     manualBoard && command
       ? getLegalActions(displayed, active).filter(
-          (action) => action.kind === command,
+          (action) =>
+            action.kind === command &&
+            (action.kind !== "attack" || action.weaponId === attackWeaponId),
         )
       : [];
   const destinations = choices.flatMap((action) =>
@@ -1224,7 +1228,12 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               paused={replay !== null || !!displayed.outcome}
             >
               <CommandMenu
-                key={mode}
+                key={
+                  mode +
+                  ":" +
+                  (session.events.findLast((event) => event.reason === "manual")
+                    ?.sequence ?? 0)
+                }
                 state={displayed}
                 active={active}
                 manual={
@@ -1232,8 +1241,10 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                   (mode === "manual" || active === displayed.setup.player)
                 }
                 category={command}
-                onCategory={(value) => {
+                attackWeaponId={attackWeaponId}
+                onCategory={(value, weaponId) => {
                   setCommand(value);
+                  setAttackWeaponId(weaponId);
                 }}
                 actionName={(action) => actionName(action, name)}
                 onAction={take}

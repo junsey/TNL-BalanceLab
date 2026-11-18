@@ -123,6 +123,7 @@ export function tacticalDemo(
     endurance: 50,
     recovery: "none",
     weapon: { model: weapons[1]!, remaining: null },
+    stowedDagger: { model: weapons[0]!, remaining: null },
     armor: { model: armors[1]!, remaining: 12 },
     shield: null,
   };

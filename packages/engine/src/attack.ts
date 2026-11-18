@@ -76,6 +76,7 @@ export const fighterState = z
     injections: z.strictObject({ stamina: count, medical: count }).optional(),
     recovery: z.enum(["none", "resting", "interrupted"]),
     weapon: equippedWeapon,
+    stowedDagger: equippedWeapon.optional(),
     energy: energy.optional(),
     conditions: z.array(activeCondition).max(1000).optional(),
     ai: tacticalProfile.optional(),
@@ -111,7 +112,12 @@ export const fighterState = z
     ) {
       ctx.addIssue({ code: "custom", message: "Recursos fuera de rango" });
     }
-    for (const item of [fighter.weapon, fighter.armor, fighter.shield]) {
+    for (const item of [
+      fighter.weapon,
+      fighter.stowedDagger,
+      fighter.armor,
+      fighter.shield,
+    ]) {
       if (!item) continue;
       const { remaining, model } = item;
       if (
@@ -142,6 +148,7 @@ export const pendingImpact = z.strictObject({
   target: percent,
   rng: rngState,
   weaponId: id.optional(),
+  alternateWeapon: weapon.optional(),
   sweep: z
     .strictObject({ model: weapon, remaining: z.array(id).max(64) })
     .optional(),
@@ -223,6 +230,16 @@ export function operateWeapon(fighter: Fighter, operation: WeaponOperation) {
     fighter: { ...fighter, vigor: fighter.vigor - cost.vigor, energy: updated },
     cost,
   };
+}
+
+export function availableDagger(fighter: Fighter) {
+  const dagger = fighter.stowedDagger;
+  return dagger?.model.id === "daga" &&
+    dagger.remaining !== 0 &&
+    !fighter.weapon.model.twoHanded &&
+    (!fighter.shield || fighter.shield.remaining === 0)
+    ? dagger
+    : undefined;
 }
 
 export function canAttack(fighter: Fighter) {
@@ -544,6 +561,7 @@ export function resolveImpact(
       ? (defender.weapon.model.parryCapacity ?? 0)
       : (defender.shield?.model.absorption ?? 0);
   const model =
+    impact.alternateWeapon ??
     impact.sweep?.model ??
     (impact.weaponId === attacker.energy?.fallback?.id &&
     attacker.energy?.fallback

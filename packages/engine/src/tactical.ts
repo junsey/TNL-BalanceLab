@@ -2,6 +2,7 @@ import { z } from "zod";
 import { action } from "../../schemas/src/index.ts";
 import {
   attackCost,
+  availableDagger,
   attackWeapon,
   canAttack,
   rechargeEnergy,
@@ -91,7 +92,12 @@ const outcomes = z.enum([
 ]);
 const continuation = z.strictObject({
   action: z.union([
-    z.strictObject({ kind: z.literal("attack"), actor: id, target: id }),
+    z.strictObject({
+      kind: z.literal("attack"),
+      actor: id,
+      target: id,
+      weaponId: id.optional(),
+    }),
     z.strictObject({
       kind: z.enum(["move", "run", "sneak"]),
       actor: id,
@@ -625,15 +631,23 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     canSee(state, actor.zone, actor.zone)
   )
     actions.push({ kind: "sweep", actor: id });
-  if (canAttack(fighter)) {
-    for (const other of opponents) {
-      if (
-        other.zone === actor.zone &&
-        alive(other.fighter) &&
-        canSee(state, actor.zone, other.zone)
-      )
-        actions.push({ kind: "attack", actor: id, target: other.fighter.id });
-    }
+  const dagger = availableDagger(fighter);
+  for (const other of opponents) {
+    if (
+      other.zone !== actor.zone ||
+      !alive(other.fighter) ||
+      !canSee(state, actor.zone, other.zone)
+    )
+      continue;
+    if (canAttack(fighter))
+      actions.push({ kind: "attack", actor: id, target: other.fighter.id });
+    if (dagger && canAttack({ ...fighter, weapon: dagger, energy: undefined }))
+      actions.push({
+        kind: "attack",
+        actor: id,
+        target: other.fighter.id,
+        weaponId: dagger.model.id,
+      });
   }
   return actions;
 }
@@ -830,7 +844,12 @@ function opportunityCandidates(state: World, trigger: Trigger) {
         (trigger.kind !== "attack" ||
           (trigger.target === fighter.id &&
             reach[attackWeapon(fighter)!.reach] >
-              reach[attackWeapon(provoking.fighter)!.reach])),
+              reach[
+                (trigger.weaponId
+                  ? availableDagger(provoking.fighter)?.model
+                  : attackWeapon(provoking.fighter)
+                )?.reach ?? "short"
+              ])),
     )
     .map((actor) => actor.fighter.id);
 }
@@ -869,7 +888,7 @@ function reportUnresolved(state: World, details: Detail[], rules: string[]) {
 function finishTrigger(
   state: World,
   trigger: Trigger,
-  attack: (attacker: Actor, defender: Actor) => void,
+  attack: (attacker: Actor, defender: Actor, weaponId?: string) => void,
   details: Detail[],
 ) {
   const actor = state.actors.find(
@@ -886,7 +905,17 @@ function finishTrigger(
     return;
   }
   if (trigger.kind === "attack") {
-    if (!canAttack(actor.fighter)) {
+    const dagger = trigger.weaponId
+      ? availableDagger(actor.fighter)
+      : undefined;
+    if (
+      (trigger.weaponId && dagger?.model.id !== trigger.weaponId) ||
+      !canAttack(
+        dagger
+          ? { ...actor.fighter, weapon: dagger, energy: undefined }
+          : actor.fighter,
+      )
+    ) {
       details.push({
         kind: "ACTION_INTERRUPTED",
         actor: trigger.actor,
@@ -905,7 +934,7 @@ function finishTrigger(
       });
       return;
     }
-    attack(actor, defender);
+    attack(actor, defender, trigger.weaponId);
   } else {
     const from = actor.zone;
     const distance = zonesWithin(
@@ -970,16 +999,33 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
     (actor) => actor.fighter.id === decision.actor,
   )!;
   const details: Detail[] = [];
-  const executeAttack = (attacker: typeof actor, defender: typeof actor) => {
+  const executeAttack = (
+    attacker: typeof actor,
+    defender: typeof actor,
+    weaponId?: string,
+  ) => {
+    const original = attacker.fighter;
+    const dagger = weaponId ? availableDagger(original) : undefined;
     const result = declareAttack(
-      attacker.fighter,
+      dagger ? { ...original, weapon: dagger, energy: undefined } : original,
       defender.fighter,
       state.rng,
       state.setup.rules,
     );
-    attacker.fighter = result.attacker;
+    attacker.fighter = dagger
+      ? {
+          ...result.attacker,
+          weapon: original.weapon,
+          stowedDagger: result.attacker.weapon,
+          ...(original.energy ? { energy: original.energy } : {}),
+        }
+      : result.attacker;
+    if (dagger && !original.energy) delete attacker.fighter.energy;
     defender.fighter = result.defender;
-    state.pending = result.impact;
+    state.pending =
+      dagger && result.impact
+        ? { ...result.impact, alternateWeapon: dagger.model }
+        : result.impact;
     state.rng = result.rng;
     details.push({
       ...result.event,
