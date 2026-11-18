@@ -69,6 +69,7 @@ export const setupSchema = z.strictObject({
       version: z.literal(1),
       sneakVigor: count,
       kickVigor: count,
+      sweepSurcharge: count.optional(),
     })
     .optional(),
   disabled: z.strictObject({
@@ -611,6 +612,19 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     )
   )
     actions.push({ kind: "flee", actor: id });
+  const sweepWeapon = attackWeapon(fighter);
+  const surcharge = maneuvers?.sweepSurcharge;
+  if (
+    surcharge !== undefined &&
+    sweepWeapon?.twoHanded &&
+    canAttack(fighter) &&
+    fighter.vigor >= attackCost[sweepWeapon.category] + surcharge &&
+    opponents.some(
+      (other) => other.zone === actor.zone && alive(other.fighter),
+    ) &&
+    canSee(state, actor.zone, actor.zone)
+  )
+    actions.push({ kind: "sweep", actor: id });
   if (canAttack(fighter)) {
     for (const other of opponents) {
       if (
@@ -975,7 +989,67 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
     reportUnresolved(state, details, result.unresolved);
   };
 
+  function sweepTargets(
+    attacker: typeof actor,
+    targetIds: string[],
+    model: NonNullable<ReturnType<typeof attackWeapon>>,
+    roll: number,
+    first: boolean,
+  ) {
+    while (targetIds.length && !state.outcome) {
+      const id = targetIds.shift()!;
+      const defender = state.actors.find((entry) => entry.fighter.id === id)!;
+      if (!alive(defender.fighter)) continue;
+      const result = declareAttack(
+        attacker.fighter,
+        defender.fighter,
+        state.rng,
+        state.setup.rules,
+        {
+          model,
+          roll,
+          first,
+          surcharge: state.setup.maneuvers!.sweepSurcharge!,
+        },
+      );
+      first = false;
+      attacker.fighter = result.attacker;
+      defender.fighter = result.defender;
+      state.rng = result.rng;
+      details.push({
+        ...result.event,
+        actor: attacker.fighter.id,
+        targetActor: id,
+      });
+      reportUnresolved(state, details, result.unresolved);
+      if (result.impact) {
+        state.pending = {
+          ...result.impact,
+          sweep: { model, remaining: targetIds },
+        };
+        return;
+      }
+    }
+  }
+
   switch (decision.kind) {
+    case "sweep": {
+      actor.major = false;
+      const model = attackWeapon(actor.fighter)!;
+      const test = rollPercentile(state.rng);
+      state.rng = test.rng;
+      const ids = state.actors
+        .filter(
+          (other) =>
+            other.zone === actor.zone &&
+            alive(other.fighter) &&
+            (other.fighter.id === state.setup.player) !==
+              (actor.fighter.id === state.setup.player),
+        )
+        .map((other) => other.fighter.id);
+      sweepTargets(actor, ids, model, test.roll, true);
+      break;
+    }
     case "attack":
     case "move":
     case "run":
@@ -1147,6 +1221,14 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         });
       }
       reportUnresolved(state, details, result.unresolved);
+      if (impact.sweep)
+        sweepTargets(
+          attacker,
+          [...impact.sweep.remaining],
+          impact.sweep.model,
+          impact.roll,
+          false,
+        );
       break;
     }
     case "weaponControl": {

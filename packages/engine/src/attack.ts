@@ -142,6 +142,9 @@ export const pendingImpact = z.strictObject({
   target: percent,
   rng: rngState,
   weaponId: id.optional(),
+  sweep: z
+    .strictObject({ model: weapon, remaining: z.array(id).max(64) })
+    .optional(),
   resistance: resistanceExperiment.optional(),
 });
 
@@ -296,8 +299,9 @@ export function previewAttack(
   attacker: Fighter,
   defender: Fighter,
   rules?: AttackRules,
+  chosenWeapon = attackWeapon(attacker),
 ) {
-  const model = attackWeapon(attacker);
+  const model = chosenWeapon;
   if (!model) return null;
   const offense = rules?.resistance?.[attacker.id];
   const protection = rules?.resistance?.[defender.id];
@@ -334,31 +338,49 @@ export function declareAttack(
   defender: Fighter,
   rng: Impact["rng"],
   rules: AttackRules,
+  sweep?: {
+    model: Fighter["weapon"]["model"];
+    roll: number;
+    first: boolean;
+    surcharge: number;
+  },
 ) {
-  const preview = previewAttack(attacker, defender, rules);
+  const preview = previewAttack(attacker, defender, rules, sweep?.model);
   if (
     attacker.id === defender.id ||
     defender.health <= 0 ||
-    !preview ||
-    !canAttack(attacker)
+    (!sweep && (!preview || !canAttack(attacker)))
   )
     throw new RangeError("Ataque ilegal");
-  const { model, cost, target } = preview;
+  const model = sweep?.model ?? preview!.model;
+  const target =
+    preview?.target ??
+    attackTarget(attacker.mastery, armorProfile(defender).final);
+  const cost = sweep
+    ? sweep.first
+      ? attackCost[model.category] + sweep.surcharge
+      : 0
+    : preview!.cost;
   const energy = attacker.energy;
   const updated = { ...attacker, vigor: attacker.vigor - cost };
-  if (energy && energy.remaining !== null && model.energyPerAttack) {
+  if (
+    energy &&
+    energy.remaining !== null &&
+    model.energyPerAttack &&
+    (!sweep || sweep.first)
+  ) {
     updated.energy = {
       ...energy,
       remaining: energy.remaining - model.energyPerAttack,
     };
   }
-  const test = rollPercentile(rng);
-  const resistance = preview.resistance;
+  const test = sweep ? { roll: sweep.roll, rng } : rollPercentile(rng);
+  const resistance = preview?.resistance;
   const check =
     resistance && compareResistanceAttack(resistance, test.roll).initial;
   const grade = check?.grade ?? classify(test.roll, target);
   const consequence =
-    grade === "fumble" && rules.fumbleConsequences
+    grade === "fumble" && rules.fumbleConsequences && (!sweep || sweep.first)
       ? applyConsequence(updated, "fumble-consequences", rules.tables, test.rng)
       : null;
   const impact: Impact | null =
@@ -388,6 +410,7 @@ export function declareAttack(
       target: check?.capacity ?? target,
       grade,
       cost,
+      ...(sweep && { maneuver: "sweep" }),
       weapon: model.label,
       ...(check && resistance
         ? {
@@ -397,10 +420,10 @@ export function declareAttack(
             modifiedRoll: check.modified,
           }
         : {
-            mastery: preview.mastery,
-            vulnerability: preview.armor.final,
-            probability: preview.probability,
-            thresholds: preview.thresholds,
+            mastery: attacker.mastery,
+            vulnerability: armorProfile(defender).final,
+            probability: Math.max(1, Math.min(99, target)),
+            thresholds: thresholds(target),
           }),
       ...(energy && { weaponId: model.id, energyCost: model.energyPerAttack }),
       ...(consequence?.result && { consequence: consequence.result }),
@@ -521,10 +544,11 @@ export function resolveImpact(
       ? (defender.weapon.model.parryCapacity ?? 0)
       : (defender.shield?.model.absorption ?? 0);
   const model =
-    impact.weaponId === attacker.energy?.fallback?.id &&
+    impact.sweep?.model ??
+    (impact.weaponId === attacker.energy?.fallback?.id &&
     attacker.energy?.fallback
       ? attacker.energy.fallback
-      : attacker.weapon.model;
+      : attacker.weapon.model);
   if (impact.weaponId && model.id !== impact.weaponId)
     throw new RangeError("Arma del impacto inválida");
   const roll = rollWeaponDamage(
@@ -538,7 +562,11 @@ export function resolveImpact(
   );
   state = roll.rng;
   const reduction = armorProfile(paid).reduction;
-  const damage = applyDamage(roll.total, capacity, reduction);
+  const damage = applyDamage(
+    impact.sweep ? Math.floor(roll.total / 2) : roll.total,
+    capacity,
+    reduction,
+  );
   let updated = { ...paid, health: paid.health - damage.effective };
   if (rules.equipmentWear) {
     if (success && defense === "parry")
@@ -566,6 +594,7 @@ export function resolveImpact(
   if (success && damage.residual > 0 && rules.defenseOverflow)
     updated = apply(updated, defense + "-overflow");
   if (
+    !impact.sweep &&
     impact.grade === "critical" &&
     damage.residual > 0 &&
     rules.criticalInjuries

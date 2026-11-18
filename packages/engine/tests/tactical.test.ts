@@ -949,3 +949,46 @@ test("Una Esquiva exitosa solo desplaza por una ruta experimental explícita", (
     /zonas del mapa/,
   );
 });
+test("Barrido conserva un d100 para dos defensas y cobra Vigor una sola vez", () => {
+  const initial = startTacticalEncounter({
+    ...setup,
+    maneuvers: { version: 1, sneakVigor: 1, kickVigor: 1, sweepSurcharge: 1 },
+    participants: [
+      {
+        fighter: {
+          ...player,
+          weapon: { ...player.weapon, model: { ...model, twoHanded: true } },
+        },
+        zone: "a",
+      },
+      { fighter: fighter("opponent"), zone: "a" },
+      { fighter: fighter("opponent-2"), zone: "a" },
+    ],
+  }).state;
+  const sweep = resolveAction(initial, { kind: "sweep", actor: "player" });
+  const first = sweep.state.pending!;
+  assert.ok(first);
+  assert.equal(
+    sweep.state.actors.find((actor) => actor.fighter.id === "player")!.fighter
+      .vigor,
+    4,
+  );
+  const response = resolveAction(sweep.state, {
+    kind: "defend",
+    actor: first.defender,
+    defense: "none",
+  });
+  assert.equal(response.state.pending?.roll, first.roll);
+  assert.notEqual(response.state.pending?.defender, first.defender);
+  assert.deepEqual(
+    replayTacticalEvent(sweep.state, response.event),
+    response.state,
+  );
+  const damage = response.event.details.find(
+    (detail) => detail.kind === "DEFENSE",
+  )?.damage as { effective: number; dice: { total: number }[] };
+  assert.equal(
+    damage.effective,
+    Math.floor(damage.dice.reduce((total, die) => total + die.total, 0) / 2),
+  );
+});

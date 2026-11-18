@@ -56,6 +56,7 @@ export const weapon = z.strictObject({
   parryCapacity: count.nullable(),
   energyPerAttack: count,
   perk: id.optional(),
+  twoHanded: z.boolean().optional(),
   status: z.enum(["confirmed", "experimental"]),
 });
 export const armor = z.strictObject({
@@ -115,6 +116,7 @@ export const scenario = z.strictObject({
   stopAtIncapacitation: z.boolean(),
 });
 export const action = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("sweep"), actor: id }),
   z.strictObject({ kind: z.literal("sneak"), actor: id, zone: id }),
   z.strictObject({ kind: z.literal("kick"), actor: id, target: id }),
   z.strictObject({

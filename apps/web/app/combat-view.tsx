@@ -442,6 +442,7 @@ const commands = [
   { id: "weaponControl", label: "Ajustar arma" },
   { id: "flee", label: "Escapar" },
   { id: "sneak", label: "Escabullirse" },
+  { id: "sweep", label: "Barrido" },
   { id: "kick", label: "Patear" },
   { id: "stabilize", label: "Estabilizar" },
   { id: "defend", label: "Defender" },
@@ -495,7 +496,7 @@ export function CommandMenu({
         { label: "Movimiento", ids: ["move", "run", "flee"] },
         {
           label: "Habilidades y maniobras",
-          ids: ["sneak", "kick", "stabilize"],
+          ids: ["sneak", "kick", "sweep", "stabilize"],
         },
         { label: "Objetos", ids: [] },
         { label: "Preparar acción", ids: ["prepareReactive"] },
@@ -526,6 +527,8 @@ export function CommandMenu({
       current?.prepared
     )
       return "Ya hay una acción preparada";
+    if (id === "sweep")
+      return "Requiere un arma a dos manos, Vigor y un enemigo en la zona";
     if (id === "stabilize")
       return "Requiere Primeros Auxilios y un blanco en Agonía";
     const label =

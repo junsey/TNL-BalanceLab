@@ -107,6 +107,8 @@ const actionName = (action: Action, name = label) => {
           ? "Respirar ante el ataque de "
           : "Respirar ante la salida de ") + name(action.target)
       );
+    case "sweep":
+      return "Barrido";
     case "kick":
       return name(action.target);
     case "sneak":
@@ -144,7 +146,7 @@ function newSession(seed: string, map: string, roundLimit?: number): Session {
   const setup = tacticalDemo(seed, map);
   const { state } = startTacticalEncounter({
     ...setup,
-    maneuvers: { version: 1, sneakVigor: 1, kickVigor: 1 },
+    maneuvers: { version: 1, sneakVigor: 1, kickVigor: 1, sweepSurcharge: 1 },
     participants: setup.participants.map((entry) =>
       entry.fighter.id === setup.player
         ? {
@@ -1396,18 +1398,22 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               speed={speed}
               onSpeed={setSpeed}
               declaration={
-                latestEvent.details.some(
-                  (detail) =>
-                    detail.kind === "OPPORTUNITY_DECISION" && detail.accepted,
-                )
-                  ? "Ataque de oportunidad"
+                frame.maneuver === "sweep" ||
+                previousAttack?.maneuver === "sweep"
+                  ? "Barrido"
                   : latestEvent.details.some(
                         (detail) =>
-                          detail.kind === "PREPARATION_TRIGGERED" &&
-                          detail.executed,
+                          detail.kind === "OPPORTUNITY_DECISION" &&
+                          detail.accepted,
                       )
-                    ? "Ataque preparado"
-                    : undefined
+                    ? "Ataque de oportunidad"
+                    : latestEvent.details.some(
+                          (detail) =>
+                            detail.kind === "PREPARATION_TRIGGERED" &&
+                            detail.executed,
+                        )
+                      ? "Ataque preparado"
+                      : undefined
               }
               onResume={() => {
                 setPlaybackPaused(false);

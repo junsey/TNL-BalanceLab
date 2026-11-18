@@ -79,6 +79,7 @@ export const weapons = weaponRows.map(
       ...(id === "espada-corta" && { perk: "Ágil" }),
       ...(id === "hacha" && { perk: "Impacto concentrado" }),
       ...(id === "espadon" && { perk: "Barrido" }),
+      ...(["espadon", "lanza"].includes(id) && { twoHanded: true }),
       status: "experimental",
       durability: null,
       wear: null,
