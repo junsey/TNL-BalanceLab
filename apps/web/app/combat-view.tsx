@@ -783,9 +783,7 @@ export function CommandMenu({
                     </div>
                   )}
                 </>
-              ) : (
-                <p>Elegí un comando para ver sus opciones.</p>
-              )}
+              ) : null}
             </div>
             {!reaction && (
               <div className="command-shortcuts">
