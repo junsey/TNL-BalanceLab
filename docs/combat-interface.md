@@ -21,3 +21,19 @@ Los terrenos y las marcas de zona son información visual de cada escenario. El 
 - `styles.css`: barra fija, variantes para pantallas estrechas y paneles de resultados.
 - Comprobaciones ejecutadas: `npm run typecheck`, `npm run lint` y `npm test` (37 pruebas).
 - Pendiente: comprobación de clics, scroll y paneles desplegados en navegador a distintas resoluciones.
+
+## Lote 01, integración del 18/11/2026
+
+El selector de manos permite una combinación completa con una sola Menor, o cancelar sin coste. Se admite una arma en cada mano, escudo, manos libres y armas a dos manos en ambos slots. La daga guardada solo aparece como ataque con mano libre y no habilita Parar mientras sigue guardada.
+
+Arrojar requiere una propiedad Arrojadiza explícita, Destreza y Dominio de Armas Arrojadizas configurados y el modelo de Resistencia del ensayo. Consume la Mayor y el coste normal de Vigor, añade 1d6 al daño y deja el arma en el hexágono del objetivo. El botón del arma caída ofrece guardar o equipar en una mano libre. Las armas conservan su identidad en el snapshot y el replay.
+
+Los ensayos nuevos solicitan los parámetros de Resistencia y las habilidades de cada arma. Las escalas y políticas de 01/grados son decisiones del diseñador y se guardan en el escenario. La versión se registra como 0.6.0-resistance-experimental. Los historiales anteriores mantienen su versión y se rotulan como históricos. Las nuevas simulaciones desde la interfaz requieren la configuración vigente.
+
+Comprobaciones de esta integración:
+- TypeScript y compilación de producción.
+- 48 pruebas de motor y presentación, incluida la restauración de grados con Resistencia, manos, lanzamiento/recogida y stock de consumibles.
+- Navegador local: configuración explícita de ensayo, equipo de ambas manos, lanzamiento desde mapa, defensa enemiga, oportunidad al retirarse, recogida en la mano izquierda y guardar/cargar.
+- Los valores utilizados durante la prueba visual (Atributo 30, Dominio 20 y Resistencia natural 10, bonificaciones 0) se ingresaron para ese ensayo y no son presets canónicos.
+
+Límites existentes: el selector trabaja con el arma principal, un arma de reserva y el escudo ya presentes en la ficha. El sistema de grupos completos y el catálogo de criaturas pertenecen al modo Coliseo solicitado después de este lote.
