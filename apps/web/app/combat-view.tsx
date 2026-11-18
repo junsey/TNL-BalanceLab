@@ -478,6 +478,8 @@ export function CommandMenu({
     : reaction
       ? "opportunity"
       : category;
+  const [onEntry, setOnEntry] = useState(false);
+  const [onAttack, setOnAttack] = useState(false);
   const [injection, setInjection] = useState<"stamina" | "medical" | null>(
     null,
   );
@@ -739,6 +741,50 @@ export function CommandMenu({
                       Elegí un destino resaltado. Salir del alcance enemigo
                       puede provocar ataques de oportunidad.
                     </p>
+                  ) : activeCategory === "prepareReactive" ? (
+                    <fieldset className="command-options">
+                      <legend>
+                        {current && attackWeapon(current.fighter)?.label}
+                      </legend>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={onEntry}
+                          onChange={(event) => setOnEntry(event.target.checked)}
+                        />{" "}
+                        Cuando un enemigo entra en mi zona
+                      </label>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={onAttack}
+                          onChange={(event) =>
+                            setOnAttack(event.target.checked)
+                          }
+                        />{" "}
+                        Cuando un enemigo me ataca
+                      </label>
+                      <button
+                        type="button"
+                        disabled={!options.length || (!onEntry && !onAttack)}
+                        onClick={() => {
+                          const trigger =
+                            onEntry && onAttack
+                              ? "either"
+                              : onEntry
+                                ? "enemyEnters"
+                                : "incomingAttack";
+                          const action = options.find(
+                            (item) =>
+                              item.kind === "prepareReactive" &&
+                              item.trigger === trigger,
+                          );
+                          if (action) onAction(action);
+                        }}
+                      >
+                        Preparar ataque
+                      </button>
+                    </fieldset>
                   ) : (
                     <div className="command-options">
                       {options.map((action) => {
@@ -994,10 +1040,23 @@ const attributeNames = {
   knowledge: "Conocimiento",
   presence: "Presencia",
 };
-export function CharacterSheet({ actor, name }: { actor: Actor; name: Name }) {
+export function CharacterSheet({
+  actor,
+  name,
+  state,
+}: {
+  actor: Actor;
+  name: Name;
+  state: TacticalState;
+}) {
   const { fighter } = actor;
   const armor = armorProfile(fighter);
   const stats = fighter.sheet;
+  const resistance = state.setup.rules.resistance?.[fighter.id];
+  const armorBonus =
+    fighter.armor && fighter.armor.remaining !== 0
+      ? (resistance?.armorBonus ?? 0)
+      : 0;
   return (
     <div className="sheet-layout">
       <section>
@@ -1073,10 +1132,28 @@ export function CharacterSheet({ actor, name }: { actor: Actor; name: Name }) {
       </section>
       <section>
         <h3>Defensa</h3>
-        <p>
-          Vulnerabilidad {armor.base} − Protección {armor.protection} ={" "}
-          <strong>{armor.final}</strong>
-        </p>
+        {resistance ? (
+          <p>
+            Resistencia natural {resistance.naturalResistance} + armadura{" "}
+            {armorBonus} ={" "}
+            <strong>{resistance.naturalResistance + armorBonus}</strong>
+          </p>
+        ) : (
+          <p>Resistencia sin configurar para este encuentro.</p>
+        )}
+        {resistance && (
+          <p>
+            Atributo {resistance.associatedAttribute} + Dominio{" "}
+            {resistance.mastery} ={" "}
+            <strong>
+              {Math.min(
+                100,
+                resistance.associatedAttribute + resistance.mastery,
+              )}
+            </strong>{" "}
+            de capacidad de ataque
+          </p>
+        )}
         {armor.reduction > 0 && (
           <p>Reducción directa de daño {armor.reduction}</p>
         )}

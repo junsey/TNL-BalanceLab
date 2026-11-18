@@ -1432,7 +1432,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               title="Hoja de personaje"
               onClose={() => setSheetActor(null)}
             >
-              <CharacterSheet actor={sheet} name={name} />
+              <CharacterSheet actor={sheet} name={name} state={displayed} />
             </CombatDialog>
           )}
           <section className="pane combat-log">
