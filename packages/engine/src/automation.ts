@@ -6,6 +6,7 @@ export {
 } from "./profiles.ts";
 import {
   stepTacticalAction,
+  isPlayerTeam,
   canSee,
   getLegalActions,
   resolveAction,
@@ -42,8 +43,8 @@ export function chooseTacticalAction(
   const opponents = state.actors.filter(
     (other) =>
       other.fighter.health > 0 &&
-      (id === state.setup.player) !==
-        (other.fighter.id === state.setup.player) &&
+      isPlayerTeam(state.setup, id) !==
+        isPlayerTeam(state.setup, other.fighter.id) &&
       canSee(state, actor.zone, other.zone),
   );
   const distance = (zone: string, target: string) =>
@@ -104,7 +105,11 @@ export function chooseTacticalAction(
       if (action) return { action, reason: priority };
       continue;
     }
-    const action = actions.find((action) => action.kind === priority);
+    const action = actions.find(
+      (action) =>
+        action.kind === priority ||
+        (priority === "recover" && action.kind === "creatureRecover"),
+    );
     if (action) return { action, reason: priority };
   }
   return null;
@@ -115,7 +120,7 @@ export function chooseEnemyAction(
   profile: TacticalProfile,
 ) {
   for (const { fighter } of state.actors) {
-    if (fighter.id === state.setup.player) continue;
+    if (isPlayerTeam(state.setup, fighter.id)) continue;
     const decision = chooseTacticalAction(
       state,
       fighter.id,

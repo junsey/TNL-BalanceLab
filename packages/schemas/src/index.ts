@@ -55,6 +55,7 @@ export const weapon = z.strictObject({
   extendedReach: z.literal("long").nullable(),
   parryCapacity: count.nullable(),
   energyPerAttack: count,
+  vigorCost: count.optional(),
   perk: id.optional(),
   twoHanded: z.boolean().optional(),
   throwable: z.boolean().optional(),
@@ -117,6 +118,7 @@ export const scenario = z.strictObject({
   stopAtIncapacitation: z.boolean(),
 });
 export const action = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("creatureRecover"), actor: id }),
   z.strictObject({
     kind: z.literal("throwWeapon"),
     actor: id,

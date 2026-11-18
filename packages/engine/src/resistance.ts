@@ -2,13 +2,13 @@ import { z } from "zod";
 
 export const resistanceExperiment = z.strictObject({
   version: z.literal("resistance-experiment-v1"),
-  associatedAttribute: z.number().int().min(5).max(50),
+  associatedAttribute: z.number().int().min(0).max(100),
   mastery: z.number().int().min(0).max(50),
   weaponSkills: z
     .record(
       z.string().min(1),
       z.strictObject({
-        attribute: z.number().int().min(5).max(50),
+        attribute: z.number().int().min(0).max(100),
         mastery: z.number().int().min(0).max(50),
       }),
     )

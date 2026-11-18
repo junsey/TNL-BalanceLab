@@ -82,6 +82,28 @@ export const fighterState = z
       .array(z.strictObject({ slot: z.enum(["weapon", "reserve"]), zone: id }))
       .max(2)
       .optional(),
+    actorType: z.enum(["human", "creature"]).optional(),
+    creatureRecovery: z
+      .string()
+      .regex(/^\d+d\d+(?:\+\d+)?$/)
+      .optional(),
+    creatureActions: z
+      .array(
+        z.strictObject({
+          model: weapon,
+          attribute: z.number().int().min(0).max(100),
+          value: count.max(50),
+        }),
+      )
+      .max(16)
+      .optional(),
+    creatureAttributes: z.record(id, count).optional(),
+    vigorAbsent: z.boolean().optional(),
+    mentalHealth: z.number().int().optional(),
+    mentalHealthMax: count.optional(),
+    profileId: id.optional(),
+    catalogVersion: id.optional(),
+    unresolvedMechanics: z.array(id).optional(),
     throwing: z
       .strictObject({ attribute: count.min(5).max(50), mastery: count.max(50) })
       .optional(),
@@ -106,6 +128,9 @@ export const fighterState = z
         code: "custom",
         message: "Combinación de manos inválida",
       });
+    if (fighter.vigorAbsent && (fighter.actorType !== "creature" || fighter.vigor !== 0 ||
+        fighter.vigorMax !== 0 || fighter.creatureRecovery))
+      ctx.addIssue({code: "custom", message: "Entidad sin reserva de Vigor inconsistente"});
     const energy = fighter.energy;
     if (
       energy &&
@@ -243,6 +268,14 @@ export function equippedAttacks(fighter: Fighter) {
   ) {
     result.push({ item: reserve, weaponId: reserve.model.id });
   }
+  if (fighter.actorType === "creature") {
+    for (const action of fighter.creatureActions ?? [])
+      if (!result.some(({ item }) => item.model.id === action.model.id))
+        result.push({
+          item: { model: action.model, remaining: null },
+          weaponId: action.model.id,
+        });
+  }
   return result;
 }
 
@@ -340,6 +373,10 @@ export function availableDagger(fighter: Fighter) {
     : undefined;
 }
 
+export function attackVigorCost(model: Fighter["weapon"]["model"]) {
+  return model.vigorCost ?? attackCost[model.category];
+}
+
 export function canAttack(fighter: Fighter) {
   const model = attackWeapon(fighter);
   return (
@@ -347,7 +384,7 @@ export function canAttack(fighter: Fighter) {
     fighter.health > 0 &&
     fighter.recovery === "none" &&
     fighter.weapon.remaining !== 0 &&
-    fighter.vigor >= attackCost[model.category]
+    fighter.vigor >= attackVigorCost(model)
   );
 }
 
@@ -462,7 +499,7 @@ export function previewAttack(
     probability: Math.max(1, Math.min(99, target)),
     thresholds: thresholds(target),
     mastery: attacker.mastery,
-    cost: attackCost[model.category],
+    cost: attackVigorCost(model),
   };
 }
 
@@ -491,7 +528,7 @@ export function declareAttack(
     attackTarget(attacker.mastery, armorProfile(defender).final);
   const cost = sweep
     ? sweep.first
-      ? attackCost[model.category] + sweep.surcharge
+      ? attackVigorCost(model) + sweep.surcharge
       : 0
     : preview!.cost;
   const energy = attacker.energy;

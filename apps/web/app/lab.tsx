@@ -105,6 +105,8 @@ const actionName = (action: Action, name = label) => {
         ? "Recoger y guardar"
         : "Recoger en mano " +
             (action.destination === "right" ? "derecha" : "izquierda");
+    case "creatureRecover":
+      return "Recuperar fuerzas";
     case "equipHands":
       return "Equipar manos";
     case "swapWeapon":

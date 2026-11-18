@@ -2,6 +2,7 @@ import { z } from "zod";
 import { action } from "../../schemas/src/index.ts";
 import {
   attackCost,
+  attackVigorCost,
   availableDagger,
   handLoadout,
   validHands,
@@ -22,7 +23,7 @@ import {
   type Fighter,
 } from "./attack.ts";
 import { recoverVigor, rollInitiative } from "./combat-math.ts";
-import { classify, parseDice, rollPercentile } from "./dice.ts";
+import { classify, parseDice, rollPercentile, rollDice } from "./dice.ts";
 import { rngVersion, rollDie, seedRng } from "./rng.ts";
 import { canonicalJson, rngState, stateHash } from "./state.ts";
 import { compareResistanceAttack } from "./resistance.ts";
@@ -63,6 +64,7 @@ export const setupSchema = z.strictObject({
   seed: z.string(),
   mapLabel: id.optional(),
   player: id,
+  playerTeam: z.array(id).min(1).max(4).optional(),
   aggressor: z.enum(["player", "enemies"]),
   zones: z.array(tacticalZone).min(1).max(256),
   participants: z.array(participant).min(2).max(64),
@@ -193,6 +195,13 @@ function zonesWithin(zones: Zone[], origin: string, limit: number) {
   return distances;
 }
 
+export function isPlayerTeam(
+  setup: { player: string; playerTeam?: string[] },
+  id: string,
+) {
+  return setup.playerTeam ? setup.playerTeam.includes(id) : setup.player === id;
+}
+
 function alive(fighter: Fighter) {
   return fighter.health > 0;
 }
@@ -240,6 +249,11 @@ function validateSetup(setup: Setup) {
     coordinates.size !== setup.zones.length ||
     ids.size !== setup.participants.length ||
     !ids.has(setup.player) ||
+    (setup.playerTeam &&
+      (!setup.playerTeam.includes(setup.player) ||
+        new Set(setup.playerTeam).size !== setup.playerTeam.length ||
+        setup.playerTeam.some((id) => !ids.has(id)) ||
+        setup.playerTeam.length === ids.size)) ||
     zonesWithin(setup.zones, setup.zones[0]!.id, setup.zones.length - 1)
       .size !== zoneIds.size
   ) {
@@ -293,7 +307,7 @@ export function startTacticalEncounter(input: unknown) {
   const aggressors: string[] = [];
   const defenders: { id: string; alert: number }[] = [];
   for (const { fighter } of setup.participants) {
-    if ((fighter.id === setup.player) === (setup.aggressor === "player"))
+    if (isPlayerTeam(setup, fighter.id) === (setup.aggressor === "player"))
       aggressors.push(fighter.id);
     else defenders.push({ id: fighter.id, alert: fighter.alert });
   }
@@ -460,7 +474,7 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
   const queued = state.opportunities?.continuation;
   const used = state.opportunities?.used ?? [];
   const opponents = (a: string, b: string) =>
-    (a === state.setup.player) !== (b === state.setup.player);
+    isPlayerTeam(state.setup, a) !== isPlayerTeam(state.setup, b);
   const invalidUsed =
     new Set(used.map((pair) => JSON.stringify(pair))).size !== used.length ||
     used.some(
@@ -501,8 +515,8 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
           (striker.major ||
             striker.ended ||
             !state.groups[state.phase]?.includes(striker.fighter.id))) ||
-        (striker.fighter.id === state.setup.player) ===
-          (target.fighter.id === state.setup.player) ||
+        isPlayerTeam(state.setup, striker.fighter.id) ===
+          isPlayerTeam(state.setup, target.fighter.id) ||
         (pending.resistance
           ? compareResistanceAttack(pending.resistance, pending.roll).initial
               .grade
@@ -559,8 +573,8 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
         if (
           ally.zone !== actor.zone ||
           dead(ally.fighter) ||
-          (ally.fighter.id === state.setup.player) !==
-            (id === state.setup.player)
+          isPlayerTeam(state.setup, ally.fighter.id) !==
+            isPlayerTeam(state.setup, id)
         )
           continue;
         if (item === "stamina" && !alive(ally.fighter)) continue;
@@ -579,8 +593,8 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       if (
         other.zone === actor.zone &&
         alive(other.fighter) &&
-        (other.fighter.id === state.setup.player) !==
-          (id === state.setup.player)
+        isPlayerTeam(state.setup, other.fighter.id) !==
+          isPlayerTeam(state.setup, id)
       )
         actions.push({ kind: "kick", actor: id, target: other.fighter.id });
     }
@@ -652,8 +666,8 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       if (
         other.zone !== actor.zone ||
         !alive(other.fighter) ||
-        (other.fighter.id === state.setup.player) ===
-          (id === state.setup.player) ||
+        isPlayerTeam(state.setup, other.fighter.id) ===
+          isPlayerTeam(state.setup, id) ||
         !canSee(state, actor.zone, other.zone)
       )
         continue;
@@ -667,7 +681,11 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       }
     }
   }
-  if (actor.minor && fighter.vigor < fighter.vigorMax)
+  if (
+    fighter.actorType !== "creature" &&
+    actor.minor &&
+    fighter.vigor < fighter.vigorMax
+  )
     actions.push({ kind: "breathe", actor: id });
   for (const [zone, distance] of nearby) {
     if (distance === 1 && actor.minor)
@@ -683,7 +701,20 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       actions.push({ kind: "sneak", actor: id, zone });
   }
   if (!actor.major) return actions;
-  actions.push({ kind: "recover", actor: id });
+  if (fighter.actorType !== "creature")
+    actions.push({ kind: "recover", actor: id });
+  else if (
+    fighter.creatureRecovery &&
+    fighter.vigor < fighter.vigorMax &&
+    !state.actors.some(
+      (other) =>
+        other.zone === actor.zone &&
+        alive(other.fighter) &&
+        isPlayerTeam(state.setup, other.fighter.id) !==
+          isPlayerTeam(state.setup, id),
+    )
+  )
+    actions.push({ kind: "creatureRecover", actor: id });
   if (!state.setup.disabled.stabilization && fighter.firstAid !== undefined) {
     for (const other of state.actors) {
       if (
@@ -721,7 +752,8 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
   }
   const opponents = state.actors.filter(
     (other) =>
-      (other.fighter.id === state.setup.player) !== (id === state.setup.player),
+      isPlayerTeam(state.setup, other.fighter.id) !==
+      isPlayerTeam(state.setup, id),
   );
   if (
     !state.setup.disabled.preparedActions &&
@@ -746,7 +778,8 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     }
   }
   if (
-    id === state.setup.player &&
+    isPlayerTeam(state.setup, id) &&
+    (!state.setup.playerTeam || state.setup.playerTeam.length === 1) &&
     opponents.every(
       (other) => !alive(other.fighter) || (nearby.get(other.zone) ?? 3) >= 2,
     )
@@ -864,7 +897,8 @@ export function actionBlockReasons(state: TacticalState, id: string) {
       reason: actor.minor ? "Vigor completo" : "Acción Menor utilizada",
     });
   if (
-    id === state.setup.player &&
+    isPlayerTeam(state.setup, id) &&
+    (!state.setup.playerTeam || state.setup.playerTeam.length === 1) &&
     !legal.some((action) => action.kind === "flee")
   )
     issues.push({
@@ -877,15 +911,15 @@ export function actionBlockReasons(state: TacticalState, id: string) {
 }
 
 function outcomeFor(state: World): Outcome | null {
-  const player = state.actors.find(
-    (actor) => actor.fighter.id === state.setup.player,
-  )!.fighter;
-  if (dead(player)) return "dead";
-  if (!alive(player))
+  const party = state.actors.filter(({ fighter }) =>
+    isPlayerTeam(state.setup, fighter.id),
+  );
+  if (party.every(({ fighter }) => dead(fighter))) return "dead";
+  if (party.every(({ fighter }) => !alive(fighter)))
     return state.setup.stopAtIncapacitation ? "incapacitated" : null;
   if (
     state.actors.every(
-      (actor) => actor.fighter.id === player.id || !alive(actor.fighter),
+      ({ fighter }) => isPlayerTeam(state.setup, fighter.id) || !alive(fighter),
     )
   )
     return "won_encounter";
@@ -1008,8 +1042,8 @@ function opportunityCandidates(state: World, trigger: Trigger) {
       ({ fighter, zone }) =>
         zone === provoking.zone &&
         (trigger.kind === "attack" || provoking.kicked !== fighter.id) &&
-        (fighter.id === state.setup.player) !==
-          (trigger.actor === state.setup.player) &&
+        isPlayerTeam(state.setup, fighter.id) !==
+          isPlayerTeam(state.setup, trigger.actor) &&
         canAttack(fighter) &&
         !fighter.conditions?.some((condition) => condition.blocksReactions) &&
         canSee(state, zone, provoking.zone) &&
@@ -1145,8 +1179,8 @@ function finishTrigger(
           "weaponId" in other.prepared &&
           other.prepared.trigger !== "incomingAttack" &&
           other.zone === actor.zone &&
-          (other.fighter.id === state.setup.player) !==
-            (actor.fighter.id === state.setup.player) &&
+          isPlayerTeam(state.setup, other.fighter.id) !==
+            isPlayerTeam(state.setup, actor.fighter.id) &&
           canSee(state, other.zone, actor.zone),
       )
       .map((other) => other.fighter.id);
@@ -1204,24 +1238,36 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       state.rng,
       state.setup.rules,
     );
-    attacker.fighter = dagger
-      ? {
-          ...result.attacker,
-          weapon: original.weapon,
-          ...(original.groundWeapons && {
-            groundWeapons: original.groundWeapons,
-          }),
-          ...(original.hands && { hands: original.hands }),
-          ...(original.reserveWeapon
-            ? { reserveWeapon: result.attacker.weapon }
-            : { stowedDagger: result.attacker.weapon }),
-          ...(original.energy ? { energy: original.energy } : {}),
-        }
-      : result.attacker;
-    if (dagger && !original.energy) delete attacker.fighter.energy;
-    if (dagger && !original.hands) delete attacker.fighter.hands;
-    if (dagger && !original.groundWeapons)
-      delete attacker.fighter.groundWeapons;
+    const creatureAction = original.actorType === "creature" && weaponId;
+    if (creatureAction) {
+      attacker.fighter = {
+        ...original,
+        health: result.attacker.health,
+        vigor: result.attacker.vigor,
+        ...(result.attacker.conditions && {
+          conditions: result.attacker.conditions,
+        }),
+      };
+    } else {
+      attacker.fighter = dagger
+        ? {
+            ...result.attacker,
+            weapon: original.weapon,
+            ...(original.groundWeapons && {
+              groundWeapons: original.groundWeapons,
+            }),
+            ...(original.hands && { hands: original.hands }),
+            ...(original.reserveWeapon
+              ? { reserveWeapon: result.attacker.weapon }
+              : { stowedDagger: result.attacker.weapon }),
+            ...(original.energy ? { energy: original.energy } : {}),
+          }
+        : result.attacker;
+      if (dagger && !original.energy) delete attacker.fighter.energy;
+      if (dagger && !original.hands) delete attacker.fighter.hands;
+      if (dagger && !original.groundWeapons)
+        delete attacker.fighter.groundWeapons;
+    }
     defender.fighter = result.defender;
     state.pending =
       dagger && result.impact
@@ -1290,8 +1336,8 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
           (other) =>
             other.zone === actor.zone &&
             alive(other.fighter) &&
-            (other.fighter.id === state.setup.player) !==
-              (actor.fighter.id === state.setup.player),
+            isPlayerTeam(state.setup, other.fighter.id) !==
+              isPlayerTeam(state.setup, actor.fighter.id),
         )
         .map((other) => other.fighter.id);
       sweepTargets(actor, ids, model, test.roll, true);
@@ -1678,6 +1724,24 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       actor.minor = false;
       actor.fighter.vigor++;
       break;
+    case "creatureRecover": {
+      const roll = rollDice(actor.fighter.creatureRecovery!, state.rng);
+      state.rng = roll.rng;
+      const amount = Math.min(
+        roll.total,
+        actor.fighter.vigorMax - actor.fighter.vigor,
+      );
+      actor.fighter.vigor += amount;
+      actor.major = false;
+      details.push({
+        kind: "RECOVERY",
+        actor: decision.actor,
+        amount,
+        roll: roll.total,
+        expression: actor.fighter.creatureRecovery!,
+      });
+      break;
+    }
     case "recover":
       actor.major = false;
       actor.ended = true;
