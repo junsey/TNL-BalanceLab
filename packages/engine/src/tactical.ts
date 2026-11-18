@@ -696,14 +696,24 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       }
     }
   }
-  if (
-    !state.setup.disabled.preparedActions &&
-    !actor.prepared &&
-    attackWeapon(fighter) &&
-    fighter.weapon.remaining !== 0
-  ) {
-    for (const trigger of ["incomingAttack", "enemyEnters", "either"] as const)
-      actions.push({ kind: "prepareReactive", actor: id, trigger });
+  if (!state.setup.disabled.preparedActions && !actor.prepared) {
+    const hands = handLoadout(fighter);
+    for (const { item, weaponId } of equippedAttacks(fighter)) {
+      const slot = weaponId ? "reserve" : "weapon";
+      if (item.remaining === 0 || (hands.right !== slot && hands.left !== slot))
+        continue;
+      for (const trigger of [
+        "incomingAttack",
+        "enemyEnters",
+        "either",
+      ] as const)
+        actions.push({
+          kind: "prepareReactive",
+          actor: id,
+          trigger,
+          ...(weaponId && { weaponId }),
+        });
+    }
   }
   const opponents = state.actors.filter(
     (other) =>
@@ -1328,7 +1338,7 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       actor.ended = true;
       actor.prepared = {
         trigger: decision.trigger,
-        weaponId: attackWeapon(actor.fighter)!.id,
+        weaponId: decision.weaponId ?? attackWeapon(actor.fighter)!.id,
       };
       details.push({
         kind: "PREPARED_ATTACK",
@@ -1704,6 +1714,12 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         !fighter.conditions?.some(
           (condition) => condition.blocksReactions || condition.blocksActions,
         );
+      const selectedWeapon =
+        preparation && "weaponId" in preparation
+          ? equippedAttacks(fighter).find(
+              ({ item }) => item.model.id === preparation.weaponId,
+            )
+          : undefined;
       const breathing =
         preparation &&
         "action" in preparation &&
@@ -1712,13 +1728,27 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         !!preparation &&
         canReact &&
         (!("weaponId" in preparation) ||
-          attackWeapon(fighter)?.id === preparation.weaponId) &&
-        (breathing ? fighter.vigor < fighter.vigorMax : canAttack(fighter));
+          (!!selectedWeapon &&
+            [handLoadout(fighter).right, handLoadout(fighter).left].includes(
+              selectedWeapon.weaponId ? "reserve" : "weapon",
+            ))) &&
+        (breathing
+          ? fighter.vigor < fighter.vigorMax
+          : selectedWeapon
+            ? canAttack({
+                ...fighter,
+                weapon: selectedWeapon.item,
+                hands: undefined,
+                groundWeapons: undefined,
+                energy: selectedWeapon.weaponId ? undefined : fighter.energy,
+              })
+            : canAttack(fighter));
       details.push({ kind: "PREPARATION_TRIGGERED", actor: id, executed });
       if (executed && breathing) {
         fighter.vigor++;
         details.push({ kind: "PREPARED_RECOVERY", actor: id, amount: 1 });
-      } else if (executed) executeAttack(ready, provoking);
+      } else if (executed)
+        executeAttack(ready, provoking, selectedWeapon?.weaponId);
     }
     if (
       !state.pending &&

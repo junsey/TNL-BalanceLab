@@ -2,7 +2,8 @@
 import { useState } from "react";
 import {
   armorProfile,
-  attackWeapon,
+  handLoadout,
+  reserveWeapon,
   getLegalActions,
   type TacticalState,
 } from "../../../packages/engine/src/index.ts";
@@ -56,7 +57,15 @@ export function PartyBar({
         const turn = state.round + ":" + state.phase + ":" + id;
         const expanded = toggle?.turn === turn ? toggle.open : false;
         const armor = armorProfile(fighter);
-        const weapon = attackWeapon(fighter) ?? fighter.weapon.model;
+        const hands = handLoadout(fighter);
+        const handName = (slot: typeof hands.right) =>
+          slot === "weapon"
+            ? fighter.weapon.model.label
+            : slot === "reserve"
+              ? reserveWeapon(fighter)?.model.label
+              : slot === "shield"
+                ? fighter.shield?.model.label
+                : "Libre";
         const durability = (
           item:
             | typeof fighter.weapon
@@ -79,7 +88,9 @@ export function PartyBar({
             <div className="party-expand">
               <strong>{fighter.sheet?.role ?? "Combatiente"}</strong>
               <p>
-                Arma {weapon.label} · Durabilidad {durability(fighter.weapon)}
+                Mano derecha {handName(hands.right)} · Mano izquierda{" "}
+                {handName(hands.left)} · Durabilidad{" "}
+                {durability(fighter.weapon)}
               </p>
               {fighter.armor && (
                 <p>

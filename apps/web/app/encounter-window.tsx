@@ -375,7 +375,11 @@ export function EncounterWindow({
             <div className="duel-reactions" aria-label="Reacciones defensivas">
               {choices.map((action) => {
                 if (action.kind !== "defend" || !defender) return null;
-                const quote = describeDefense(defender.fighter, action.defense);
+                const quote = describeDefense(
+                  defender.fighter,
+                  action.defense,
+                  state.setup.rules,
+                );
                 return (
                   <button
                     type="button"

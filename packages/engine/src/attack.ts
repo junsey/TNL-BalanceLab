@@ -626,7 +626,7 @@ export function resolveImpact(
   ) {
     throw new RangeError("Defensa ilegal");
   }
-  const { cost, target } = describeDefense(defender, defense);
+  const { cost, target } = describeDefense(defender, defense, rules);
   let state = impact.rng;
   const test =
     defense === "dodge" || defense === "parry" ? rollPercentile(state) : null;
@@ -749,13 +749,20 @@ export function resolveImpact(
     unresolved,
   };
 }
-export function describeDefense(fighter: Fighter, defense: Defense) {
+export function describeDefense(
+  fighter: Fighter,
+  defense: Defense,
+  rules?: AttackRules,
+) {
+  const weapon = parryWeapon(fighter);
+  const training =
+    weapon && rules?.resistance?.[fighter.id]?.weaponSkills?.[weapon.model.id];
+  const parry =
+    training && fighter.sheet
+      ? Math.min(100, fighter.sheet.attributes.dexterity + training.mastery)
+      : fighter.parry;
   const target =
-    defense === "dodge"
-      ? fighter.dodge
-      : defense === "parry"
-        ? fighter.parry
-        : null;
+    defense === "dodge" ? fighter.dodge : defense === "parry" ? parry : null;
   return {
     cost: {
       none: 0,

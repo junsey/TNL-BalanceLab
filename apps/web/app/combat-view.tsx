@@ -542,6 +542,7 @@ export function CommandMenu({
     : reaction
       ? "opportunity"
       : category;
+  const [preparedWeapon, setPreparedWeapon] = useState<string | undefined>();
   const [onEntry, setOnEntry] = useState(false);
   const [onAttack, setOnAttack] = useState(false);
   const [injection, setInjection] = useState<"stamina" | "medical" | null>(
@@ -551,6 +552,19 @@ export function CommandMenu({
     (action) => action.kind === "inject" && action.item === injection,
   );
   const options = legal.filter((action) => action.kind === activeCategory);
+  const selectedPreparedWeapon = options.some(
+    (action) =>
+      action.kind === "prepareReactive" && action.weaponId === preparedWeapon,
+  )
+    ? preparedWeapon
+    : options.find((action) => action.kind === "prepareReactive")?.kind ===
+        "prepareReactive"
+      ? (
+          options.find(
+            (action) => action.kind === "prepareReactive",
+          ) as Extract<CombatAction, { kind: "prepareReactive" }>
+        ).weaponId
+      : undefined;
   const groups: { label: string; ids: Command[] }[] = reaction
     ? [{ label: "Reacción", ids: [state.pending ? "defend" : "opportunity"] }]
     : [
@@ -965,9 +979,33 @@ export function CommandMenu({
                     </p>
                   ) : activeCategory === "prepareReactive" ? (
                     <fieldset className="command-options">
-                      <legend>
-                        {current && attackWeapon(current.fighter)?.label}
-                      </legend>
+                      <legend>Ataque preparado</legend>
+                      <label>
+                        Arma
+                        <select
+                          value={selectedPreparedWeapon ?? ""}
+                          onChange={(event) =>
+                            setPreparedWeapon(event.target.value || undefined)
+                          }
+                        >
+                          {equippedAttacks(current!.fighter)
+                            .filter(({ weaponId }) =>
+                              options.some(
+                                (action) =>
+                                  action.kind === "prepareReactive" &&
+                                  action.weaponId === weaponId,
+                              ),
+                            )
+                            .map(({ item, weaponId }) => (
+                              <option
+                                key={item.model.id}
+                                value={weaponId ?? ""}
+                              >
+                                {item.model.label}
+                              </option>
+                            ))}
+                        </select>
+                      </label>
                       <label>
                         <input
                           type="checkbox"
@@ -999,7 +1037,8 @@ export function CommandMenu({
                           const action = options.find(
                             (item) =>
                               item.kind === "prepareReactive" &&
-                              item.trigger === trigger,
+                              item.trigger === trigger &&
+                              item.weaponId === selectedPreparedWeapon,
                           );
                           if (action) onAction(action);
                         }}
