@@ -7,6 +7,7 @@ import {
   attackCost,
   attackWeapon,
   getLegalActions,
+  isPlayerTeam,
   equippedAttacks,
   handLoadout,
   reserveWeapon,
@@ -175,8 +176,8 @@ export function TacticalBoard({
               .filter((actor) => actor.zone === cell.id)
               .sort(
                 (a, b) =>
-                  Number(b.fighter.id === state.setup.player) -
-                  Number(a.fighter.id === state.setup.player),
+                  Number(isPlayerTeam(state.setup, b.fighter.id)) -
+                  Number(isPlayerTeam(state.setup, a.fighter.id)),
               );
             return (
               <div
@@ -228,7 +229,7 @@ export function TacticalBoard({
                           className={fighter.health <= 0 ? "down" : ""}
                         >
                           <PixelSprite
-                            player={fighter.id === state.setup.player}
+                            player={isPlayerTeam(state.setup, fighter.id)}
                           />
                           {prepared && "weaponId" in prepared && (
                             <span
@@ -298,7 +299,7 @@ export function TacticalBoard({
                           onClick={() => onTarget?.(fighter.id)}
                         >
                           <PixelSprite
-                            player={fighter.id === state.setup.player}
+                            player={isPlayerTeam(state.setup, fighter.id)}
                           />
                         </button>
                       ))}
@@ -392,7 +393,7 @@ export function EnemyPanel({
       </header>
       <div className="combat-enemies">
         {state.actors
-          .filter(({ fighter }) => fighter.id !== state.setup.player)
+          .filter(({ fighter }) => !isPlayerTeam(state.setup, fighter.id))
           .map((actor) => {
             const { fighter, zone } = actor;
             const group = state.groups.findIndex((ids) =>
@@ -1149,10 +1150,10 @@ export function InitiativeSequence({
   }, [finished, last, step]);
   const portrait = (id: string) => (
     <>
-      <PixelSprite player={id === state.setup.player} />
+      <PixelSprite player={isPlayerTeam(state.setup, id)} />
       <strong>
         {name(id)}
-        {id === state.setup.player ? " (vos)" : ""}
+        {isPlayerTeam(state.setup, id) ? " (tu grupo)" : ""}
       </strong>
     </>
   );

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { TacticalState, TacticalDetail } from "./tactical.ts";
+import { isPlayerTeam } from "./tactical.ts";
 
 const count = z.number().int().nonnegative();
 export const combatMetricsSchema = z.strictObject({
@@ -71,7 +72,8 @@ export function collectCombatMetrics(
         const damage = detail.damage;
         if (damage && typeof damage === "object" && !Array.isArray(damage)) {
           const effective = numeric(damage.effective);
-          if (actorId === next.setup.player) total.damageReceived += effective;
+          if (isPlayerTeam(next.setup, actorId))
+            total.damageReceived += effective;
           else total.damageInflicted += effective;
           total.damageMitigated +=
             numeric(damage.intercepted) + numeric(damage.residual) - effective;

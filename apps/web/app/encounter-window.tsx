@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import {
   describeDefense,
   getLegalActions,
+  isPlayerTeam,
   type TacticalDetail,
   type TacticalState,
 } from "../../../packages/engine/src/index.ts";
@@ -110,7 +111,8 @@ export function EncounterWindow({
       : [];
   const defense = defending ? String(detail.defense) : "";
   const offense = defending ? attack : detail;
-  const playerOnLeft = defenderId === state.setup.player;
+  const playerOnLeft =
+    typeof defenderId === "string" && isPlayerTeam(state.setup, defenderId);
   const attackFrom = playerOnLeft ? "right" : "left";
   const defenseFrom = playerOnLeft ? "left" : "right";
   const response = defending && defense !== "none";
@@ -180,7 +182,7 @@ export function EncounterWindow({
     };
     return actor ? (
       <section className={"duel-fighter " + side}>
-        <PixelSprite player={actor.fighter.id === state.setup.player} />
+        <PixelSprite player={isPlayerTeam(state.setup, actor.fighter.id)} />
         <h3>{name(actor.fighter.id)}</h3>
         <div className="exchange-resource">
           <Resource

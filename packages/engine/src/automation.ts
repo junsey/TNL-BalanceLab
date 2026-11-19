@@ -192,7 +192,11 @@ export function runAutomaticEncounter(
   options: {
     recordEvents?: boolean;
     actionLimit?: number;
-    onStep?: (previous: TacticalState, next: TacticalState) => void;
+    onStep?: (
+      previous: TacticalState,
+      next: TacticalState,
+      action: ReturnType<typeof getLegalActions>[number],
+    ) => void;
   } = {},
 ) {
   let state = initial;
@@ -239,7 +243,7 @@ export function runAutomaticEncounter(
       );
       state = step.state;
     }
-    options.onStep?.(previous, state);
+    options.onStep?.(previous, state, decision.action);
     steps++;
   }
   const status = !state.outcome

@@ -295,6 +295,11 @@ export function makeColiseumWave(
     pack = pack.slice(0, settings.enemyCap);
   }
   const enemies = instantiate(pack);
+  for (const warning of new Set(
+    enemies.flatMap((e) => e.fighter.unresolvedMechanics ?? []),
+  )) {
+    if (!warnings.includes(warning)) warnings.push(warning);
+  }
   const actualThreat = packThreat(enemies, party, settings);
   if (actualThreat < targetThreat * 0.7)
     warnings.push(
@@ -400,6 +405,9 @@ export function coliseumMetrics(
   for (const e of events) {
     if (
       e.action.kind === "end" &&
+      snapshot.actors.some(
+        (a) => a.fighter.id === e.action.actor && a.major && a.minor,
+      ) &&
       getLegalActions(snapshot, e.action.actor).every((a) => a.kind === "end")
     )
       totals.noActionTurns++;
@@ -471,6 +479,9 @@ export function runColiseumWave(
     if (!decision) throw new Error("Coliseo: encuentro sin acciones legales");
     if (
       decision.action.kind === "end" &&
+      state.actors.some(
+        (a) => a.fighter.id === decision.action.actor && a.major && a.minor,
+      ) &&
       getLegalActions(state, decision.action.actor).every(
         (a) => a.kind === "end",
       )
