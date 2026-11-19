@@ -602,6 +602,9 @@ export function declareAttack(
             mastery: resistance.mastery,
             resistance: check.resistance,
             modifiedRoll: check.modified,
+            naturalResistance: resistance.naturalResistance,
+            armorResistance: resistance.armorBonus,
+            thresholds: thresholds(check.capacity),
           }
         : {
             mastery: attacker.mastery,

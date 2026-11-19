@@ -164,6 +164,36 @@ export function tacticalDemo(
       stabilization: false,
     },
     rules: {
+      resistance: Object.fromEntries(
+        [player, enemy, { ...enemy, id: "acechador-2" }].map((fighter) => [
+          fighter.id,
+          {
+            version: "resistance-experiment-v1" as const,
+            associatedAttribute:
+              fighter.id === player.id
+                ? player.sheet!.attributes.dexterity
+                : 25,
+            mastery: fighter.id === player.id ? player.mastery : 20,
+            naturalResistance: 4,
+            armorBonus: fighter.armor?.model.protection ?? 0,
+            shieldBonus: 0,
+            naturalOne: "requiresImpact" as const,
+            gradeBasis: "modifiedRoll" as const,
+            ...(fighter.id === player.id && {
+              weaponSkills: Object.fromEntries(
+                [player.weapon, player.stowedDagger!].map((item) => [
+                  item.model.id,
+                  {
+                    attribute: player.sheet!.attributes.dexterity,
+                    mastery:
+                      player.sheet!.mastery[item.model.id] ?? player.mastery,
+                  },
+                ]),
+              ),
+            }),
+          },
+        ]),
+      ),
       fumbleConsequences: false,
       criticalInjuries: false,
       dodgeDisplacement: false,
