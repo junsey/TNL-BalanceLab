@@ -21,6 +21,7 @@ import {
   type TacticalProfile,
   type GeneralSettings,
   generalSettingsSchema,
+  coreResistance,
 } from "../../../packages/engine/src/index.ts";
 import {
   maps,
@@ -986,9 +987,11 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               (a) => a.fighter.id === session.state.setup.player,
             )?.fighter;
             const resistance =
-              session.state.setup.rules.resistance?.[
-                session.state.setup.player
-              ];
+              fighter && session.state.setup.rules.calculationVersion
+                ? coreResistance(fighter, fighter)
+                : session.state.setup.rules.resistance?.[
+                    session.state.setup.player
+                  ];
             return fighter && resistance
               ? { fighter, resistance, rolls: [] }
               : null;

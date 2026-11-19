@@ -1,13 +1,14 @@
 import {
   armor,
-  character,
-  creature,
+  characterDocument as character,
+  creatureDocument as creature,
   ruleModule,
   shield,
   weapon,
 } from "../../../packages/schemas/src/index.ts";
 import {
   deriveCharacter,
+  inspectCombatDocument,
   attackRules,
   startTacticalEncounter,
   type AttackRules,
@@ -30,6 +31,7 @@ export async function loadCatalogReferences(
   if (!shared || (kind !== "character" && kind !== "creature")) return {};
   const card =
     kind === "character" ? character.parse(input) : creature.parse(input);
+  if (!("weaponId" in card)) return {};
   const load = async (
     kind: "weapon" | "armor" | "shield",
     id: string | null,
@@ -135,28 +137,63 @@ export function applyCatalogItem(
       if (target === setup.player)
         throw new RangeError("Elegí un rival para usar una ficha de criatura");
       const card = creature.parse(data);
-      return {
-        ...actor,
-        fighter: {
-          ...fighter,
-          health: card.health,
-          healthMax: card.health,
-          vigor: card.vigor,
-          vigorMax: card.vigor,
-          vulnerability: card.vulnerability,
-          alert: card.alert,
-          dodge: card.dodge,
-          endurance: card.endurance,
-          mastery: Object.hasOwn(card.mastery, card.weaponId)
-            ? card.mastery[card.weaponId]!
-            : 0,
-          weapon: resolveWeapon(card.weaponId),
-        },
-      };
+      if (card.schemaVersion === 2) {
+        const inspected = inspectCombatDocument("creature", card);
+        if (!inspected.combatReady)
+          throw new RangeError(
+            "Ficha incompleta: " + inspected.missing.join(", "),
+          );
+        return {
+          ...actor,
+          fighter: {
+            ...fighter,
+            actorType: "creature" as const,
+            naturalResistance: card.naturalResistance,
+            schemaVersion: 2 as const,
+            rulesVersion: card.rulesVersion,
+            catalogVersion: card.catalogVersion,
+            source: card.source,
+            creatureAttributes: card.attributes,
+            creatureActions: card.actions.map((a) => ({
+              model: a.model,
+              attributeKey: a.associatedAttribute,
+              value: a.value,
+            })),
+            sheet: undefined,
+            health: card.health,
+            healthMax: card.health,
+            vigor: card.vigor ?? 0,
+            vigorMax: card.vigor ?? 0,
+            vigorAbsent: card.vigor === null,
+            alert: card.alert,
+            dodge: card.dodge,
+            endurance: card.endurance,
+            weapon: equipped(card.actions[0]!.model),
+            creatureRecovery: card.recovery,
+            armor: null,
+            shield: null,
+            stowedDagger: undefined,
+            reserveWeapon: undefined,
+            hands: undefined,
+            energy: undefined,
+            groundWeapons: undefined,
+          },
+        };
+      }
+      throw new RangeError(
+        "HISTORICO: esta ficha de criatura se conserva para lectura; faltan Atributos y acciones actuales",
+      );
     }
     if (target !== setup.player)
       throw new RangeError("Elegí el PJ para usar la ficha de personaje");
     const card = character.parse(data);
+    if (card.schemaVersion === 1)
+      throw new RangeError(
+        "HISTORICO: esta ficha necesita una migración explícita de Dominios y Resistencia",
+      );
+    const inspected = inspectCombatDocument("character", card);
+    if (!inspected.combatReady)
+      throw new RangeError("Ficha incompleta: " + inspected.missing.join(", "));
     const derived = deriveCharacter(card, resolveWeapon(card.weaponId).model);
     const armorModel =
       card.armorId === null
@@ -179,8 +216,13 @@ export function applyCatalogItem(
       fighter: {
         ...fighter,
         ...derived,
+        schemaVersion: 2 as const,
+        rulesVersion: card.rulesVersion,
+        catalogVersion: card.catalogVersion,
+        source: card.source,
+        naturalResistance: card.naturalResistance,
         sheet: {
-          name: fighter.sheet?.name ?? card.id,
+          name: card.name,
           role: fighter.sheet?.role ?? "Personaje jugador",
           attributes: card.attributes,
           training: card.training,
@@ -188,9 +230,10 @@ export function applyCatalogItem(
         },
         health: derived.healthMax,
         vigor: derived.vigorMax,
-        mastery: Object.hasOwn(card.mastery, card.weaponId)
-          ? card.mastery[card.weaponId]!
-          : 0,
+        mastery:
+          card.mastery[
+            resolveWeapon(card.weaponId).model.skill?.domain ?? ""
+          ] ?? 0,
         weapon: resolveWeapon(card.weaponId),
         armor: armorModel ? equipped(armorModel) : null,
         shield: shieldModel ? equipped(shieldModel) : null,

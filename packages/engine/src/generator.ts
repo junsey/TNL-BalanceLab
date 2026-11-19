@@ -4,6 +4,7 @@ import { rollDie, seedRng, isolatedRngStreams, type Rng } from "./rng.ts";
 import {
   setupSchema,
   startTacticalEncounter,
+  startHistoricalTacticalEncounter,
   tacticalZone,
   type TacticalSetup,
 } from "./tactical.ts";
@@ -69,6 +70,18 @@ export function materializeScenario(scenario: TacticalScenario, seed?: string) {
     );
   return startTacticalEncounter({ ...scenario, seed: seed ?? scenario.seed })
     .state.setup;
+}
+
+/** Read-only validation of archived scenarios; never used by batch execution. */
+export function materializeHistoricalScenario(scenario: TacticalScenario) {
+  if ("kind" in scenario)
+    return generateTacticalSetup(
+      scenario.base,
+      scenario.generator,
+      scenario.base.seed,
+      true,
+    );
+  return startHistoricalTacticalEncounter(scenario).state.setup;
 }
 
 function integer(rng: Rng, upper: number): readonly [number, Rng] {
@@ -183,6 +196,7 @@ export function generateTacticalSetup(
   base: TacticalSetup,
   input: unknown,
   seed: string,
+  historical = false,
 ): TacticalSetup {
   const config = generatorSchema.parse(input);
   if (new Set(config.maps.map((map) => map.id)).size !== config.maps.length)
@@ -258,7 +272,9 @@ export function generateTacticalSetup(
         ? "player"
         : "enemies"
       : aggression.kind;
-  return startTacticalEncounter({
+  return (
+    historical ? startHistoricalTacticalEncounter : startTacticalEncounter
+  )({
     ...base,
     ...(config.rngStreams && { rngStreams: config.rngStreams }),
     ...(resistance && { rules: { ...base.rules, resistance } }),

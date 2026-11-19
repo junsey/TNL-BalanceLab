@@ -9,6 +9,10 @@ import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
 import postgres from "postgres";
 import { tacticalDemo } from "../packages/fixtures/src/tactical-demo.ts";
 import {
+  demoCharacterDocument,
+  demoCreatureDocument,
+} from "../packages/fixtures/src/combat-documents.ts";
+import {
   layerConfigurationSource,
   listConfigurationFields,
   withFieldSources,
@@ -135,6 +139,20 @@ try {
     });
   }
   assert.equal((await write(first, {}, "http://127.0.0.1:1")).status, 403);
+  for (const [kind, document] of [
+    ["character", demoCharacterDocument],
+    ["creature", demoCreatureDocument],
+  ] as const) {
+    const saved = await write(first, { kind, expected: 0, data: document });
+    assert.equal(saved.status, 201, await saved.clone().text());
+    const key = (await saved.json()) as { id: string };
+    const loaded = await fetch(route + "?kind=" + kind + "&id=" + key.id, {
+      headers: { Cookie: second },
+    });
+    assert.equal(loaded.status, 200);
+    const revisions = (await loaded.json()) as { data: unknown }[];
+    assert.deepEqual(revisions[0]!.data, document);
+  }
   const created = await write(first, {
     kind: "scenario",
     expected: 0,

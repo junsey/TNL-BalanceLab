@@ -6,5 +6,6 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | --- | --- | --- | --- |
 | Lote previo | Publicado | ade2f70 | docs/immediate-fixes.md |
 | 1.1 Dados y reproducción | Publicado | 71f2d75 | docs/rng-audit-1.1.md; 65 tests, 16 contrastes |
-| 1.2 Fuente de cálculo | Verificada; publicación en el commit de esta fila | base 71f2d75 | docs/core-calculation-1.2.md; 71 tests + web, tipos, lint y build |
-| 1.3 y posteriores | Pendientes | — | docs/atomic-plan-v02.md |
+| 1.2 Fuente de cálculo | Publicada | c3eaf60 | docs/core-calculation-1.2.md; 71 tests + web, tipos, lint y build |
+| 1.3 Fichas y migración | Verificada; publicación en el commit de esta fila | base c3eaf60 | docs/combat-documents-1.3.md; 76 tests + web, tipos, lint y build |
+| 1.4 y posteriores | Pendientes | — | docs/atomic-plan-v02.md |

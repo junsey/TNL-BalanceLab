@@ -2,6 +2,10 @@
 import { useEffect, useRef, useState } from "react";
 import { armors, weapons } from "../../../packages/fixtures/src/index.ts";
 import {
+  demoCharacterDocument,
+  demoCreatureDocument,
+} from "../../../packages/fixtures/src/combat-documents.ts";
+import {
   generatedDemo,
   tacticalDemo,
 } from "../../../packages/fixtures/src/tactical-demo.ts";
@@ -13,6 +17,7 @@ import {
   type TacticalProfile,
   type GeneralSettings,
   generalSettingsSchema,
+  migrateCombatScenario,
 } from "../../../packages/engine/src/index.ts";
 import {
   exportLabZip,
@@ -77,39 +82,8 @@ const templates: Partial<Record<Kind, unknown>> = {
     absorption: null,
     wear: null,
   },
-  character: {
-    schemaVersion: 1,
-    revision: 1,
-    id: "vigia",
-    attributes: {
-      strength: 25,
-      dexterity: 25,
-      perception: 25,
-      will: 25,
-      knowledge: 25,
-      presence: 25,
-    },
-    training: { alert: 20, dodge: 30, endurance: 25 },
-    mastery: { "espada-corta": 35 },
-    weaponId: "espada-corta",
-    armorId: "media",
-    shieldId: null,
-  },
-  creature: {
-    schemaVersion: 1,
-    revision: 1,
-    id: "acechador",
-    label: "Acechador de ensayo",
-    health: 22,
-    vigor: 5,
-    vulnerability: 43,
-    alert: 25,
-    dodge: 32,
-    endurance: 33,
-    mastery: { daga: 26 },
-    weaponId: "daga",
-    aiId: "default",
-  },
+  character: demoCharacterDocument,
+  creature: demoCreatureDocument,
   module: {
     schemaVersion: 1,
     revision: 1,
@@ -693,6 +667,31 @@ export function Library(props: Props) {
                 <button onClick={useData}>
                   {kind === "run" ? "Cargar partida" : "Ejecutar escenario"}
                 </button>
+                {kind === "scenario" && (
+                  <button
+                    onClick={() => {
+                      try {
+                        const result = migrateCombatScenario(JSON.parse(text));
+                        if (result.status === "HISTORICO") {
+                          setMessage(
+                            "Histórico conservado sin cambios: faltan datos para una migración segura.",
+                          );
+                          return;
+                        }
+                        setText(stringify(result.setup));
+                        setMessage(
+                          result.changed
+                            ? "Escenario normalizado. El original y su huella quedan conservados; guardalo como una revisión nueva."
+                            : "El escenario ya está normalizado.",
+                        );
+                      } catch (error) {
+                        setMessage(String(error));
+                      }
+                    }}
+                  >
+                    Normalizar escenario
+                  </button>
+                )}
               </>
             )}
             <button

@@ -6,14 +6,15 @@ import {
   armor,
   weapon,
   shield,
-  creature,
-  character,
+  creatureDocument,
+  characterDocument,
   ruleModule,
   batch,
 } from "../../../packages/schemas/src/index.ts";
 import {
   replayTacticalEvent,
   materializeScenario,
+  materializeHistoricalScenario,
   tacticalScenarioSchema,
   restoreTacticalEncounter,
   generalSettingsSchema,
@@ -121,9 +122,9 @@ export function validateRecord(kind: Kind, input: unknown): Json {
     case "shield":
       return shield.parse(input);
     case "creature":
-      return creature.parse(input);
+      return creatureDocument.parse(input);
     case "character":
-      return character.parse(input);
+      return characterDocument.parse(input);
     case "module": {
       const module = ruleModule.parse(input);
       if (module.tables) consequenceTables.parse(module.tables);
@@ -139,7 +140,10 @@ export function validateRecord(kind: Kind, input: unknown): Json {
       return tacticalProfile.parse(input);
     case "scenario": {
       const scenario = tacticalScenarioSchema.parse(input);
-      const validated = materializeScenario(scenario);
+      const rules = "kind" in scenario ? scenario.base.rules : scenario.rules;
+      const validated = rules.calculationVersion
+        ? materializeScenario(scenario)
+        : materializeHistoricalScenario(scenario);
       return "kind" in scenario ? scenario : validated;
     }
     case "study":
@@ -160,7 +164,8 @@ export function validateRecord(kind: Kind, input: unknown): Json {
         planHash,
       } = summary;
       if (
-        validateBatchPlan(plan).planHash !== planHash ||
+        validateBatchPlan(plan, !plan.setup.rules.calculationVersion)
+          .planHash !== planHash ||
         requested !== plan.requested ||
         completed !== results.length ||
         reduced + censored + failed !== completed ||

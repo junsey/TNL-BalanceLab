@@ -1,4 +1,8 @@
-import { character, weapon } from "../../schemas/src/index.ts";
+import {
+  character,
+  characterDocument,
+  weapon,
+} from "../../schemas/src/index.ts";
 import type { z } from "zod";
 import { skillValue } from "./skills.ts";
 
@@ -24,7 +28,11 @@ export function deriveCharacter(
   input: unknown,
   model?: z.infer<typeof weapon>,
 ) {
-  const { attributes: a, training: t, mastery } = character.parse(input);
+  const {
+    attributes: a,
+    training: t,
+    mastery,
+  } = characterDocument.parse(input);
   return {
     healthMax: 25 + Math.floor(a.strength / 2),
     vigorMax: 4 + Math.floor((a.strength + a.will) / 20),

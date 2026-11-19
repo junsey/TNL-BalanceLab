@@ -9,6 +9,7 @@ import {
   compareResistanceAttack,
   declareAttack,
   seedRng,
+  bodyResistance,
 } from "../../../packages/engine/src/index.ts";
 
 test("El preset aprobado inicia sin parámetros y conserva las fichas", () => {
@@ -25,11 +26,8 @@ test("El preset aprobado inicia sin parámetros y conserva las fichas", () => {
       compareResistanceAttack(preview.resistance, 50).initial.capacity,
       45,
     );
-    assert.equal(
-      setup.rules.resistance![enemy.fighter.id]!.associatedAttribute,
-      25,
-    );
-    assert.equal(setup.rules.resistance![enemy.fighter.id]!.mastery, 20);
+    assert.equal(enemy.fighter.creatureAttributes!.strength, 25);
+    assert.equal(enemy.fighter.creatureActions![0]!.value, 20);
     const attack = declareAttack(
       enemy.fighter,
       hero,
@@ -48,8 +46,8 @@ test("El preset aprobado inicia sin parámetros y conserva las fichas", () => {
     ).initial.capacity,
     60,
   );
-  assert.equal(state.setup.rules.resistance!.vigia!.naturalResistance, 4);
-  assert.equal(state.setup.rules.resistance!.vigia!.armorBonus, 6);
+  assert.equal(hero.naturalResistance, 4);
+  assert.equal(bodyResistance(hero).armorBonus, 6);
   for (const participant of setup.participants)
     assert.deepEqual(
       state.setup.participants.find(

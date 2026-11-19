@@ -86,7 +86,9 @@ function validateRun(value: unknown): Run {
   const run = value as Run;
   if (
     run?.version !== coliseumVersion ||
-    run.catalogVersion !== coliseumCatalogVersion ||
+    ![coliseumCatalogVersion, "coliseum-catalog-2026-11-18-v1"].includes(
+      run.catalogVersion,
+    ) ||
     run.rngVersion !== rngVersion
   )
     throw new Error("Versión de Coliseo incompatible");
@@ -287,7 +289,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   function act(action: Action) {
     try {
       if (!run?.active || run.status !== "fighting" || !running) return;
-      if (!run.active.state.setup.rules.calculationVersion)
+      if (
+        !run.active.state.setup.rules.calculationVersion ||
+        run.catalogVersion !== coliseumCatalogVersion
+      )
         throw new Error(
           "HISTORICO: esta carrera admite lectura y replay. Prepará una carrera nueva para simular.",
         );
@@ -317,6 +322,13 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   }
   function nextWave(current: Run) {
     try {
+      if (
+        !current.settings.calculationVersion ||
+        current.catalogVersion !== coliseumCatalogVersion
+      )
+        throw new Error(
+          "HISTORICO: iniciá otra carrera para usar el catálogo actual.",
+        );
       const prior = current.results.at(-1);
       const party = current.party.map((p) => ({
         ...p,
@@ -357,7 +369,8 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       !active ||
       !state ||
       run.status !== "fighting" ||
-      !state.setup.rules.calculationVersion
+      !state.setup.rules.calculationVersion ||
+      run.catalogVersion !== coliseumCatalogVersion
     )
       return;
     if (state.outcome) {
@@ -395,6 +408,16 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   useEffect(() => () => worker?.terminate(), [worker]);
   useEffect(() => {
     if (run?.status !== "between") return;
+    if (
+      !run.settings.calculationVersion ||
+      run.catalogVersion !== coliseumCatalogVersion
+    ) {
+      setError(
+        "HISTORICO: carrera disponible para consulta y replay; iniciá otra con el catálogo actual.",
+      );
+      setPreview(null);
+      return;
+    }
     try {
       const prior = run.results.at(-1);
       const party = run.party.map((p) => ({

@@ -60,6 +60,13 @@ const combatant = participant.extend({
   kicked: id.optional(),
 });
 export const setupSchema = z.strictObject({
+  migration: z
+    .strictObject({
+      version: z.literal("core-normalization-v1"),
+      sourceHash: z.string().regex(/^[a-f0-9]{64}$/),
+      original: z.json(),
+    })
+    .optional(),
   schemaVersion: z.literal(1),
   seed: z.string(),
   rngStreams: z.literal(isolatedRngStreams).optional(),
@@ -233,6 +240,11 @@ export function canSee(state: TacticalState, from: string, to: string) {
 }
 
 function validateSetup(setup: Setup) {
+  if (
+    setup.migration &&
+    stateHash(setup.migration.original) !== setup.migration.sourceHash
+  )
+    throw new RangeError("Integridad de la migración inválida");
   const zoneIds = new Set(setup.zones.map((zone) => zone.id));
   for (const [origin, destination] of Object.entries(
     setup.rules.dodgeRoutes ?? {},
@@ -307,6 +319,11 @@ export function startHistoricalTacticalEncounter(input: unknown) {
   validateSetup(setup);
   if (setup.rules.calculationVersion) {
     for (const { fighter } of setup.participants) {
+      if (
+        fighter.source &&
+        ["HISTORICO", "PENDIENTE_DE_REGLAS"].includes(fighter.source.status)
+      )
+        throw new RangeError("Ficha incompleta o histórica: " + fighter.id);
       bodyResistance(fighter);
       for (const item of [
         fighter.weapon,

@@ -8,7 +8,14 @@ import type {
 } from "../../engine/src/coliseum.ts";
 import { weapons, armors } from "./index.ts";
 
-export const coliseumCatalogVersion = "coliseum-catalog-2026-11-18-v1";
+export const historicalColiseumCatalogVersion =
+  "coliseum-catalog-2026-11-18-v1";
+export const coliseumCatalogVersion = "coliseum-catalog-2026-11-19-v2";
+const benchSource = {
+  sourceDoc: "CORE 03",
+  sourceSection: "Bestiario y humanos de ensayo del Coliseo",
+  status: "BANCO_DE_PRUEBAS" as const,
+};
 type Model = Fighter["weapon"]["model"];
 type Action = {
   id: string;
@@ -22,7 +29,14 @@ type Action = {
   reach?: Model["reach"];
 };
 const natural = (a: Action): Model => ({
-  ...weapons[0]!,
+  schemaVersion: 1,
+  revision: 1,
+  durability: null,
+  wear: null,
+  status: "experimental",
+  parryCapacity: null,
+  extendedReach: null,
+  energyPerAttack: 0,
   id: a.id,
   label: a.name,
   vigorCost: a.cost,
@@ -238,13 +252,15 @@ function creature(
   const naturalResistance = roll(def.resDice, def.res);
   const actions = def.actions.map((a) => ({
     model: natural(a),
-    attribute: strength,
     attributeKey: "strength",
     value: a.value,
   }));
   const first = actions[0]!;
   const fighter: Fighter = {
     id,
+    schemaVersion: 2,
+    rulesVersion: "core03-sheet-v1",
+    source: benchSource,
     actorType: "creature",
     profileId: def.id,
     catalogVersion: coliseumCatalogVersion,
@@ -255,7 +271,6 @@ function creature(
     mentalHealthMax: mentalHealth,
     vigor,
     vigorMax: vigor,
-    vulnerability: 0,
     naturalResistance,
     mastery: first.value,
     dodge: def.dodge ? Math.min(100, stats.dexterity! + def.dodge) : 0,
@@ -330,6 +345,9 @@ export function coliseumHuman(
     vigor = spear ? 7 : 6;
   const fighter: Fighter = {
     id,
+    schemaVersion: 2,
+    rulesVersion: "core03-sheet-v1",
+    source: benchSource,
     actorType: "human",
     profileId: profile,
     catalogVersion: coliseumCatalogVersion,
@@ -353,7 +371,6 @@ export function coliseumHuman(
     mentalHealthMax: spear ? 40 : 37,
     vigor,
     vigorMax: vigor,
-    vulnerability: 0,
     naturalResistance: spear ? 9 : 8,
     mastery,
     dodge: spear ? 35 : 60,

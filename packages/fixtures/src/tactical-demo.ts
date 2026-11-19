@@ -98,6 +98,14 @@ export function tacticalDemo(
   }));
   const player: Fighter = {
     id: "vigia",
+    schemaVersion: 2,
+    rulesVersion: "core03-sheet-v1",
+    catalogVersion: "core-fixtures-v2",
+    source: {
+      sourceDoc: "Ensayo aprobado por el usuario",
+      sourceSection: "Vigía y Acechadores: valores provisionales",
+      status: "BANCO_DE_PRUEBAS",
+    },
     sheet: {
       name: "Vigía",
       role: "Personaje de ensayo",
@@ -116,7 +124,6 @@ export function tacticalDemo(
     healthMax: 37,
     vigor: 6,
     vigorMax: 6,
-    vulnerability: 38,
     naturalResistance: 4,
     mastery: 35,
     dodge: 55,
@@ -131,13 +138,16 @@ export function tacticalDemo(
   };
   const enemy: Fighter = {
     id: "acechador",
+    schemaVersion: 2,
+    rulesVersion: "core03-sheet-v1",
+    catalogVersion: "core-fixtures-v2",
+    source: player.source,
     actorType: "creature",
     naturalResistance: 4,
     creatureAttributes: { strength: 25 },
     creatureActions: [
       {
         model: weapons[0]!,
-        attribute: 25,
         attributeKey: "strength",
         value: 20,
       },
@@ -146,7 +156,6 @@ export function tacticalDemo(
     healthMax: 22,
     vigor: 5,
     vigorMax: 5,
-    vulnerability: 43,
     mastery: 26,
     dodge: 32,
     parry: 30,
@@ -178,36 +187,6 @@ export function tacticalDemo(
     },
     rules: {
       calculationVersion: "core03-sheet-v1",
-      resistance: Object.fromEntries(
-        [player, enemy, { ...enemy, id: "acechador-2" }].map((fighter) => [
-          fighter.id,
-          {
-            version: "resistance-experiment-v1" as const,
-            associatedAttribute:
-              fighter.id === player.id
-                ? player.sheet!.attributes.dexterity
-                : 25,
-            mastery: fighter.id === player.id ? player.mastery : 20,
-            naturalResistance: 4,
-            armorBonus: fighter.armor?.model.protection ?? 0,
-            shieldBonus: 0,
-            naturalOne: "requiresImpact" as const,
-            gradeBasis: "modifiedRoll" as const,
-            ...(fighter.id === player.id && {
-              weaponSkills: Object.fromEntries(
-                [player.weapon, player.stowedDagger!].map((item) => [
-                  item.model.id,
-                  {
-                    attribute: player.sheet!.attributes.dexterity,
-                    mastery:
-                      player.sheet!.mastery[item.model.id] ?? player.mastery,
-                  },
-                ]),
-              ),
-            }),
-          },
-        ]),
-      ),
       fumbleConsequences: false,
       criticalInjuries: false,
       dodgeDisplacement: false,

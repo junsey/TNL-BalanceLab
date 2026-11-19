@@ -16,6 +16,7 @@ import { stateHash } from "./state.ts";
 import {
   setupSchema,
   startTacticalEncounter,
+  startHistoricalTacticalEncounter,
   type TacticalSetup,
 } from "./tactical.ts";
 
@@ -188,7 +189,7 @@ export type BatchChunk = {
   captures: { index: number; chain: ReturnType<typeof runSurvivalChain> }[];
 };
 
-export function validateBatchPlan(plan: BatchPlan) {
+export function validateBatchPlan(plan: BatchPlan, historical = false) {
   if (
     !Number.isSafeInteger(plan.requested) ||
     plan.requested < 1 ||
@@ -202,8 +203,11 @@ export function validateBatchPlan(plan: BatchPlan) {
   ) {
     throw new RangeError("Plan de lote inválido");
   }
-  const setup = startTacticalEncounter(plan.setup).state.setup;
-  if (plan.generator) generateTacticalSetup(setup, plan.generator, setup.seed);
+  const setup = (
+    historical ? startHistoricalTacticalEncounter : startTacticalEncounter
+  )(plan.setup).state.setup;
+  if (plan.generator)
+    generateTacticalSetup(setup, plan.generator, setup.seed, historical);
   const profiles = new Map(
     Object.entries(plan.profiles).map(([id, profile]) => [
       id,

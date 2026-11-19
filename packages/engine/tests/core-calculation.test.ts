@@ -38,7 +38,11 @@ test("CORE 1.2: ficha y catálogo son autoritativos; las copias antiguas no alte
   hero.mastery = 0;
   hero.vulnerability = 0;
   enemy.vulnerability = 100;
-  const stale = setup.rules.resistance![hero.id]!;
+  setup.rules.resistance = {
+    [hero.id]: { ...before.resistance! },
+    [enemy.id]: { ...before.resistance! },
+  };
+  const stale = setup.rules.resistance[hero.id]!;
   stale.associatedAttribute = 99;
   stale.mastery = 0;
   stale.naturalOne = "alwaysCritical";

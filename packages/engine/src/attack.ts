@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { armor, character, shield, weapon } from "../../schemas/src/index.ts";
+import {
+  armor,
+  character,
+  shield,
+  weapon,
+  sourceReference,
+} from "../../schemas/src/index.ts";
 import { compareResistanceAttack, resistanceExperiment } from "./resistance.ts";
 import { attackTarget } from "./character.ts";
 import {
@@ -60,6 +66,10 @@ const energy = z.strictObject({
 export const fighterState = z
   .strictObject({
     id,
+    schemaVersion: z.literal(2).optional(),
+    rulesVersion: z.literal("core03-sheet-v1").optional(),
+    catalogVersion: id.optional(),
+    source: sourceReference.optional(),
     sheet: z
       .strictObject({
         name: id,
@@ -73,7 +83,7 @@ export const fighterState = z
     healthMax: count.min(1),
     vigor: count,
     vigorMax: count,
-    vulnerability: percent,
+    vulnerability: percent.optional(),
     naturalResistance: count.optional(),
     mastery: count.max(50),
     dodge: percent,
@@ -99,7 +109,7 @@ export const fighterState = z
       .array(
         z.strictObject({
           model: weapon,
-          attribute: z.number().int().min(0).max(100),
+          attribute: z.number().int().min(0).max(100).optional(),
           attributeKey: id.optional(),
           value: count.max(50),
         }),
@@ -111,7 +121,6 @@ export const fighterState = z
     mentalHealth: z.number().int().optional(),
     mentalHealthMax: count.optional(),
     profileId: id.optional(),
-    catalogVersion: id.optional(),
     unresolvedMechanics: z.array(id).optional(),
     throwing: z
       .strictObject({ attribute: count.min(5).max(50), mastery: count.max(50) })
@@ -474,6 +483,20 @@ export function armorProfile(fighter: Fighter) {
   const armor = fighter.armor;
   const usable = armor && armor.remaining !== 0 ? armor.model : null;
   const protection = usable?.protection ?? 0;
+  if (fighter.vulnerability === undefined) {
+    const natural = fighter.naturalResistance;
+    if (natural === undefined)
+      throw new RangeError("Falta Resistencia natural de " + fighter.id);
+    const bonus = usable?.resistanceBonus;
+    if (usable && bonus === undefined)
+      throw new RangeError("Falta bonificación de Resistencia de armadura");
+    return {
+      base: natural,
+      protection: bonus ?? 0,
+      final: natural + (bonus ?? 0),
+      reduction: usable?.directReduction ?? 0,
+    };
+  }
   return {
     base: fighter.vulnerability,
     protection,

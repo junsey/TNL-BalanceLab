@@ -1,11 +1,11 @@
 "use client";
 import { z } from "zod";
 import {
-  character,
+  characterDocument as character,
   armor,
   weapon,
   shield,
-  creature,
+  creatureDocument as creature,
   ruleModule,
 } from "../../../packages/schemas/src/index.ts";
 import { deriveCharacter } from "../../../packages/engine/src/index.ts";
@@ -99,6 +99,10 @@ function Sheet({
       <p className="notice">La ficha necesita corregirse en el editor JSON.</p>
     );
   const card = result.data;
+  const domain =
+    card.schemaVersion === 2
+      ? weapons.find((model) => model.id === card.weaponId)?.skill?.domain
+      : card.weaponId;
   const derived = deriveCharacter(
     card,
     weapons.find((model) => model.id === card.weaponId),
@@ -115,6 +119,34 @@ function Sheet({
   return (
     <fieldset className="field-editor">
       <legend>Ficha de personaje</legend>
+      {card.schemaVersion === 2 && (
+        <>
+          <label>
+            Nombre
+            <input
+              value={card.name}
+              onChange={(event) =>
+                onChange({ ...card, name: event.target.value })
+              }
+            />
+          </label>
+          <label>
+            Resistencia natural (dato de ensayo)
+            <input
+              type="number"
+              min={0}
+              value={card.naturalResistance ?? ""}
+              placeholder="Sin regla de generación"
+              onChange={(event) => {
+                const next = { ...card };
+                if (event.target.value === "") delete next.naturalResistance;
+                else next.naturalResistance = Number(event.target.value);
+                onChange(next);
+              }}
+            />
+          </label>
+        </>
+      )}
       {Object.entries(attributes).map(([key, label]) => (
         <label key={key}>
           {label}
@@ -182,13 +214,14 @@ function Sheet({
           type="number"
           min={0}
           max={50}
-          value={card.mastery[card.weaponId] ?? 0}
+          disabled={!domain}
+          value={domain ? (card.mastery[domain] ?? 0) : 0}
           onChange={(event) =>
             onChange({
               ...card,
               mastery: {
                 ...card.mastery,
-                [card.weaponId]: Math.max(
+                [domain!]: Math.max(
                   0,
                   Math.min(50, Math.trunc(Number(event.target.value))),
                 ),
@@ -252,10 +285,18 @@ export function CatalogEditor({
   const data = input as Record<string, unknown>;
   const set = (key: string, value: unknown) =>
     onChange({ ...data, [key]: value });
+  const visibleFields =
+    kind === "creature" && data.schemaVersion === 2
+      ? fields.creature
+          .filter(([key]) => !["vulnerability", "weaponId"].includes(key))
+          .concat([
+            ["naturalResistance", "Resistencia natural (ensayo)", "number"],
+          ])
+      : fields[kind];
   return (
     <fieldset className="field-editor">
       <legend>Campos del catálogo</legend>
-      {fields[kind].map(([key, label, type]) => (
+      {visibleFields.map(([key, label, type]) => (
         <label key={key}>
           {label}
           {type === "check" ? (

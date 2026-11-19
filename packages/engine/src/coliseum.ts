@@ -350,7 +350,7 @@ export function makeColiseumWave(
       dodgeDisplacement: false,
       equipmentWear: false,
       defenseOverflow: false,
-      resistance,
+      ...(!settings.calculationVersion && { resistance }),
     },
   };
   startTacticalEncounter(setup);

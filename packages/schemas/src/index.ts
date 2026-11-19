@@ -275,3 +275,77 @@ export const batch = z
         batch.completed,
     "Los conteos del lote no coinciden",
   );
+
+export const sourceReference = z.strictObject({
+  sourceDoc: id,
+  sourceSection: id,
+  status: z.enum([
+    "CORE_DEFINIDO",
+    "BANCO_DE_PRUEBAS",
+    "PENDIENTE_DE_REGLAS",
+    "HISTORICO",
+  ]),
+});
+export const characterV2 = character.extend({
+  schemaVersion: z.literal(2),
+  name: id,
+  rulesVersion: z.literal("core03-sheet-v1"),
+  catalogVersion: id,
+  source: sourceReference,
+  naturalResistance: count.optional(),
+});
+export const creatureV2 = z
+  .strictObject({
+    schemaVersion: z.literal(2),
+    id,
+    revision: positive,
+    label: id,
+    rulesVersion: z.literal("core03-sheet-v1"),
+    catalogVersion: id,
+    source: sourceReference,
+    attributes: z.record(id, count),
+    naturalResistance: count.optional(),
+    health: positive,
+    vigor: count.nullable(),
+    alert: percent,
+    dodge: percent,
+    endurance: percent,
+    recovery: dice.optional(),
+    actions: z
+      .array(
+        z.strictObject({
+          model: weapon,
+          associatedAttribute: id,
+          value: training,
+        }),
+      )
+      .min(1)
+      .max(16),
+    aiId: id,
+  })
+  .superRefine((card, ctx) => {
+    for (const action of card.actions) {
+      if (!Object.hasOwn(card.attributes, action.associatedAttribute))
+        ctx.addIssue({
+          code: "custom",
+          message: "Falta Atributo de " + action.model.label,
+        });
+      if (action.model.vigorCost === undefined)
+        ctx.addIssue({
+          code: "custom",
+          message: "Falta coste propio de " + action.model.label,
+        });
+      if (card.vigor === null && action.model.vigorCost !== 0)
+        ctx.addIssue({
+          code: "custom",
+          message: "Acción con coste en criatura sin Vigor",
+        });
+    }
+    if (card.vigor === null && card.recovery)
+      ctx.addIssue({
+        code: "custom",
+        message: "Recuperación sin reserva de Vigor",
+      });
+  });
+export const characterDocument = z.union([character, characterV2]);
+export const creatureDocument = z.union([creature, creatureV2]);
