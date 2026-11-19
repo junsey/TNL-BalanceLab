@@ -2,7 +2,6 @@ import { z } from "zod";
 import { action } from "../../schemas/src/index.ts";
 import {
   attackCost,
-  attackVigorCost,
   availableDagger,
   handLoadout,
   validHands,
@@ -599,7 +598,7 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
         actions.push({ kind: "kick", actor: id, target: other.fighter.id });
     }
   }
-  if (actor.minor && !fighter.energy) {
+  if (actor.minor && !fighter.energy && fighter.actorType !== "creature") {
     const slots = [null, "weapon", "reserve", "shield"] as const;
     const current = handLoadout(fighter);
     for (const right of slots)
@@ -661,7 +660,12 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     }
   }
   const nearby = zonesWithin(state.setup.zones, actor.zone, 2);
-  if (actor.minor && !state.setup.disabled.preparedActions && !actor.prepared) {
+  if (
+    fighter.actorType !== "creature" &&
+    actor.minor &&
+    !state.setup.disabled.preparedActions &&
+    !actor.prepared
+  ) {
     for (const other of state.actors) {
       if (
         other.zone !== actor.zone ||

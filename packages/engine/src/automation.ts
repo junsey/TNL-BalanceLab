@@ -56,6 +56,25 @@ export function chooseTacticalAction(
         : 0) || distance(actor.zone, a.zone) - distance(actor.zone, b.zone),
   );
   const target = opponents[0];
+  if (
+    actor.fighter.actorType === "creature" &&
+    actor.fighter.creatureRecovery &&
+    !actions.some((a) => a.kind === "attack") &&
+    actor.fighter.vigor < actor.fighter.vigorMax
+  ) {
+    const recovery = actions.find((a) => a.kind === "creatureRecover");
+    if (recovery)
+      return { action: recovery, reason: "creature-sheet-recovery" };
+    if (target) {
+      const nearest = (zone: string) =>
+        Math.min(...opponents.map((p) => distance(zone, p.zone)));
+      const retreat = actions.find(
+        (a) => a.kind === "move" && nearest(a.zone) > nearest(actor.zone),
+      );
+      if (retreat)
+        return { action: retreat, reason: "retreat-before-sheet-recovery" };
+    }
+  }
   for (const priority of [...profile.priorities, "end"] as const) {
     const { fighter } = actor;
     if (
@@ -89,10 +108,46 @@ export function chooseTacticalAction(
     }
     if (priority === "attack" || priority === "prepareAttack") {
       for (const opponent of opponents) {
-        const action = actions.find(
+        const candidates = actions.filter(
           (action) =>
             action.kind === priority && action.target === opponent.fighter.id,
         );
+        if (priority === "attack" && fighter.actorType === "creature") {
+          const expected = (expression: string) => {
+            const m = /^(\d+)d(\d+)(?:\+(\d+))?$/.exec(expression)!;
+            return (Number(m[1]) * (Number(m[2]) + 1)) / 2 + Number(m[3] ?? 0);
+          };
+          const score = (candidate: (typeof candidates)[number]) => {
+            const action = candidate as Extract<
+              typeof candidate,
+              { kind: "attack" }
+            >;
+            const specific = fighter.creatureActions?.find(
+              (a) => a.model.id === action.weaponId,
+            );
+            const model = specific?.model ?? fighter.weapon.model;
+            const capacity =
+              (specific?.attribute ??
+                state.setup.rules.resistance?.[id]?.associatedAttribute ??
+                0) + (specific?.value ?? fighter.mastery);
+            const defense = state.setup.rules.resistance?.[opponent.fighter.id];
+            const resistance =
+              (defense?.naturalResistance ?? 0) + (defense?.armorBonus ?? 0);
+            const chance = Math.max(
+              0.01,
+              Math.min(0.99, (capacity - resistance) / 100),
+            );
+            const cost =
+              model.vigorCost ??
+              { light: 1, medium: 2, heavy: 3 }[model.category];
+            const scarcity = 1 - fighter.vigor / Math.max(1, fighter.vigorMax);
+            return (
+              expected(model.damage) * chance - cost * (0.25 + scarcity * 1.5)
+            );
+          };
+          candidates.sort((a, b) => score(b) - score(a));
+        }
+        const action = candidates[0];
         if (action) return { action, reason: profile.objective };
       }
       continue;
@@ -134,7 +189,11 @@ export function chooseEnemyAction(
 export function runAutomaticEncounter(
   initial: TacticalState,
   profiles: ReadonlyMap<string, TacticalProfile>,
-  options: { recordEvents?: boolean; actionLimit?: number } = {},
+  options: {
+    recordEvents?: boolean;
+    actionLimit?: number;
+    onStep?: (previous: TacticalState, next: TacticalState) => void;
+  } = {},
 ) {
   let state = initial;
   const actionLimit = options.actionLimit ?? 100000;
@@ -144,6 +203,7 @@ export function runAutomaticEncounter(
   const metrics = emptyCombatMetrics();
   let steps = 0;
   while (!state.outcome && steps < actionLimit) {
+    const previous = state;
     let decision = null;
     for (const { fighter } of state.actors) {
       decision = chooseTacticalAction(
@@ -179,6 +239,7 @@ export function runAutomaticEncounter(
       );
       state = step.state;
     }
+    options.onStep?.(previous, state);
     steps++;
   }
   const status = !state.outcome

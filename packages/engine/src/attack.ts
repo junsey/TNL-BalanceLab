@@ -128,9 +128,17 @@ export const fighterState = z
         code: "custom",
         message: "Combinación de manos inválida",
       });
-    if (fighter.vigorAbsent && (fighter.actorType !== "creature" || fighter.vigor !== 0 ||
-        fighter.vigorMax !== 0 || fighter.creatureRecovery))
-      ctx.addIssue({code: "custom", message: "Entidad sin reserva de Vigor inconsistente"});
+    if (
+      fighter.vigorAbsent &&
+      (fighter.actorType !== "creature" ||
+        fighter.vigor !== 0 ||
+        fighter.vigorMax !== 0 ||
+        fighter.creatureRecovery)
+    )
+      ctx.addIssue({
+        code: "custom",
+        message: "Entidad sin reserva de Vigor inconsistente",
+      });
     const energy = fighter.energy;
     if (
       energy &&
@@ -264,7 +272,8 @@ export function equippedAttacks(fighter: Fighter) {
     reserve &&
     !fighter.groundWeapons?.some((entry) => entry.slot === "reserve") &&
     (slots.has("reserve") ||
-      (reserve.model.id === "daga" && (!hands.right || !hands.left)))
+      (["daga", "dagger"].includes(reserve.model.id) &&
+        (!hands.right || !hands.left)))
   ) {
     result.push({ item: reserve, weaponId: reserve.model.id });
   }
@@ -366,7 +375,8 @@ export function availableDagger(fighter: Fighter) {
     !hands.right ||
     !hands.left) &&
     !fighter.groundWeapons?.some((entry) => entry.slot === "reserve") &&
-    dagger?.model.id === "daga" &&
+    dagger &&
+    ["daga", "dagger"].includes(dagger.model.id) &&
     dagger.remaining !== 0 &&
     !(hands.right === "weapon" && hands.left === "weapon")
     ? dagger
@@ -425,7 +435,11 @@ export function legalDefenses(
     fighter.conditions?.some((condition) => condition.blocksReactions)
   )
     return choices;
-  if (fighter.vigor >= 2) choices.push("dodge");
+  if (
+    fighter.vigor >= 2 &&
+    (fighter.actorType !== "creature" || fighter.dodge > 0)
+  )
+    choices.push("dodge");
   const weapon = parryWeapon(fighter);
   if (
     weapon &&
