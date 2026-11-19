@@ -101,6 +101,21 @@ export function Detail({
               {print(detail.mastery)}. Tirada {print(detail.roll)} + Resistencia{" "}
               {print(detail.resistance)} = {print(detail.modifiedRoll)} contra{" "}
               {print(detail.target)}.
+              {typeof detail.naturalResistance === "number" && (
+                <>
+                  {" "}
+                  Resistencia natural {print(detail.naturalResistance)} +
+                  armadura {print(detail.armorResistance)}.
+                </>
+              )}
+              {typeof detail.target === "number" && (
+                <>
+                  {" "}
+                  Umbrales normal {detail.target} · mitad{" "}
+                  {Math.floor(detail.target / 2)} · cuarto{" "}
+                  {Math.floor(detail.target / 4)}.
+                </>
+              )}
             </span>
           ) : (
             <span>

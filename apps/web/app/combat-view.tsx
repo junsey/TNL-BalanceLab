@@ -519,6 +519,7 @@ export function CommandMenu({
   category,
   onCategory,
   attackWeaponId,
+  returnToAttack = false,
 }: {
   state: TacticalState;
   active: string;
@@ -529,11 +530,14 @@ export function CommandMenu({
   category: Command | null;
   onCategory: (command: Command | null, weaponId?: string) => void;
   attackWeaponId?: string;
+  returnToAttack?: boolean;
 }) {
   const [proposedHands, setProposedHands] = useState<ReturnType<
     typeof handLoadout
   > | null>(null);
-  const [groupIndex, setGroupIndex] = useState<number | null>(null);
+  const [groupIndex, setGroupIndex] = useState<number | null>(
+    returnToAttack ? 0 : null,
+  );
   const legal = getLegalActions(state, active);
   const current = state.actors.find((actor) => actor.fighter.id === active);
   const reason = actionBlockReasons(state, active);
@@ -543,6 +547,13 @@ export function CommandMenu({
     : reaction
       ? "opportunity"
       : category;
+  const editor =
+    activeCategory === "equipHands" || activeCategory === "prepareReactive";
+  function backFromEditor() {
+    setProposedHands(null);
+    onCategory(null);
+    setGroupIndex(activeCategory === "equipHands" ? 0 : 4);
+  }
   const [preparedWeapon, setPreparedWeapon] = useState<string | undefined>();
   const [onEntry, setOnEntry] = useState(false);
   const [onAttack, setOnAttack] = useState(false);
@@ -625,459 +636,517 @@ export function CommandMenu({
       <section className="pane command-pane">
         {manual && !state.outcome && (
           <div className="command-body">
-            {!reaction && (
+            {
               <p className="command-resources">
                 <span data-used={!current?.major}>◆ Mayor</span>{" "}
                 <span data-used={!current?.minor}>◇ Menor</span>
               </p>
-            )}
-            <nav className="command-list" aria-label="Comandos">
-              {groups.map((group, index) => (
-                <section key={group.label} className="command-group">
-                  {!reaction && groupIndex === null && (
-                    <button type="button" onClick={() => setGroupIndex(index)}>
-                      {group.label}
-                    </button>
-                  )}
-                  {!reaction && groupIndex === index && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setGroupIndex(null);
-                        onCategory(null);
-                      }}
-                    >
-                      ← Volver
-                    </button>
-                  )}
-                  {(reaction || groupIndex === index) &&
-                    commands
-                      .filter((item) => group.ids.includes(item.id))
-                      .map((item) => {
-                        const matching = legal.filter(
-                          (action) => action.kind === item.id,
-                        );
-                        if (item.id === "throwWeapon" && current) {
-                          const slots = ["weapon", "reserve"] as const;
-                          return slots.map((slot) => {
+            }
+            <div className="command-content">
+              {!editor && (
+                <nav className="command-list" aria-label="Comandos">
+                  {groups.map((group, index) => (
+                    <section key={group.label} className="command-group">
+                      {!reaction && groupIndex === null && (
+                        <button
+                          type="button"
+                          onClick={() => setGroupIndex(index)}
+                        >
+                          {group.label}
+                        </button>
+                      )}
+                      {!reaction && groupIndex === index && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGroupIndex(null);
+                            onCategory(null);
+                          }}
+                        >
+                          ← Volver
+                        </button>
+                      )}
+                      {(reaction || groupIndex === index) &&
+                        commands
+                          .filter((item) => group.ids.includes(item.id))
+                          .map((item) => {
+                            const matching = legal.filter(
+                              (action) => action.kind === item.id,
+                            );
+                            if (item.id === "throwWeapon" && current) {
+                              const slots = ["weapon", "reserve"] as const;
+                              return slots.map((slot) => {
+                                const weapon =
+                                  slot === "weapon"
+                                    ? current.fighter.weapon
+                                    : reserveWeapon(current.fighter);
+                                if (!weapon?.model.throwable) return null;
+                                const enabled = matching.some(
+                                  (action) =>
+                                    action.kind === "throwWeapon" &&
+                                    action.slot === slot,
+                                );
+                                return (
+                                  <button
+                                    type="button"
+                                    key={item.id + slot}
+                                    disabled={!enabled}
+                                    title={
+                                      !enabled
+                                        ? unavailable(item.id)
+                                        : undefined
+                                    }
+                                    onClick={() =>
+                                      onCategory("throwWeapon", slot)
+                                    }
+                                  >
+                                    <ActionIcon cost="major" />
+                                    Arrojar {weapon.model.label}
+                                    <small>
+                                      {attackCost[weapon.model.category]} Vigor
+                                      · {weapon.model.damage.toUpperCase()} +
+                                      1D6
+                                    </small>
+                                  </button>
+                                );
+                              });
+                            }
+                            if (item.id === "attack" && current) {
+                              const { fighter } = current;
+                              const weapons = equippedAttacks(fighter).map(
+                                ({ item, weaponId }) => ({
+                                  model: item.model,
+                                  id: weaponId,
+                                }),
+                              );
+                              const resistance =
+                                state.setup.rules.resistance?.[fighter.id];
+                              return weapons.map(({ model, id }) => {
+                                const weaponSkill =
+                                  resistance?.weaponSkills?.[model.id];
+                                const skill = weaponSkill
+                                  ? weaponSkill.attribute + weaponSkill.mastery
+                                  : resistance
+                                    ? resistance.associatedAttribute +
+                                      resistance.mastery
+                                    : fighter.mastery;
+                                const enabled = matching.some(
+                                  (action) =>
+                                    action.kind === "attack" &&
+                                    action.weaponId === id,
+                                );
+                                return (
+                                  <button
+                                    type="button"
+                                    className="command-attack-option"
+                                    key={model.id}
+                                    aria-pressed={
+                                      activeCategory === "attack" &&
+                                      attackWeaponId === id
+                                    }
+                                    disabled={!enabled}
+                                    title={
+                                      !enabled
+                                        ? unavailable("attack")
+                                        : undefined
+                                    }
+                                    onClick={() => onCategory("attack", id)}
+                                  >
+                                    <span>
+                                      <span>
+                                        <ActionIcon cost="major" />
+                                        Atacar con {model.label}
+                                      </span>
+                                      <small>
+                                        {attackCost[model.category]} Vigor
+                                      </small>
+                                    </span>
+                                    <small className="command-attack-stats">
+                                      <span>Habilidad {skill}%</span>
+                                      <span aria-label="Daño base, adicional a mitad y adicional a cuarto">
+                                        {model.damage.toUpperCase()} | +
+                                        {model.halfExtra.toUpperCase()} | +
+                                        {model.quarterExtra.toUpperCase()}
+                                      </span>
+                                    </small>
+                                  </button>
+                                );
+                              });
+                            }
+                            if (
+                              item.id === "weaponControl" &&
+                              !current?.fighter.energy?.controls
+                            )
+                              return null;
+                            if (item.id === "equipHands") {
+                              return (
+                                <button
+                                  type="button"
+                                  className="command-attack-option"
+                                  key={item.id}
+                                  disabled={!matching.length}
+                                  title={
+                                    !matching.length
+                                      ? !current?.minor
+                                        ? "Acción Menor usada"
+                                        : "Arma o equipo incompatible"
+                                      : undefined
+                                  }
+                                  onClick={() => {
+                                    setProposedHands(
+                                      handLoadout(current!.fighter),
+                                    );
+                                    onCategory("equipHands");
+                                  }}
+                                >
+                                  <ActionIcon cost="minor" />
+                                  Cambiar arma
+                                </button>
+                              );
+                            }
+                            const blocked = !matching.length;
                             const weapon =
-                              slot === "weapon"
-                                ? current.fighter.weapon
-                                : reserveWeapon(current.fighter);
-                            if (!weapon?.model.throwable) return null;
-                            const enabled = matching.some(
-                              (action) =>
-                                action.kind === "throwWeapon" &&
-                                action.slot === slot,
-                            );
+                              current && attackWeapon(current.fighter);
+                            const cost =
+                              item.id === "sneak"
+                                ? state.setup.maneuvers?.sneakVigor + " Vigor"
+                                : item.id === "kick"
+                                  ? state.setup.maneuvers?.kickVigor + " Vigor"
+                                  : item.id === "attack"
+                                    ? weapon
+                                      ? attackCost[weapon.category] + " Vigor"
+                                      : null
+                                    : [
+                                          "move",
+                                          "run",
+                                          "breathe",
+                                          "recover",
+                                          "flee",
+                                          "prepareReactive",
+                                          "prepareBreathe",
+                                          "stabilize",
+                                        ].includes(item.id)
+                                      ? "0 Vigor"
+                                      : null;
                             return (
                               <button
                                 type="button"
-                                key={item.id + slot}
-                                disabled={!enabled}
+                                key={item.id}
+                                aria-pressed={item.id === activeCategory}
+                                disabled={blocked}
                                 title={
-                                  !enabled ? unavailable(item.id) : undefined
+                                  blocked ? unavailable(item.id) : undefined
                                 }
-                                onClick={() => onCategory("throwWeapon", slot)}
-                              >
-                                <ActionIcon cost="major" />
-                                Arrojar {weapon.model.label}
-                                <small>
-                                  {attackCost[weapon.model.category]} Vigor ·{" "}
-                                  {weapon.model.damage.toUpperCase()} + 1D6
-                                </small>
-                              </button>
-                            );
-                          });
-                        }
-                        if (item.id === "attack" && current) {
-                          const { fighter } = current;
-                          const weapons = equippedAttacks(fighter).map(
-                            ({ item, weaponId }) => ({
-                              model: item.model,
-                              id: weaponId,
-                            }),
-                          );
-                          const resistance =
-                            state.setup.rules.resistance?.[fighter.id];
-                          return weapons.map(({ model, id }) => {
-                            const weaponSkill =
-                              resistance?.weaponSkills?.[model.id];
-                            const skill = weaponSkill
-                              ? weaponSkill.attribute + weaponSkill.mastery
-                              : resistance
-                                ? resistance.associatedAttribute +
-                                  resistance.mastery
-                                : fighter.mastery;
-                            const enabled = matching.some(
-                              (action) =>
-                                action.kind === "attack" &&
-                                action.weaponId === id,
-                            );
-                            return (
-                              <button
-                                type="button"
-                                className="command-attack-option"
-                                key={model.id}
-                                aria-pressed={
-                                  activeCategory === "attack" &&
-                                  attackWeaponId === id
-                                }
-                                disabled={!enabled}
-                                title={
-                                  !enabled ? unavailable("attack") : undefined
-                                }
-                                onClick={() => onCategory("attack", id)}
+                                onClick={() => {
+                                  if (
+                                    matching.length === 1 &&
+                                    ![
+                                      "move",
+                                      "run",
+                                      "attack",
+                                      "weaponControl",
+                                      "prepareReactive",
+                                    ].includes(item.id)
+                                  ) {
+                                    onAction(matching[0]!);
+                                  } else {
+                                    onCategory(item.id);
+                                  }
+                                }}
                               >
                                 <span>
                                   <span>
-                                    <ActionIcon cost="major" />
-                                    Atacar con {model.label}
+                                    <ActionIcon cost={commandAction[item.id]} />
+                                    {item.label}
                                   </span>
-                                  <small>
-                                    {attackCost[model.category]} Vigor
-                                  </small>
+                                  {cost && <small>{cost}</small>}
                                 </span>
-                                <small className="command-attack-stats">
-                                  <span>Habilidad {skill}%</span>
-                                  <span aria-label="Daño base, adicional a mitad y adicional a cuarto">
-                                    {model.damage.toUpperCase()} | +
-                                    {model.halfExtra.toUpperCase()} | +
-                                    {model.quarterExtra.toUpperCase()}
-                                  </span>
-                                </small>
+                                {blocked && (
+                                  <small className="command-block">
+                                    {unavailable(item.id)}
+                                  </small>
+                                )}
                               </button>
                             );
-                          });
+                          })}
+                    </section>
+                  ))}
+                </nav>
+              )}
+              {!reaction && groupIndex === 3 && (
+                <div className="command-options">
+                  {(["stamina", "medical"] as const).map((item) => {
+                    const stock = current?.fighter.injections?.[item] ?? 0;
+                    const choices = legal.filter(
+                      (action) =>
+                        action.kind === "inject" && action.item === item,
+                    );
+                    return (
+                      <button
+                        key={item}
+                        type="button"
+                        disabled={!choices.length}
+                        title={
+                          !stock
+                            ? "Sin unidades"
+                            : !current?.minor
+                              ? "Acción Menor usada"
+                              : undefined
                         }
-                        if (
-                          item.id === "weaponControl" &&
-                          !current?.fighter.energy?.controls
+                        onClick={() => {
+                          if (choices.length === 1) onAction(choices[0]!);
+                          else setInjection(item);
+                        }}
+                      >
+                        {"◇ "}
+                        {item === "stamina"
+                          ? "Inyección de estamina"
+                          : "Inyección médica"}{" "}
+                        {"×"}
+                        {stock}
+                        <small>
+                          {item === "stamina"
+                            ? "Recupera todo el Vigor"
+                            : "Recupera 2d6 + 4 Salud"}
+                        </small>
+                      </button>
+                    );
+                  })}
+                  {injectionOptions.length > 1 &&
+                    injectionOptions.map((action) => (
+                      <button
+                        type="button"
+                        key={JSON.stringify(action)}
+                        onClick={() => {
+                          setInjection(null);
+                          onAction(action);
+                        }}
+                      >
+                        {actionName(action)}
+                      </button>
+                    ))}
+                </div>
+              )}
+              <div className="command-detail">
+                {editor && (
+                  <div className="command-level-heading">
+                    <button type="button" onClick={backFromEditor}>
+                      ← Volver
+                    </button>
+                    <h3>
+                      {activeCategory === "equipHands"
+                        ? "Cambiar arma"
+                        : "Preparar ataque"}
+                    </h3>
+                  </div>
+                )}
+                {state.pending && (
+                  <p>Impacto confirmado. El daño se tira después de decidir.</p>
+                )}
+                {activeCategory === "equipHands" && current ? (
+                  <fieldset className="command-options">
+                    <legend>Equipo de manos</legend>
+                    {(["right", "left"] as const).map((hand) => (
+                      <label key={hand}>
+                        {hand === "right" ? "Mano derecha" : "Mano izquierda"}
+                        <select
+                          value={
+                            (proposedHands ?? handLoadout(current.fighter))[
+                              hand
+                            ] ?? ""
+                          }
+                          onChange={(event) => {
+                            const slot = (event.target.value ||
+                              null) as ReturnType<typeof handLoadout>["right"];
+                            const other = hand === "right" ? "left" : "right";
+                            const previous =
+                              proposedHands ?? handLoadout(current.fighter);
+                            const item =
+                              slot === "weapon"
+                                ? current.fighter.weapon
+                                : slot === "reserve"
+                                  ? reserveWeapon(current.fighter)
+                                  : null;
+                            setProposedHands(
+                              item?.model.twoHanded
+                                ? { right: slot, left: slot }
+                                : {
+                                    ...previous,
+                                    [hand]: slot,
+                                    ...(previous.right === previous.left &&
+                                    previous.right
+                                      ? { [other]: null }
+                                      : {}),
+                                  },
+                            );
+                          }}
+                        >
+                          <option value="">Libre</option>
+                          <option value="weapon">
+                            {current.fighter.weapon.model.label}
+                          </option>
+                          {reserveWeapon(current.fighter) && (
+                            <option value="reserve">
+                              {reserveWeapon(current.fighter)!.model.label}
+                            </option>
+                          )}
+                          {current.fighter.shield && (
+                            <option value="shield">
+                              {current.fighter.shield.model.label}
+                            </option>
+                          )}
+                        </select>
+                      </label>
+                    ))}
+                    <button
+                      type="button"
+                      disabled={
+                        !options.some(
+                          (action) =>
+                            action.kind === "equipHands" &&
+                            action.right === proposedHands?.right &&
+                            action.left === proposedHands?.left,
                         )
-                          return null;
-                        if (item.id === "equipHands") {
+                      }
+                      onClick={() => {
+                        const action = options.find(
+                          (action) =>
+                            action.kind === "equipHands" &&
+                            action.right === proposedHands?.right &&
+                            action.left === proposedHands?.left,
+                        );
+                        if (action) onAction(action);
+                      }}
+                    >
+                      Equipar
+                    </button>
+                    <button type="button" onClick={backFromEditor}>
+                      Cancelar
+                    </button>
+                  </fieldset>
+                ) : activeCategory === "attack" ||
+                  activeCategory === "throwWeapon" ? (
+                  <p>Seleccioná un enemigo en el mapa o en el panel lateral.</p>
+                ) : activeCategory ? (
+                  <>
+                    {!editor && (
+                      <h3>
+                        {
+                          commands.find((item) => item.id === activeCategory)
+                            ?.label
+                        }
+                      </h3>
+                    )}
+                    {activeCategory === "move" ||
+                    activeCategory === "run" ||
+                    activeCategory === "sneak" ? (
+                      <p>
+                        Elegí un destino resaltado. Salir del alcance enemigo
+                        puede provocar ataques de oportunidad.
+                      </p>
+                    ) : activeCategory === "prepareReactive" ? (
+                      <fieldset className="command-options">
+                        <legend>Ataque preparado</legend>
+                        <label>
+                          Arma
+                          <select
+                            value={selectedPreparedWeapon ?? ""}
+                            onChange={(event) =>
+                              setPreparedWeapon(event.target.value || undefined)
+                            }
+                          >
+                            {equippedAttacks(current!.fighter)
+                              .filter(({ weaponId }) =>
+                                options.some(
+                                  (action) =>
+                                    action.kind === "prepareReactive" &&
+                                    action.weaponId === weaponId,
+                                ),
+                              )
+                              .map(({ item, weaponId }) => (
+                                <option
+                                  key={item.model.id}
+                                  value={weaponId ?? ""}
+                                >
+                                  {item.model.label}
+                                </option>
+                              ))}
+                          </select>
+                        </label>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={onEntry}
+                            onChange={(event) =>
+                              setOnEntry(event.target.checked)
+                            }
+                          />{" "}
+                          Cuando un enemigo entra en mi zona
+                        </label>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={onAttack}
+                            onChange={(event) =>
+                              setOnAttack(event.target.checked)
+                            }
+                          />{" "}
+                          Cuando un enemigo me ataca
+                        </label>
+                        <button
+                          type="button"
+                          disabled={!options.length || (!onEntry && !onAttack)}
+                          onClick={() => {
+                            const trigger =
+                              onEntry && onAttack
+                                ? "either"
+                                : onEntry
+                                  ? "enemyEnters"
+                                  : "incomingAttack";
+                            const action = options.find(
+                              (item) =>
+                                item.kind === "prepareReactive" &&
+                                item.trigger === trigger &&
+                                item.weaponId === selectedPreparedWeapon,
+                            );
+                            if (action) onAction(action);
+                          }}
+                        >
+                          <ActionIcon cost="major" />
+                          Preparar ataque
+                        </button>
+                      </fieldset>
+                    ) : (
+                      <div className="command-options">
+                        {options.map((action) => {
+                          const cost =
+                            current && action.kind === "weaponControl"
+                              ? weaponControlCost(
+                                  current.fighter,
+                                  action.operation,
+                                )
+                              : null;
                           return (
                             <button
                               type="button"
-                              className="command-attack-option"
-                              key={item.id}
-                              disabled={!matching.length}
-                              title={
-                                !matching.length
-                                  ? !current?.minor
-                                    ? "Acción Menor usada"
-                                    : "Arma o equipo incompatible"
-                                  : undefined
-                              }
-                              onClick={() => {
-                                setProposedHands(handLoadout(current!.fighter));
-                                onCategory("equipHands");
-                              }}
+                              key={JSON.stringify(action)}
+                              onClick={() => onAction(action)}
                             >
-                              <ActionIcon cost="minor" />
-                              Cambiar arma
+                              <ActionIcon cost={cost?.action} />
+                              {actionName(action)}
+                              {cost && (
+                                <small>
+                                  {cost.vigor} Vigor · {cost.energy} Energía
+                                </small>
+                              )}
                             </button>
                           );
-                        }
-                        const blocked = !matching.length;
-                        const weapon = current && attackWeapon(current.fighter);
-                        const cost =
-                          item.id === "sneak"
-                            ? state.setup.maneuvers?.sneakVigor + " Vigor"
-                            : item.id === "kick"
-                              ? state.setup.maneuvers?.kickVigor + " Vigor"
-                              : item.id === "attack"
-                                ? weapon
-                                  ? attackCost[weapon.category] + " Vigor"
-                                  : null
-                                : [
-                                      "move",
-                                      "run",
-                                      "breathe",
-                                      "recover",
-                                      "flee",
-                                      "prepareReactive",
-                                      "prepareBreathe",
-                                      "stabilize",
-                                    ].includes(item.id)
-                                  ? "0 Vigor"
-                                  : null;
-                        return (
-                          <button
-                            type="button"
-                            key={item.id}
-                            aria-pressed={item.id === activeCategory}
-                            disabled={blocked}
-                            title={blocked ? unavailable(item.id) : undefined}
-                            onClick={() => {
-                              if (
-                                matching.length === 1 &&
-                                ![
-                                  "move",
-                                  "run",
-                                  "attack",
-                                  "weaponControl",
-                                ].includes(item.id)
-                              ) {
-                                onAction(matching[0]!);
-                              } else {
-                                onCategory(item.id);
-                              }
-                            }}
-                          >
-                            <span>
-                              <span>
-                                <ActionIcon cost={commandAction[item.id]} />
-                                {item.label}
-                              </span>
-                              {cost && <small>{cost}</small>}
-                            </span>
-                            {blocked && (
-                              <small className="command-block">
-                                {unavailable(item.id)}
-                              </small>
-                            )}
-                          </button>
-                        );
-                      })}
-                </section>
-              ))}
-            </nav>
-            {!reaction && groupIndex === 3 && (
-              <div className="command-options">
-                {(["stamina", "medical"] as const).map((item) => {
-                  const stock = current?.fighter.injections?.[item] ?? 0;
-                  const choices = legal.filter(
-                    (action) =>
-                      action.kind === "inject" && action.item === item,
-                  );
-                  return (
-                    <button
-                      key={item}
-                      type="button"
-                      disabled={!choices.length}
-                      title={
-                        !stock
-                          ? "Sin unidades"
-                          : !current?.minor
-                            ? "Acción Menor usada"
-                            : undefined
-                      }
-                      onClick={() => {
-                        if (choices.length === 1) onAction(choices[0]!);
-                        else setInjection(item);
-                      }}
-                    >
-                      {"◇ "}
-                      {item === "stamina"
-                        ? "Inyección de estamina"
-                        : "Inyección médica"}{" "}
-                      {"×"}
-                      {stock}
-                      <small>
-                        {item === "stamina"
-                          ? "Recupera todo el Vigor"
-                          : "Recupera 2d6 + 4 Salud"}
-                      </small>
-                    </button>
-                  );
-                })}
-                {injectionOptions.length > 1 &&
-                  injectionOptions.map((action) => (
-                    <button
-                      type="button"
-                      key={JSON.stringify(action)}
-                      onClick={() => {
-                        setInjection(null);
-                        onAction(action);
-                      }}
-                    >
-                      {actionName(action)}
-                    </button>
-                  ))}
+                        })}
+                      </div>
+                    )}
+                  </>
+                ) : null}
               </div>
-            )}
-            <div className="command-detail">
-              {state.pending && (
-                <p>Impacto confirmado. El daño se tira después de decidir.</p>
-              )}
-              {activeCategory === "equipHands" && current ? (
-                <fieldset className="command-options">
-                  <legend>Equipo de manos</legend>
-                  {(["right", "left"] as const).map((hand) => (
-                    <label key={hand}>
-                      {hand === "right" ? "Mano derecha" : "Mano izquierda"}
-                      <select
-                        value={
-                          (proposedHands ?? handLoadout(current.fighter))[
-                            hand
-                          ] ?? ""
-                        }
-                        onChange={(event) =>
-                          setProposedHands({
-                            ...(proposedHands ?? handLoadout(current.fighter)),
-                            [hand]: event.target.value || null,
-                          } as ReturnType<typeof handLoadout>)
-                        }
-                      >
-                        <option value="">Libre</option>
-                        <option value="weapon">
-                          {current.fighter.weapon.model.label}
-                        </option>
-                        {reserveWeapon(current.fighter) && (
-                          <option value="reserve">
-                            {reserveWeapon(current.fighter)!.model.label}
-                          </option>
-                        )}
-                        {current.fighter.shield && (
-                          <option value="shield">
-                            {current.fighter.shield.model.label}
-                          </option>
-                        )}
-                      </select>
-                    </label>
-                  ))}
-                  <button
-                    type="button"
-                    disabled={
-                      !options.some(
-                        (action) =>
-                          action.kind === "equipHands" &&
-                          action.right === proposedHands?.right &&
-                          action.left === proposedHands?.left,
-                      )
-                    }
-                    onClick={() => {
-                      const action = options.find(
-                        (action) =>
-                          action.kind === "equipHands" &&
-                          action.right === proposedHands?.right &&
-                          action.left === proposedHands?.left,
-                      );
-                      if (action) onAction(action);
-                    }}
-                  >
-                    Equipar
-                  </button>
-                  <button type="button" onClick={() => onCategory(null)}>
-                    Cancelar
-                  </button>
-                </fieldset>
-              ) : activeCategory === "attack" ||
-                activeCategory === "throwWeapon" ? (
-                <p>Seleccioná un enemigo en el mapa o en el panel lateral.</p>
-              ) : activeCategory ? (
-                <>
-                  <h3>
-                    {commands.find((item) => item.id === activeCategory)?.label}
-                  </h3>
-                  {activeCategory === "move" ||
-                  activeCategory === "run" ||
-                  activeCategory === "sneak" ? (
-                    <p>
-                      Elegí un destino resaltado. Salir del alcance enemigo
-                      puede provocar ataques de oportunidad.
-                    </p>
-                  ) : activeCategory === "prepareReactive" ? (
-                    <fieldset className="command-options">
-                      <legend>Ataque preparado</legend>
-                      <label>
-                        Arma
-                        <select
-                          value={selectedPreparedWeapon ?? ""}
-                          onChange={(event) =>
-                            setPreparedWeapon(event.target.value || undefined)
-                          }
-                        >
-                          {equippedAttacks(current!.fighter)
-                            .filter(({ weaponId }) =>
-                              options.some(
-                                (action) =>
-                                  action.kind === "prepareReactive" &&
-                                  action.weaponId === weaponId,
-                              ),
-                            )
-                            .map(({ item, weaponId }) => (
-                              <option
-                                key={item.model.id}
-                                value={weaponId ?? ""}
-                              >
-                                {item.model.label}
-                              </option>
-                            ))}
-                        </select>
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={onEntry}
-                          onChange={(event) => setOnEntry(event.target.checked)}
-                        />{" "}
-                        Cuando un enemigo entra en mi zona
-                      </label>
-                      <label>
-                        <input
-                          type="checkbox"
-                          checked={onAttack}
-                          onChange={(event) =>
-                            setOnAttack(event.target.checked)
-                          }
-                        />{" "}
-                        Cuando un enemigo me ataca
-                      </label>
-                      <button
-                        type="button"
-                        disabled={!options.length || (!onEntry && !onAttack)}
-                        onClick={() => {
-                          const trigger =
-                            onEntry && onAttack
-                              ? "either"
-                              : onEntry
-                                ? "enemyEnters"
-                                : "incomingAttack";
-                          const action = options.find(
-                            (item) =>
-                              item.kind === "prepareReactive" &&
-                              item.trigger === trigger &&
-                              item.weaponId === selectedPreparedWeapon,
-                          );
-                          if (action) onAction(action);
-                        }}
-                      >
-                        <ActionIcon cost="major" />
-                        Preparar ataque
-                      </button>
-                    </fieldset>
-                  ) : (
-                    <div className="command-options">
-                      {options.map((action) => {
-                        const cost =
-                          current && action.kind === "weaponControl"
-                            ? weaponControlCost(
-                                current.fighter,
-                                action.operation,
-                              )
-                            : null;
-                        return (
-                          <button
-                            type="button"
-                            key={JSON.stringify(action)}
-                            onClick={() => onAction(action)}
-                          >
-                            <ActionIcon cost={cost?.action} />
-                            {actionName(action)}
-                            {cost && (
-                              <small>
-                                {cost.vigor} Vigor · {cost.energy} Energía
-                              </small>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              ) : null}
             </div>
             {!reaction && (
               <div className="command-shortcuts">
@@ -1419,7 +1488,16 @@ export function CharacterSheet({
             Esquivar: fighter.dodge,
             Alerta: fighter.alert,
             Parar: fighter.parry,
-            "Dominio equipado": fighter.mastery,
+            ...(resistance
+              ? {
+                  "Atributo del ataque":
+                    resistance.weaponSkills?.[fighter.weapon.model.id]
+                      ?.attribute ?? resistance.associatedAttribute,
+                  "Dominio / valor de acción":
+                    resistance.weaponSkills?.[fighter.weapon.model.id]
+                      ?.mastery ?? resistance.mastery,
+                }
+              : { "Dominio equipado": fighter.mastery }),
             ...(fighter.firstAid !== undefined && {
               "Primeros Auxilios": fighter.firstAid,
             }),

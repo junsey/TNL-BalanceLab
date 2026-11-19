@@ -1338,6 +1338,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                       heading="Comandos"
                       category={category}
                       attackWeaponId={weaponId}
+                      returnToAttack={lastEvent?.action.kind === "equipHands"}
                       onCategory={(c, id) => {
                         setCategory(c);
                         setWeaponId(id);

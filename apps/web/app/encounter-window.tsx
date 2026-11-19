@@ -8,6 +8,7 @@ import {
   type TacticalState,
 } from "../../../packages/engine/src/index.ts";
 import { Detail, changes } from "./combat-log";
+import { exchangeRoll } from "../lib/exchange-roll";
 import { PixelSprite, Resource, type CombatAction } from "./combat-view";
 
 const labels = {
@@ -26,13 +27,14 @@ const grades: Record<string, [string, string]> = {
 };
 
 function ExchangeRoll({ detail }: { detail: TacticalDetail }) {
-  if (typeof detail.roll !== "number") return null;
-  const grade = String(detail.grade ?? "");
+  const result = exchangeRoll(detail);
+  if (result.main === null) return null;
+  const grade = result.grade;
   const [symbol, label] = grades[grade] ?? ["", ""];
   return (
     <span className="exchange-roll" data-grade={grade} title={label}>
       <span aria-hidden="true">{symbol}</span>{" "}
-      <strong>{String(detail.roll).padStart(2, "0")}</strong>
+      <strong>{String(result.main).padStart(2, "0")}</strong>
       {label && <span className="exchange-grade">{label}</span>}
     </span>
   );
@@ -287,9 +289,13 @@ export function EncounterWindow({
               <div className="exchange-strip-value">
                 <small>Tirada</small>
                 <ExchangeRoll detail={offense} />
-                {typeof offense.modifiedRoll === "number" && (
-                  <small>{offense.modifiedRoll} con Resistencia</small>
-                )}
+                {typeof offense.modifiedRoll === "number" &&
+                  typeof offense.roll === "number" && (
+                    <small>
+                      <b>{String(offense.roll).padStart(2, "0")}</b> resultado
+                      natural
+                    </small>
+                  )}
               </div>
             )}
             {ready && dice.length > 0 && (
@@ -326,7 +332,27 @@ export function EncounterWindow({
             </div>
             {ready && (
               <div className="exchange-strip-value">
-                {typeof detail.roll === "number" ? (
+                {detail.shieldCheck &&
+                typeof detail.shieldCheck === "object" &&
+                !Array.isArray(detail.shieldCheck) ? (
+                  <>
+                    <small>Tirada ofensiva con escudo</small>
+                    <ExchangeRoll
+                      detail={{
+                        ...detail,
+                        roll: Number(detail.shieldCheck.natural),
+                        modifiedRoll: Number(detail.shieldCheck.modified),
+                        grade: String(detail.shieldCheck.grade),
+                      }}
+                    />
+                    <small>
+                      <b>
+                        {String(detail.shieldCheck.natural).padStart(2, "0")}
+                      </b>{" "}
+                      resultado natural
+                    </small>
+                  </>
+                ) : typeof detail.roll === "number" ? (
                   <>
                     <small>Tirada</small>
                     <ExchangeRoll detail={detail} />

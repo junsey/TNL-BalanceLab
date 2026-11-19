@@ -2019,6 +2019,116 @@ h3 {
 .coliseum-table {
   overflow: auto;
 }
+.dock-commands > .command-pane {
+  height: min(350px, 65dvh);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.dock-commands .command-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.command-resources {
+  flex: 0 0 auto;
+  margin: 0 0 6px;
+}
+.command-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.dock-commands .command-list {
+  border: 0;
+  padding: 4px;
+}
+.dock-commands .command-detail {
+  min-height: 0;
+  padding: 6px;
+  border: 0;
+}
+.command-level-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.command-level-heading h3 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.command-level-heading button {
+  justify-self: start;
+}
+.command-options {
+  min-width: 0;
+}
+.command-options select {
+  max-width: 100%;
+}
+.command-detail fieldset.command-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+  margin: 0;
+}
+.command-detail fieldset.command-options label {
+  grid-column: 1/-1;
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+}
+.command-detail fieldset.command-options label:has(input[type="checkbox"]) {
+  display: flex;
+  align-items: flex-start;
+  font-size: 0.78rem;
+}
+.command-detail fieldset.command-options select {
+  padding: 5px;
+  min-height: 30px;
+  min-width: 0;
+}
+.command-detail fieldset.command-options button {
+  padding: 7px 5px;
+  font-size: 0.78rem;
+}
+.command-detail fieldset.command-options:has(input[type="checkbox"]) > button {
+  grid-column: 1/-1;
+  white-space: nowrap;
+}
+.command-level-heading {
+  min-width: 0;
+}
+.command-level-heading > button {
+  flex: 0 0 auto;
+  padding: 7px 9px;
+}
+.command-level-heading h3 {
+  min-width: 0;
+  font-size: 0.82rem;
+}
+.dock-commands .command-shortcuts {
+  position: static;
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+}
+.dock-commands .command-shortcuts button {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  padding: 7px 3px;
+  font-size: 0.7rem;
+}
 .coliseum table {
   width: 100%;
   border-collapse: collapse;
