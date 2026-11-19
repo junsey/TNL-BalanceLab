@@ -42,11 +42,11 @@ if (!isMainThread) {
 } else {
   let rows: CalibrationRow[] = [];
   if (
-    existsSync("reports/coliseum-baseline.json") &&
+    existsSync("reports/coliseum-baseline-streams-v2.json") &&
     !process.argv.includes("--fresh")
   ) {
     const saved = JSON.parse(
-      readFileSync("reports/coliseum-baseline.json", "utf8"),
+      readFileSync("reports/coliseum-baseline-streams-v2.json", "utf8"),
     );
     if (
       saved.calibrationVersion === calibrationVersion &&
@@ -80,7 +80,7 @@ if (!isMainThread) {
         });
         rows.push(row);
         writeFileSync(
-          "reports/coliseum-baseline.json",
+          "reports/coliseum-baseline-streams-v2.json",
           JSON.stringify(
             {
               calibrationVersion,

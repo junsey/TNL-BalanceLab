@@ -37,6 +37,7 @@ test("El preset aprobado inicia sin parámetros y conserva las fichas", () => {
       setup.rules,
     );
     assert.equal(attack.event.target, 45);
+    assert.ok("resistance" in attack.event);
     assert.equal(attack.event.resistance, 10);
   }
   assert.equal(

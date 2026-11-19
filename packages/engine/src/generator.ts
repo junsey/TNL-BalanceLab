@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { fighterState } from "./attack.ts";
-import { rollDie, seedRng, type Rng } from "./rng.ts";
+import { rollDie, seedRng, isolatedRngStreams, type Rng } from "./rng.ts";
 import {
   setupSchema,
   startTacticalEncounter,
@@ -13,6 +13,7 @@ const weight = z.number().int().min(1).max(1000000);
 const size = z.number().int().min(1).max(12);
 const zone = tacticalZone;
 export const generatorSchema = z.strictObject({
+  rngStreams: z.literal(isolatedRngStreams).optional(),
   min: size,
   max: size,
   species: z
@@ -259,6 +260,7 @@ export function generateTacticalSetup(
       : aggression.kind;
   return startTacticalEncounter({
     ...base,
+    ...(config.rngStreams && { rngStreams: config.rngStreams }),
     ...(resistance && { rules: { ...base.rules, resistance } }),
     seed,
     aggressor,

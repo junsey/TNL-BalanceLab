@@ -23,7 +23,7 @@ import {
 } from "./attack.ts";
 import { recoverVigor, rollInitiative } from "./combat-math.ts";
 import { classify, parseDice, rollPercentile, rollDice } from "./dice.ts";
-import { rngVersion, rollDie, seedRng } from "./rng.ts";
+import { rngVersion, rollDie, combatRng, isolatedRngStreams } from "./rng.ts";
 import { canonicalJson, rngState, stateHash } from "./state.ts";
 import { compareResistanceAttack } from "./resistance.ts";
 import { applyConsequence, tickConditions } from "./effects.ts";
@@ -61,6 +61,7 @@ const combatant = participant.extend({
 export const setupSchema = z.strictObject({
   schemaVersion: z.literal(1),
   seed: z.string(),
+  rngStreams: z.literal(isolatedRngStreams).optional(),
   mapLabel: id.optional(),
   player: id,
   playerTeam: z.array(id).min(1).max(4).optional(),
@@ -313,7 +314,7 @@ export function startTacticalEncounter(input: unknown) {
   const { groups, rng, ...initiative } = rollInitiative(
     aggressors,
     defenders,
-    seedRng(setup.seed),
+    combatRng(setup.seed, setup.rngStreams),
   );
   const state: TacticalState = {
     setup,

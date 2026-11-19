@@ -1,5 +1,13 @@
 export const rngVersion = "mulberry32-utf8-v1";
 export type Rng = Readonly<{ word: number; draws: number }>;
+export const isolatedRngStreams = "isolated-streams-v2";
+/** Missing version preserves historical snapshots and their exact seed semantics. */
+export function combatRng(
+  seed: string,
+  streams?: typeof isolatedRngStreams,
+): Rng {
+  return seedRng(streams ? JSON.stringify([streams, "combat", seed]) : seed);
+}
 
 export function seedRng(seed: string): Rng {
   let word = 0x811c9dc5;

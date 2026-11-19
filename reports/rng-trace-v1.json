@@ -1,0 +1,3058 @@
+{
+  "schemaVersion": 1,
+  "rngVersion": "mulberry32-utf8-v1",
+  "traces": [
+    {
+      "seed": "rng-audit-alpha",
+      "initiative": {
+        "aggression": 7,
+        "aggressorRolls": [
+          {
+            "id": "vigia",
+            "roll": 7
+          }
+        ],
+        "defenderRolls": [
+          {
+            "id": "acechador",
+            "roll": 48,
+            "anticipated": false
+          },
+          {
+            "id": "acechador-2",
+            "roll": 68,
+            "anticipated": false
+          }
+        ]
+      },
+      "drawsAfterInitiative": 6,
+      "finalHash": "f3516b8cd39eab2e50e6789d78af7aa45d1245acc880bf49ac42037b4c5fa0d8",
+      "totalActions": 61,
+      "totalDraws": 60,
+      "frames": [
+        {
+          "sequence": 2,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador-2"
+          },
+          "drawsBefore": 6,
+          "drawsAfter": 8,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 35,
+            "target": 60,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 39,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador-2"
+          },
+          "display": {
+            "natural": 35,
+            "main": 39,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 3,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador-2",
+            "defense": "dodge"
+          },
+          "drawsBefore": 8,
+          "drawsAfter": 11,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador-2",
+            "attacker": "vigia",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 78,
+            "target": 32,
+            "grade": "miss",
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 6,
+              "effective": 6,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d6+1",
+                  "faces": [
+                    5
+                  ],
+                  "total": 6
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": 78,
+            "main": 78,
+            "modified": false,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 6,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 11,
+          "drawsAfter": 13,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 18,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 28,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 18,
+            "main": 28,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 7,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "dodge"
+          },
+          "drawsBefore": 13,
+          "drawsAfter": 15,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 41,
+            "target": 55,
+            "grade": "normal",
+            "success": true,
+            "damage": null
+          },
+          "display": {
+            "natural": 41,
+            "main": 41,
+            "modified": false,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 10,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 15,
+          "drawsAfter": 17,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 52,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 62,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 52,
+            "main": 62,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 13,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 17,
+          "drawsAfter": 19,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 79,
+            "target": 60,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 83,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 79,
+            "main": 83,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 16,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 19,
+          "drawsAfter": 21,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 60,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 70,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 60,
+            "main": 70,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 19,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 21,
+          "drawsAfter": 23,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 30,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 40,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 30,
+            "main": 40,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 20,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "dodge"
+          },
+          "drawsBefore": 23,
+          "drawsAfter": 26,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador-2",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 56,
+            "target": 55,
+            "grade": "miss",
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 2,
+              "effective": 2,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    2
+                  ],
+                  "total": 2
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": 56,
+            "main": 56,
+            "modified": false,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 23,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 26,
+          "drawsAfter": 28,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 100,
+            "target": 60,
+            "grade": "fumble",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 104,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 100,
+            "main": 104,
+            "modified": true,
+            "grade": "fumble"
+          }
+        },
+        {
+          "sequence": 26,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 28,
+          "drawsAfter": 30,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 89,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 99,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 89,
+            "main": 99,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 29,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 30,
+          "drawsAfter": 32,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 93,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 103,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 93,
+            "main": 103,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 32,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 32,
+          "drawsAfter": 34,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 54,
+            "target": 60,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 58,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 54,
+            "main": 58,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 33,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador",
+            "defense": "dodge"
+          },
+          "drawsBefore": 34,
+          "drawsAfter": 37,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador",
+            "attacker": "vigia",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 59,
+            "target": 32,
+            "grade": "miss",
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 6,
+              "effective": 6,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d6+1",
+                  "faces": [
+                    5
+                  ],
+                  "total": 6
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": 59,
+            "main": 59,
+            "modified": false,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 36,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 37,
+          "drawsAfter": 39,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 47,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 57,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 47,
+            "main": 57,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 39,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 39,
+          "drawsAfter": 41,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 99,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 109,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 99,
+            "main": 109,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 42,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 41,
+          "drawsAfter": 43,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 32,
+            "target": 60,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 36,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 32,
+            "main": 36,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 43,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador",
+            "defense": "dodge"
+          },
+          "drawsBefore": 43,
+          "drawsAfter": 46,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador",
+            "attacker": "vigia",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 81,
+            "target": 32,
+            "grade": "miss",
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 3,
+              "effective": 3,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d6+1",
+                  "faces": [
+                    2
+                  ],
+                  "total": 3
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": 81,
+            "main": 81,
+            "modified": false,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 46,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 46,
+          "drawsAfter": 48,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 69,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 79,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 69,
+            "main": 79,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 49,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 48,
+          "drawsAfter": 50,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 82,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 92,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 82,
+            "main": 92,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 52,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 50,
+          "drawsAfter": 52,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 43,
+            "target": 60,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 47,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 43,
+            "main": 47,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 53,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador",
+            "defense": "none"
+          },
+          "drawsBefore": 52,
+          "drawsAfter": 53,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador",
+            "attacker": "vigia",
+            "defense": "none",
+            "cost": 0,
+            "roll": null,
+            "target": null,
+            "grade": null,
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 6,
+              "effective": 6,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d6+1",
+                  "faces": [
+                    5
+                  ],
+                  "total": 6
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": null,
+            "main": null,
+            "modified": false,
+            "grade": ""
+          }
+        },
+        {
+          "sequence": 56,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 53,
+          "drawsAfter": 55,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 11,
+            "target": 45,
+            "grade": "half",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 21,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 11,
+            "main": 21,
+            "modified": true,
+            "grade": "half"
+          }
+        },
+        {
+          "sequence": 57,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "none"
+          },
+          "drawsBefore": 55,
+          "drawsAfter": 58,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador",
+            "defense": "none",
+            "cost": 0,
+            "roll": null,
+            "target": null,
+            "grade": null,
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 5,
+              "effective": 5,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    2
+                  ],
+                  "total": 2
+                },
+                {
+                  "expression": "2d4",
+                  "faces": [
+                    2,
+                    1
+                  ],
+                  "total": 3
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": null,
+            "main": null,
+            "modified": false,
+            "grade": ""
+          }
+        },
+        {
+          "sequence": 60,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 58,
+          "drawsAfter": 60,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 98,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 108,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 98,
+            "main": 108,
+            "modified": true,
+            "grade": "miss"
+          }
+        }
+      ]
+    },
+    {
+      "seed": "rng-audit-ñ",
+      "initiative": {
+        "aggression": 58,
+        "aggressorRolls": [
+          {
+            "id": "vigia",
+            "roll": 58
+          }
+        ],
+        "defenderRolls": [
+          {
+            "id": "acechador",
+            "roll": 74,
+            "anticipated": false
+          },
+          {
+            "id": "acechador-2",
+            "roll": 34,
+            "anticipated": false
+          }
+        ]
+      },
+      "drawsAfterInitiative": 6,
+      "finalHash": "144bf086576b1dafef842a0985206735deb5380e185a652fdbfde8aa24fd0d3a",
+      "totalActions": 65,
+      "totalDraws": 62,
+      "frames": [
+        {
+          "sequence": 2,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador-2"
+          },
+          "drawsBefore": 6,
+          "drawsAfter": 8,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 38,
+            "target": 60,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 42,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador-2"
+          },
+          "display": {
+            "natural": 38,
+            "main": 42,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 3,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador-2",
+            "defense": "dodge"
+          },
+          "drawsBefore": 8,
+          "drawsAfter": 11,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador-2",
+            "attacker": "vigia",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 60,
+            "target": 32,
+            "grade": "miss",
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 6,
+              "effective": 6,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d6+1",
+                  "faces": [
+                    5
+                  ],
+                  "total": 6
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": 60,
+            "main": 60,
+            "modified": false,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 6,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 11,
+          "drawsAfter": 13,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 19,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 29,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 19,
+            "main": 29,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 7,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "dodge"
+          },
+          "drawsBefore": 13,
+          "drawsAfter": 15,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 44,
+            "target": 55,
+            "grade": "normal",
+            "success": true,
+            "damage": null
+          },
+          "display": {
+            "natural": 44,
+            "main": 44,
+            "modified": false,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 10,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 15,
+          "drawsAfter": 17,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 96,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 106,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 96,
+            "main": 106,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 13,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 17,
+          "drawsAfter": 19,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 79,
+            "target": 60,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 83,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 79,
+            "main": 83,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 16,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 19,
+          "drawsAfter": 21,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 23,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 33,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 23,
+            "main": 33,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 17,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "dodge"
+          },
+          "drawsBefore": 21,
+          "drawsAfter": 24,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 73,
+            "target": 55,
+            "grade": "miss",
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 1,
+              "effective": 1,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    1
+                  ],
+                  "total": 1
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": 73,
+            "main": 73,
+            "modified": false,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 20,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 24,
+          "drawsAfter": 26,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 22,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 32,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 22,
+            "main": 32,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 21,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "none"
+          },
+          "drawsBefore": 26,
+          "drawsAfter": 27,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador-2",
+            "defense": "none",
+            "cost": 0,
+            "roll": null,
+            "target": null,
+            "grade": null,
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 3,
+              "effective": 3,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    3
+                  ],
+                  "total": 3
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": null,
+            "main": null,
+            "modified": false,
+            "grade": ""
+          }
+        },
+        {
+          "sequence": 24,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 27,
+          "drawsAfter": 29,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 41,
+            "target": 60,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 45,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 41,
+            "main": 45,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 25,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador",
+            "defense": "dodge"
+          },
+          "drawsBefore": 29,
+          "drawsAfter": 31,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador",
+            "attacker": "vigia",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 31,
+            "target": 32,
+            "grade": "normal",
+            "success": true,
+            "damage": null
+          },
+          "display": {
+            "natural": 31,
+            "main": 31,
+            "modified": false,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 28,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 31,
+          "drawsAfter": 33,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 26,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 36,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 26,
+            "main": 36,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 29,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "none"
+          },
+          "drawsBefore": 33,
+          "drawsAfter": 34,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador",
+            "defense": "none",
+            "cost": 0,
+            "roll": null,
+            "target": null,
+            "grade": null,
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 3,
+              "effective": 3,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    3
+                  ],
+                  "total": 3
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": null,
+            "main": null,
+            "modified": false,
+            "grade": ""
+          }
+        },
+        {
+          "sequence": 32,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 34,
+          "drawsAfter": 36,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 84,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 94,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 84,
+            "main": 94,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 35,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 36,
+          "drawsAfter": 38,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 5,
+            "target": 60,
+            "grade": "quarter",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 9,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 5,
+            "main": 9,
+            "modified": true,
+            "grade": "quarter"
+          }
+        },
+        {
+          "sequence": 36,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador",
+            "defense": "dodge"
+          },
+          "drawsBefore": 38,
+          "drawsAfter": 40,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador",
+            "attacker": "vigia",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 14,
+            "target": 32,
+            "grade": "half",
+            "success": true,
+            "damage": null
+          },
+          "display": {
+            "natural": 14,
+            "main": 14,
+            "modified": false,
+            "grade": "half"
+          }
+        },
+        {
+          "sequence": 39,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 40,
+          "drawsAfter": 42,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 25,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 35,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 25,
+            "main": 35,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 40,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "none"
+          },
+          "drawsBefore": 42,
+          "drawsAfter": 43,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador",
+            "defense": "none",
+            "cost": 0,
+            "roll": null,
+            "target": null,
+            "grade": null,
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 1,
+              "effective": 1,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    1
+                  ],
+                  "total": 1
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": null,
+            "main": null,
+            "modified": false,
+            "grade": ""
+          }
+        },
+        {
+          "sequence": 43,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 43,
+          "drawsAfter": 45,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 21,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 31,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 21,
+            "main": 31,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 44,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "none"
+          },
+          "drawsBefore": 45,
+          "drawsAfter": 46,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador-2",
+            "defense": "none",
+            "cost": 0,
+            "roll": null,
+            "target": null,
+            "grade": null,
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 2,
+              "effective": 2,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    2
+                  ],
+                  "total": 2
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": null,
+            "main": null,
+            "modified": false,
+            "grade": ""
+          }
+        },
+        {
+          "sequence": 47,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 46,
+          "drawsAfter": 48,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 2,
+            "target": 60,
+            "grade": "quarter",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 6,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 2,
+            "main": 6,
+            "modified": true,
+            "grade": "quarter"
+          }
+        },
+        {
+          "sequence": 48,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador",
+            "defense": "none"
+          },
+          "drawsBefore": 48,
+          "drawsAfter": 51,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador",
+            "attacker": "vigia",
+            "defense": "none",
+            "cost": 0,
+            "roll": null,
+            "target": null,
+            "grade": null,
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 5,
+              "effective": 5,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d6+1",
+                  "faces": [
+                    2
+                  ],
+                  "total": 3
+                },
+                {
+                  "expression": "2d4",
+                  "faces": [
+                    1,
+                    1
+                  ],
+                  "total": 2
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": null,
+            "main": null,
+            "modified": false,
+            "grade": ""
+          }
+        },
+        {
+          "sequence": 51,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 51,
+          "drawsAfter": 53,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 24,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 34,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 24,
+            "main": 34,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 52,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "none"
+          },
+          "drawsBefore": 53,
+          "drawsAfter": 54,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador",
+            "defense": "none",
+            "cost": 0,
+            "roll": null,
+            "target": null,
+            "grade": null,
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 1,
+              "effective": 1,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    1
+                  ],
+                  "total": 1
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": null,
+            "main": null,
+            "modified": false,
+            "grade": ""
+          }
+        },
+        {
+          "sequence": 55,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 54,
+          "drawsAfter": 56,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 77,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 87,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 77,
+            "main": 87,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 58,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 56,
+          "drawsAfter": 58,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 70,
+            "target": 60,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 74,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 70,
+            "main": 74,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 61,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 58,
+          "drawsAfter": 60,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 64,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 74,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 64,
+            "main": 74,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 64,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 60,
+          "drawsAfter": 62,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 89,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 99,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 89,
+            "main": 99,
+            "modified": true,
+            "grade": "miss"
+          }
+        }
+      ]
+    },
+    {
+      "seed": "rng-audit-03",
+      "initiative": {
+        "aggression": 61,
+        "aggressorRolls": [
+          {
+            "id": "vigia",
+            "roll": 61
+          }
+        ],
+        "defenderRolls": [
+          {
+            "id": "acechador",
+            "roll": 3,
+            "anticipated": true
+          },
+          {
+            "id": "acechador-2",
+            "roll": 99,
+            "anticipated": false
+          }
+        ]
+      },
+      "drawsAfterInitiative": 6,
+      "finalHash": "a4083b71d7331ff1df603c63927605824d2b2c2d1d29fce749c74f9e09720ad2",
+      "totalActions": 61,
+      "totalDraws": 55,
+      "frames": [
+        {
+          "sequence": 4,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 6,
+          "drawsAfter": 8,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 81,
+            "target": 60,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 85,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 81,
+            "main": 85,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 8,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 8,
+          "drawsAfter": 10,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 13,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 23,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 13,
+            "main": 23,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 9,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "dodge"
+          },
+          "drawsBefore": 10,
+          "drawsAfter": 13,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador-2",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 89,
+            "target": 55,
+            "grade": "miss",
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 1,
+              "effective": 1,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    1
+                  ],
+                  "total": 1
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": 89,
+            "main": 89,
+            "modified": false,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 11,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 13,
+          "drawsAfter": 15,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 34,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 44,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 34,
+            "main": 44,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 12,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "dodge"
+          },
+          "drawsBefore": 15,
+          "drawsAfter": 18,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 77,
+            "target": 55,
+            "grade": "miss",
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 1,
+              "effective": 1,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    1
+                  ],
+                  "total": 1
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": 77,
+            "main": 77,
+            "modified": false,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 16,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 18,
+          "drawsAfter": 20,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 77,
+            "target": 60,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 81,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 77,
+            "main": 81,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 19,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 20,
+          "drawsAfter": 22,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 51,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 61,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 51,
+            "main": 61,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 21,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 22,
+          "drawsAfter": 24,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 69,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 79,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 69,
+            "main": 79,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 25,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 24,
+          "drawsAfter": 26,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 12,
+            "target": 60,
+            "grade": "half",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 16,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 12,
+            "main": 16,
+            "modified": true,
+            "grade": "half"
+          }
+        },
+        {
+          "sequence": 26,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador",
+            "defense": "dodge"
+          },
+          "drawsBefore": 26,
+          "drawsAfter": 28,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador",
+            "attacker": "vigia",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 16,
+            "target": 32,
+            "grade": "half",
+            "success": true,
+            "damage": null
+          },
+          "display": {
+            "natural": 16,
+            "main": 16,
+            "modified": false,
+            "grade": "half"
+          }
+        },
+        {
+          "sequence": 29,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 28,
+          "drawsAfter": 30,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 26,
+            "target": 45,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 36,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 26,
+            "main": 36,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 30,
+          "action": {
+            "kind": "defend",
+            "actor": "vigia",
+            "defense": "dodge"
+          },
+          "drawsBefore": 30,
+          "drawsAfter": 33,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "vigia",
+            "attacker": "acechador-2",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 72,
+            "target": 55,
+            "grade": "miss",
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 3,
+              "effective": 3,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d3",
+                  "faces": [
+                    3
+                  ],
+                  "total": 3
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": 72,
+            "main": 72,
+            "modified": false,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 33,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 33,
+          "drawsAfter": 35,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 89,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 99,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 89,
+            "main": 99,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 36,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 35,
+          "drawsAfter": 37,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 33,
+            "target": 60,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 37,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 33,
+            "main": 37,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 37,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador",
+            "defense": "dodge"
+          },
+          "drawsBefore": 37,
+          "drawsAfter": 39,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador",
+            "attacker": "vigia",
+            "defense": "dodge",
+            "cost": 2,
+            "roll": 20,
+            "target": 32,
+            "grade": "normal",
+            "success": true,
+            "damage": null
+          },
+          "display": {
+            "natural": 20,
+            "main": 20,
+            "modified": false,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 40,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 39,
+          "drawsAfter": 41,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 36,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 46,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 36,
+            "main": 46,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 43,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 41,
+          "drawsAfter": 43,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 41,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 51,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 41,
+            "main": 51,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 46,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 43,
+          "drawsAfter": 45,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 45,
+            "target": 60,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 49,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 45,
+            "main": 49,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 47,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador",
+            "defense": "none"
+          },
+          "drawsBefore": 45,
+          "drawsAfter": 46,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador",
+            "attacker": "vigia",
+            "defense": "none",
+            "cost": 0,
+            "roll": null,
+            "target": null,
+            "grade": null,
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 6,
+              "effective": 6,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d6+1",
+                  "faces": [
+                    5
+                  ],
+                  "total": 6
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": null,
+            "main": null,
+            "modified": false,
+            "grade": ""
+          }
+        },
+        {
+          "sequence": 50,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 46,
+          "drawsAfter": 48,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 61,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 71,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 61,
+            "main": 71,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 53,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador",
+            "target": "vigia"
+          },
+          "drawsBefore": 48,
+          "drawsAfter": 50,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 56,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 66,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 56,
+            "main": 66,
+            "modified": true,
+            "grade": "miss"
+          }
+        },
+        {
+          "sequence": 56,
+          "action": {
+            "kind": "attack",
+            "actor": "vigia",
+            "target": "acechador"
+          },
+          "drawsBefore": 50,
+          "drawsAfter": 52,
+          "detail": {
+            "kind": "IMPACT",
+            "roll": 31,
+            "target": 60,
+            "grade": "normal",
+            "cost": 1,
+            "weapon": "Espada corta",
+            "associatedAttribute": 25,
+            "mastery": 35,
+            "resistance": 4,
+            "modifiedRoll": 35,
+            "naturalResistance": 4,
+            "armorResistance": 0,
+            "thresholds": {
+              "normal": 60,
+              "half": 30,
+              "quarter": 15
+            },
+            "actor": "vigia",
+            "targetActor": "acechador"
+          },
+          "display": {
+            "natural": 31,
+            "main": 35,
+            "modified": true,
+            "grade": "normal"
+          }
+        },
+        {
+          "sequence": 57,
+          "action": {
+            "kind": "defend",
+            "actor": "acechador",
+            "defense": "none"
+          },
+          "drawsBefore": 52,
+          "drawsAfter": 53,
+          "detail": {
+            "kind": "DEFENSE",
+            "actor": "acechador",
+            "attacker": "vigia",
+            "defense": "none",
+            "cost": 0,
+            "roll": null,
+            "target": null,
+            "grade": null,
+            "success": false,
+            "damage": {
+              "intercepted": 0,
+              "residual": 5,
+              "effective": 5,
+              "reduction": 0,
+              "dice": [
+                {
+                  "expression": "1d6+1",
+                  "faces": [
+                    4
+                  ],
+                  "total": 5
+                }
+              ]
+            },
+            "consequences": []
+          },
+          "display": {
+            "natural": null,
+            "main": null,
+            "modified": false,
+            "grade": ""
+          }
+        },
+        {
+          "sequence": 60,
+          "action": {
+            "kind": "attack",
+            "actor": "acechador-2",
+            "target": "vigia"
+          },
+          "drawsBefore": 53,
+          "drawsAfter": 55,
+          "detail": {
+            "kind": "ATTACK_FAILED",
+            "roll": 68,
+            "target": 45,
+            "grade": "miss",
+            "cost": 1,
+            "weapon": "Daga",
+            "associatedAttribute": 25,
+            "mastery": 20,
+            "resistance": 10,
+            "modifiedRoll": 78,
+            "naturalResistance": 4,
+            "armorResistance": 6,
+            "thresholds": {
+              "normal": 45,
+              "half": 22,
+              "quarter": 11
+            },
+            "actor": "acechador-2",
+            "targetActor": "vigia"
+          },
+          "display": {
+            "natural": 68,
+            "main": 78,
+            "modified": true,
+            "grade": "miss"
+          }
+        }
+      ]
+    }
+  ]
+}

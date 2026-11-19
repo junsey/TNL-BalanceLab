@@ -11,6 +11,7 @@ export function generatedDemo(seed: string): TacticalScenario {
     kind: "generated",
     base,
     generator: {
+      rngStreams: "isolated-streams-v2",
       min: 1,
       max: 3,
       species: [

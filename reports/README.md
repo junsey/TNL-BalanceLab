@@ -11,3 +11,9 @@ Las métricas son sumas sobre las iteraciones. `healthLost` se refiere al grupo 
 El estimador de amenaza sigue siendo provisional. Los resultados no certifican que las seis oleadas sean equilibradas ni establecen una dificultad oficial. Sirven para comparar composiciones y ajustar parámetros fuera de las carreras sin modificar fichas durante el combate.
 
 Repetir con `node scripts/calibrate-coliseum.ts 1000 --fresh`. Sin `--fresh`, la herramienta reanuda los casos completos de la misma revisión y configuración; ejecuta hasta cuatro casos en paralelo, manteniendo sus semillas independientes del orden de ejecución.
+
+## Auditoría RNG 1.1
+
+rng-audit-v1.json contiene los 16 contrastes reproducibles; rng-trace-v1.json contiene trazas hasta presentación/replay. Ver docs/rng-audit-1.1.md.
+
+La referencia coliseum-baseline.json queda HISTORICO tras separar corrientes de composición y combate. Las futuras calibraciones escriben coliseum-baseline-streams-v2.json; no se ha ejecutado una nueva calibración de balance en esta etapa.

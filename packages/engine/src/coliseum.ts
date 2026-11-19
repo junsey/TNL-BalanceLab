@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { fighterState, type Fighter } from "./attack.ts";
 import { resistanceExperiment } from "./resistance.ts";
-import { seedRng, rollDie, rngVersion } from "./rng.ts";
+import { seedRng, rollDie, rngVersion, isolatedRngStreams } from "./rng.ts";
 import {
   getLegalActions,
   resolveAction,
@@ -27,6 +27,7 @@ export type ColiseumProfile = {
   instantiate: (seed: string, id: string) => ColiseumEntry;
 };
 export const coliseumSettings = z.strictObject({
+  rngStreams: z.literal(isolatedRngStreams).optional(),
   seed: z.string().min(1).max(512),
   mode: z.enum(["independent", "survival"]),
   initialWave: z.number().int().min(1).safe(),
@@ -54,6 +55,7 @@ export const coliseumSettings = z.strictObject({
 });
 export type ColiseumSettings = z.infer<typeof coliseumSettings>;
 export const defaultColiseumSettings: ColiseumSettings = {
+  rngStreams: isolatedRngStreams,
   seed: "coliseo-1",
   mode: "independent",
   initialWave: 1,
@@ -312,6 +314,7 @@ export function makeColiseumWave(
       naturalOne: settings.naturalOne,
     };
   const setup: TacticalSetup = {
+    ...(settings.rngStreams && { rngStreams: settings.rngStreams }),
     schemaVersion: 1,
     seed,
     mapLabel: "Coliseo · arena abierta",

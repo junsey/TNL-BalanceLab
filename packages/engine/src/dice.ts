@@ -1,8 +1,11 @@
 import { rollDie, type Rng } from "./rng.ts";
 
 export function parseDice(expression: string) {
+  if (typeof expression !== "string")
+    throw new RangeError("Se esperaba una expresión de dados");
   const match = /^(\d{1,4})d(\d{1,10})(?:\+(\d{1,10}))?$/.exec(expression);
-  if (!match) throw new RangeError("Se esperaba NdM o NdM+K");
+  if (!match || match[0] !== expression)
+    throw new RangeError("Se esperaba NdM o NdM+K");
   const count = Number(match[1]);
   const sides = Number(match[2]);
   const modifier = Number(match[3] ?? 0);

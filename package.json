@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit && tsc -p apps/web/tsconfig.json --incremental false",
     "test:web": "node scripts/test-web.ts",
     "benchmark": "node scripts/benchmark.ts",
+    "audit:rng": "node scripts/audit-rng.ts",
     "migrate": "node --env-file-if-exists=apps/web/.env.local scripts/migrate.ts",
     "test": "node --test packages/engine/tests/*.test.ts apps/web/tests/*.test.ts",
     "lint": "eslint packages scripts apps/web/app apps/web/lib apps/web/tests",

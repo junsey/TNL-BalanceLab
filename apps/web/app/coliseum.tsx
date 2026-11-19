@@ -422,7 +422,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   }
   function start() {
     try {
-      const parsed = coliseumSettings.parse(settings),
+      const parsed = coliseumSettings.parse({
+          ...settings,
+          rngStreams: "isolated-streams-v2",
+        }),
         party = partyFromSelection();
       const technicalLimit = limit === "" ? null : Number(limit);
       if (
@@ -478,7 +481,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       )
         throw new Error("Cantidad de iteraciones inválida");
       const party = partyFromSelection();
-      const parsed = coliseumSettings.parse(settings);
+      const parsed = coliseumSettings.parse({
+        ...settings,
+        rngStreams: "isolated-streams-v2",
+      });
       const w = new Worker(
         new URL("../lib/coliseum-worker.ts", import.meta.url),
       );
