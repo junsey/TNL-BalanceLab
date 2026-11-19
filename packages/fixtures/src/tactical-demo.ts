@@ -110,13 +110,14 @@ export function tacticalDemo(
         presence: 25,
       },
       training: { alert: 20, dodge: 30, endurance: 25 },
-      mastery: { "espada-corta": 35 },
+      mastery: { swords: 35, daggers: 35 },
     },
     health: 37,
     healthMax: 37,
     vigor: 6,
     vigorMax: 6,
     vulnerability: 38,
+    naturalResistance: 4,
     mastery: 35,
     dodge: 55,
     parry: 60,
@@ -130,6 +131,17 @@ export function tacticalDemo(
   };
   const enemy: Fighter = {
     id: "acechador",
+    actorType: "creature",
+    naturalResistance: 4,
+    creatureAttributes: { strength: 25 },
+    creatureActions: [
+      {
+        model: weapons[0]!,
+        attribute: 25,
+        attributeKey: "strength",
+        value: 20,
+      },
+    ],
     health: 22,
     healthMax: 22,
     vigor: 5,
@@ -165,6 +177,7 @@ export function tacticalDemo(
       stabilization: false,
     },
     rules: {
+      calculationVersion: "core03-sheet-v1",
       resistance: Object.fromEntries(
         [player, enemy, { ...enemy, id: "acechador-2" }].map((fighter) => [
           fighter.id,

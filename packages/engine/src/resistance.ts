@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { classifyModified } from "./dice.ts";
+import { skillValue } from "./skills.ts";
 
 export const resistanceExperiment = z.strictObject({
   version: z.literal("resistance-experiment-v1"),
@@ -23,7 +25,11 @@ export const resistanceExperiment = z.strictObject({
 export function compareResistanceAttack(input: unknown, naturalRoll: number) {
   const config = resistanceExperiment.parse(input);
   const natural = z.number().int().min(1).max(100).parse(naturalRoll);
-  const capacity = Math.min(100, config.associatedAttribute + config.mastery);
+  const capacity = skillValue(
+    config.associatedAttribute,
+    config.mastery,
+    false,
+  );
   const compare = (
     shieldBonus: number,
   ): {
@@ -40,19 +46,21 @@ export function compareResistanceAttack(input: unknown, naturalRoll: number) {
     const threshold =
       config.gradeBasis === "modifiedRoll" ? capacity : capacity - resistance;
     const grade =
-      natural === 100
-        ? "fumble"
-        : natural === 1 && config.naturalOne === "alwaysCritical"
-          ? "critical"
-          : modified > capacity
-            ? "miss"
-            : natural === 1
-              ? "critical"
-              : score <= Math.floor(threshold / 4)
-                ? "quarter"
-                : score <= Math.floor(threshold / 2)
-                  ? "half"
-                  : "normal";
+      config.gradeBasis === "modifiedRoll"
+        ? classifyModified(natural, modified, capacity, config.naturalOne)
+        : natural === 100
+          ? "fumble"
+          : natural === 1 && config.naturalOne === "alwaysCritical"
+            ? "critical"
+            : modified > capacity
+              ? "miss"
+              : natural === 1
+                ? "critical"
+                : score <= Math.floor(threshold / 4)
+                  ? "quarter"
+                  : score <= Math.floor(threshold / 2)
+                    ? "half"
+                    : "normal";
     return { natural, resistance, modified, capacity, grade };
   };
   return { initial: compare(0), withShield: compare(config.shieldBonus) };

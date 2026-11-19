@@ -15,7 +15,7 @@ import {
 } from "./tactical.ts";
 import { stateHash } from "./state.ts";
 import { collectCombatMetrics, emptyCombatMetrics } from "./metrics.ts";
-import { attackVigorCost } from "./attack.ts";
+import { attackVigorCost, previewAttack } from "./attack.ts";
 
 export function chooseTacticalAction(
   state: TacticalState,
@@ -137,13 +137,18 @@ export function chooseTacticalAction(
             const defense = state.setup.rules.resistance?.[opponent.fighter.id];
             const resistance =
               (defense?.naturalResistance ?? 0) + (defense?.armorBonus ?? 0);
-            const chance = Math.max(
-              0.01,
-              Math.min(0.99, (capacity - resistance) / 100),
-            );
-            const cost =
-              model.vigorCost ??
-              { light: 1, medium: 2, heavy: 3 }[model.category];
+            const preview =
+              state.setup.rules.calculationVersion &&
+              previewAttack(
+                fighter,
+                opponent.fighter,
+                state.setup.rules,
+                model,
+              );
+            const chance = preview
+              ? preview.probability / 100
+              : Math.max(0.01, Math.min(0.99, (capacity - resistance) / 100));
+            const cost = attackVigorCost(model);
             const scarcity = 1 - fighter.vigor / Math.max(1, fighter.vigorMax);
             return (
               expected(model.damage) * chance - cost * (0.25 + scarcity * 1.5)

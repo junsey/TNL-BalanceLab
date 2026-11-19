@@ -101,7 +101,7 @@ function Sheet({
   const card = result.data;
   const derived = deriveCharacter(
     card,
-    armors.find((model) => model.id === card.armorId)?.protection ?? 0,
+    weapons.find((model) => model.id === card.weaponId),
   );
   const weaponIds = [
     ...new Set([...weapons.map((model) => model.id), card.weaponId]),
@@ -223,9 +223,9 @@ function Sheet({
         />
       </label>
       <output>
-        Salud {derived.healthMax} · Vigor {derived.vigorMax} · Vulnerabilidad{" "}
-        {derived.vulnerability} · Esquivar {derived.dodge} · Parar{" "}
-        {derived.parry} · Aguante {derived.endurance} · Alerta {derived.alert}
+        Salud {derived.healthMax} · Vigor {derived.vigorMax} · Esquivar{" "}
+        {derived.dodge} · Parar {derived.parry} · Aguante {derived.endurance} ·
+        Alerta {derived.alert}
       </output>
     </fieldset>
   );

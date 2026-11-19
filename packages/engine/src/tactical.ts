@@ -26,6 +26,7 @@ import { classify, parseDice, rollPercentile, rollDice } from "./dice.ts";
 import { rngVersion, rollDie, combatRng, isolatedRngStreams } from "./rng.ts";
 import { canonicalJson, rngState, stateHash } from "./state.ts";
 import { compareResistanceAttack } from "./resistance.ts";
+import { attackSkill, bodyResistance, combatSkill } from "./skills.ts";
 import { applyConsequence, tickConditions } from "./effects.ts";
 
 const id = z.string().min(1);
@@ -123,6 +124,7 @@ const opportunityState = z.strictObject({
 const stateSchema = z.strictObject({
   setup: setupSchema,
   engineVersion: z.enum([
+    "0.7.0-core03-sheet",
     "0.6.0-resistance-experimental",
     "0.1.0-tactical",
     "0.2.0-tactical",
@@ -292,9 +294,32 @@ function validateSetup(setup: Setup) {
 
 export function startTacticalEncounter(input: unknown) {
   const setup = setupSchema.parse(input);
+  if (!setup.rules.calculationVersion)
+    throw new RangeError(
+      "HISTORICO: este escenario solo admite lectura/replay; las partidas nuevas requieren core03-sheet-v1",
+    );
+  return startHistoricalTacticalEncounter(setup);
+}
+
+/** Compatibility entry point for validation of archived starts; not offered for new simulations. */
+export function startHistoricalTacticalEncounter(input: unknown) {
+  const setup = setupSchema.parse(input);
   validateSetup(setup);
+  if (setup.rules.calculationVersion) {
+    for (const { fighter } of setup.participants) {
+      bodyResistance(fighter);
+      for (const item of [
+        fighter.weapon,
+        fighter.reserveWeapon,
+        fighter.stowedDagger,
+      ])
+        if (item) attackSkill(fighter, item.model);
+      for (const action of fighter.creatureActions ?? [])
+        attackSkill(fighter, action.model);
+    }
+  }
   const resistance = setup.rules.resistance;
-  if (resistance) {
+  if (resistance && !setup.rules.calculationVersion) {
     for (const { fighter } of setup.participants) {
       if (!Object.hasOwn(resistance, fighter.id))
         throw new RangeError(
@@ -309,7 +334,11 @@ export function startTacticalEncounter(input: unknown) {
   for (const { fighter } of setup.participants) {
     if (isPlayerTeam(setup, fighter.id) === (setup.aggressor === "player"))
       aggressors.push(fighter.id);
-    else defenders.push({ id: fighter.id, alert: fighter.alert });
+    else
+      defenders.push({
+        id: fighter.id,
+        alert: combatSkill(fighter, "alert", !!setup.rules.calculationVersion),
+      });
   }
   const { groups, rng, ...initiative } = rollInitiative(
     aggressors,
@@ -318,9 +347,11 @@ export function startTacticalEncounter(input: unknown) {
   );
   const state: TacticalState = {
     setup,
-    engineVersion: setup.rules.resistance
-      ? "0.6.0-resistance-experimental"
-      : tacticalVersion,
+    engineVersion: setup.rules.calculationVersion
+      ? "0.7.0-core03-sheet"
+      : setup.rules.resistance
+        ? "0.6.0-resistance-experimental"
+        : tacticalVersion,
     rngVersion,
     rng,
     round: 1,
@@ -791,8 +822,10 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
   )
     actions.push({ kind: "flee", actor: id });
   if (
-    fighter.throwing &&
-    state.setup.rules.resistance &&
+    (state.setup.rules.calculationVersion
+      ? fighter.sheet && (fighter.sheet.mastery.throwing ?? 0) > 0
+      : fighter.throwing) &&
+    (state.setup.rules.calculationVersion || state.setup.rules.resistance) &&
     fighter.recovery === "none"
   ) {
     const hands = handLoadout(fighter);
@@ -1004,7 +1037,11 @@ function advance(state: World, details: Detail[]) {
       if (!alive(fighter) || fighter.recovery === "none") continue;
       const result = recoverVigor(
         state.rng,
-        fighter.endurance,
+        combatSkill(
+          fighter,
+          "endurance",
+          !!state.setup.rules.calculationVersion,
+        ),
         fighter.recovery === "interrupted",
       );
       state.rng = result.rng;
@@ -1356,7 +1393,11 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       if (decision.kind === "sneak") {
         const cost = state.setup.maneuvers!.sneakVigor;
         actor.fighter.vigor -= cost;
-        const target = actor.fighter.dodge;
+        const target = combatSkill(
+          actor.fighter,
+          "dodge",
+          !!state.setup.rules.calculationVersion,
+        );
         const test = rollPercentile(state.rng);
         state.rng = test.rng;
         const grade = classify(test.roll, target);
@@ -1445,7 +1486,14 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         (actor) => actor.fighter.id === decision.target,
       )!;
       const test = rollPercentile(state.rng);
-      const grade = classify(test.roll, actor.fighter.firstAid!);
+      const grade = classify(
+        test.roll,
+        combatSkill(
+          actor.fighter,
+          "firstAid",
+          !!state.setup.rules.calculationVersion,
+        ),
+      );
       state.rng = test.rng;
       actor.major = false;
       target.stabilized = grade !== "miss" && grade !== "fumble";
@@ -1544,8 +1592,8 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
           [decision.actor]: {
             ...state.setup.rules.resistance![decision.actor]!,
             weaponSkills: undefined,
-            associatedAttribute: original.throwing!.attribute,
-            mastery: original.throwing!.mastery,
+            associatedAttribute: original.throwing?.attribute ?? 0,
+            mastery: original.throwing?.mastery ?? 0,
           },
         },
       };
@@ -1562,6 +1610,8 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         target.fighter,
         state.rng,
         rules,
+        undefined,
+        true,
       );
       actor.fighter = {
         ...original,

@@ -2,6 +2,13 @@ import { z } from "zod";
 import { armor, character, shield, weapon } from "../../schemas/src/index.ts";
 import { compareResistanceAttack, resistanceExperiment } from "./resistance.ts";
 import { attackTarget } from "./character.ts";
+import {
+  coreCalculationVersion,
+  attackSkill,
+  combatSkill,
+  skillValue,
+  coreResistance,
+} from "./skills.ts";
 import { applyDamage } from "./combat-math.ts";
 import { classify, rollDice, rollPercentile, thresholds } from "./dice.ts";
 import { rngState } from "./state.ts";
@@ -67,6 +74,7 @@ export const fighterState = z
     vigor: count,
     vigorMax: count,
     vulnerability: percent,
+    naturalResistance: count.optional(),
     mastery: count.max(50),
     dodge: percent,
     parry: percent,
@@ -92,6 +100,7 @@ export const fighterState = z
         z.strictObject({
           model: weapon,
           attribute: z.number().int().min(0).max(100),
+          attributeKey: id.optional(),
           value: count.max(50),
         }),
       )
@@ -187,6 +196,7 @@ export const fighterState = z
   });
 
 export const attackRules = z.strictObject({
+  calculationVersion: z.literal(coreCalculationVersion).optional(),
   fumbleConsequences: z.boolean(),
   criticalInjuries: z.boolean(),
   dodgeDisplacement: z.boolean(),
@@ -477,9 +487,39 @@ export function previewAttack(
   defender: Fighter,
   rules?: AttackRules,
   chosenWeapon = attackWeapon(attacker),
+  thrown = false,
 ) {
   const model = chosenWeapon;
   if (!model) return null;
+  if (rules?.calculationVersion === coreCalculationVersion) {
+    const skill = attackSkill(attacker, model, thrown);
+    const resistance = coreResistance(attacker, defender, model, thrown);
+    const probability = Math.max(
+      0,
+      Math.min(
+        99,
+        skill.capacity - resistance.naturalResistance - resistance.armorBonus,
+      ),
+    );
+    return {
+      model,
+      resistance,
+      armor: {
+        base: resistance.naturalResistance,
+        protection: resistance.armorBonus,
+        final: resistance.naturalResistance + resistance.armorBonus,
+        reduction:
+          defender.armor && defender.armor.remaining !== 0
+            ? defender.armor.model.directReduction
+            : 0,
+      },
+      target: skill.capacity,
+      probability,
+      thresholds: thresholds(skill.capacity),
+      mastery: skill.mastery,
+      cost: attackVigorCost(model),
+    };
+  }
   const offense = rules?.resistance?.[attacker.id];
   const protection = rules?.resistance?.[defender.id];
   if (rules?.resistance && (!offense || !protection))
@@ -528,18 +568,24 @@ export function declareAttack(
     first: boolean;
     surcharge: number;
   },
+  thrown = false,
 ) {
-  const preview = previewAttack(attacker, defender, rules, sweep?.model);
+  const preview = previewAttack(
+    attacker,
+    defender,
+    rules,
+    sweep?.model,
+    thrown,
+  );
   if (
     attacker.id === defender.id ||
     defender.health <= 0 ||
-    (!sweep && (!preview || !canAttack(attacker)))
+    !preview ||
+    (!sweep && !canAttack(attacker))
   )
     throw new RangeError("Ataque ilegal");
   const model = sweep?.model ?? preview!.model;
-  const target =
-    preview?.target ??
-    attackTarget(attacker.mastery, armorProfile(defender).final);
+  const target = preview.target;
   const cost = sweep
     ? sweep.first
       ? attackVigorCost(model) + sweep.surcharge
@@ -594,6 +640,10 @@ export function declareAttack(
       target: check?.capacity ?? target,
       grade,
       cost,
+      ...(rules.calculationVersion && {
+        calculationVersion: rules.calculationVersion,
+        naturalOnePolicy: "BANCO_DE_PRUEBAS:requiresImpact",
+      }),
       ...(sweep && { maneuver: "sweep" }),
       weapon: model.label,
       ...(check && resistance
@@ -812,11 +862,20 @@ export function describeDefense(
   const training =
     weapon && rules?.resistance?.[fighter.id]?.weaponSkills?.[weapon.model.id];
   const parry =
-    training && fighter.sheet
-      ? Math.min(100, fighter.sheet.attributes.dexterity + training.mastery)
-      : fighter.parry;
+    rules?.calculationVersion && fighter.sheet && weapon
+      ? skillValue(
+          fighter.sheet.attributes.dexterity,
+          attackSkill(fighter, weapon.model).mastery,
+        )
+      : training && fighter.sheet
+        ? Math.min(100, fighter.sheet.attributes.dexterity + training.mastery)
+        : fighter.parry;
   const target =
-    defense === "dodge" ? fighter.dodge : defense === "parry" ? parry : null;
+    defense === "dodge"
+      ? combatSkill(fighter, "dodge", !!rules?.calculationVersion)
+      : defense === "parry"
+        ? parry
+        : null;
   return {
     cost: {
       none: 0,

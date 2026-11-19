@@ -47,6 +47,19 @@ export const creature = z.strictObject({
 export const weapon = z.strictObject({
   ...equipment,
   category,
+  skill: z
+    .strictObject({
+      attribute: z.enum([
+        "strength",
+        "dexterity",
+        "perception",
+        "will",
+        "knowledge",
+        "presence",
+      ]),
+      domain: id,
+    })
+    .optional(),
   damage: dice,
   halfExtra: dice,
   quarterExtra: dice,
@@ -64,6 +77,7 @@ export const weapon = z.strictObject({
 export const armor = z.strictObject({
   ...equipment,
   protection: count,
+  resistanceBonus: count.optional(),
   directReduction: count,
   status: z.enum(["confirmed", "experimental"]),
 });
@@ -71,6 +85,7 @@ export const shield = z.strictObject({
   ...equipment,
   category: z.enum(["light", "heavy"]),
   absorption: count.nullable(),
+  resistanceBonus: count.optional(),
 });
 export const condition = z.strictObject({
   ...reference,

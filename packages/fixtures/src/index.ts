@@ -69,6 +69,21 @@ export const weapons = weaponRows.map(
       id,
       label,
       category,
+      skill: {
+        domain:
+          id === "daga"
+            ? "daggers"
+            : id === "hacha"
+              ? "axes"
+              : id === "lanza"
+                ? "spears"
+                : id.startsWith("diskos-")
+                  ? "manualTechnology"
+                  : "swords",
+        attribute: ["daga", "lanza", "diskos-off", "diskos-on"].includes(id)
+          ? "dexterity"
+          : "strength",
+      },
       damage,
       halfExtra,
       quarterExtra,
@@ -99,6 +114,7 @@ export const armors = (
     id,
     label,
     protection,
+    resistanceBonus: protection,
     durability,
     directReduction,
     wear: null,

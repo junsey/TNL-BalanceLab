@@ -13,13 +13,15 @@ const fighter = {
     presence: 25,
   },
   training: { endurance: 25 },
-  mastery: { daga: 25 },
+  mastery: { daggers: 25 },
   weaponId: "daga",
   armorId: null,
   shieldId: null,
 };
 const result = runPassiveTargetPlaytest({
   schemaVersion: 1,
+  calculationVersion: "core03-sheet-v1",
+  targetNaturalResistance: 4,
   model: "core03-passive-target",
   disabledModules: [
     "critical-injuries",

@@ -266,12 +266,14 @@ export function EncounterWindow({
               {typeof offense.mastery === "number" && (
                 <span>
                   Habilidad{" "}
-                  {typeof offense.associatedAttribute === "number"
-                    ? Math.min(
-                        100,
-                        offense.associatedAttribute + offense.mastery,
-                      )
-                    : offense.mastery}
+                  {typeof offense.target === "number"
+                    ? offense.target
+                    : typeof offense.associatedAttribute === "number"
+                      ? Math.min(
+                          100,
+                          offense.associatedAttribute + offense.mastery,
+                        )
+                      : offense.mastery}
                   %
                 </span>
               )}

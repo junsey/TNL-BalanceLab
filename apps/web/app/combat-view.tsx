@@ -3,8 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
   actionBlockReasons,
+  attackSkill,
+  bodyResistance,
+  combatSkill,
+  describeDefense,
   armorProfile,
   attackCost,
+  attackVigorCost,
   attackWeapon,
   getLegalActions,
   isPlayerTeam,
@@ -724,12 +729,16 @@ export function CommandMenu({
                               return weapons.map(({ model, id }) => {
                                 const weaponSkill =
                                   resistance?.weaponSkills?.[model.id];
-                                const skill = weaponSkill
-                                  ? weaponSkill.attribute + weaponSkill.mastery
-                                  : resistance
-                                    ? resistance.associatedAttribute +
-                                      resistance.mastery
-                                    : fighter.mastery;
+                                const skill = state.setup.rules
+                                  .calculationVersion
+                                  ? attackSkill(fighter, model).capacity
+                                  : weaponSkill
+                                    ? weaponSkill.attribute +
+                                      weaponSkill.mastery
+                                    : resistance
+                                      ? resistance.associatedAttribute +
+                                        resistance.mastery
+                                      : fighter.mastery;
                                 const enabled = matching.some(
                                   (action) =>
                                     action.kind === "attack" &&
@@ -758,7 +767,7 @@ export function CommandMenu({
                                         Atacar con {model.label}
                                       </span>
                                       <small>
-                                        {attackCost[model.category]} Vigor
+                                        {attackVigorCost(model)} Vigor
                                       </small>
                                     </span>
                                     <small className="command-attack-stats">
@@ -1422,7 +1431,16 @@ export function CharacterSheet({
   const { fighter } = actor;
   const armor = armorProfile(fighter);
   const stats = fighter.sheet;
-  const resistance = state.setup.rules.resistance?.[fighter.id];
+  const skill = state.setup.rules.calculationVersion
+    ? attackSkill(fighter)
+    : null;
+  const resistance = skill
+    ? {
+        ...bodyResistance(fighter),
+        associatedAttribute: skill.attribute,
+        mastery: skill.mastery,
+      }
+    : state.setup.rules.resistance?.[fighter.id];
   const armorBonus =
     fighter.armor && fighter.armor.remaining !== 0
       ? (resistance?.armorBonus ?? 0)
@@ -1484,18 +1502,35 @@ export function CharacterSheet({
         )}
         <dl className="combat-values">
           {Object.entries({
-            Aguante: fighter.endurance,
-            Esquivar: fighter.dodge,
-            Alerta: fighter.alert,
-            Parar: fighter.parry,
+            Aguante: combatSkill(
+              fighter,
+              "endurance",
+              !!state.setup.rules.calculationVersion,
+            ),
+            Esquivar: combatSkill(
+              fighter,
+              "dodge",
+              !!state.setup.rules.calculationVersion,
+            ),
+            Alerta: combatSkill(
+              fighter,
+              "alert",
+              !!state.setup.rules.calculationVersion,
+            ),
+            Parar:
+              describeDefense(fighter, "parry", state.setup.rules).target ?? 0,
             ...(resistance
               ? {
                   "Atributo del ataque":
-                    resistance.weaponSkills?.[fighter.weapon.model.id]
-                      ?.attribute ?? resistance.associatedAttribute,
+                    ("weaponSkills" in resistance
+                      ? resistance.weaponSkills?.[fighter.weapon.model.id]
+                          ?.attribute
+                      : undefined) ?? resistance.associatedAttribute,
                   "Dominio / valor de acción":
-                    resistance.weaponSkills?.[fighter.weapon.model.id]
-                      ?.mastery ?? resistance.mastery,
+                    ("weaponSkills" in resistance
+                      ? resistance.weaponSkills?.[fighter.weapon.model.id]
+                          ?.mastery
+                      : undefined) ?? resistance.mastery,
                 }
               : { "Dominio equipado": fighter.mastery }),
             ...(fighter.firstAid !== undefined && {
@@ -1527,7 +1562,8 @@ export function CharacterSheet({
             <strong>
               {Math.min(
                 100,
-                resistance.associatedAttribute + resistance.mastery,
+                skill?.capacity ??
+                  resistance.associatedAttribute + resistance.mastery,
               )}
             </strong>{" "}
             de capacidad de ataque

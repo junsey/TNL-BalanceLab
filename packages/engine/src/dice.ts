@@ -38,14 +38,33 @@ export function thresholds(target: number) {
 }
 
 export function classify(roll: number, target: number) {
-  const { normal, half, quarter } = thresholds(target);
   if (!Number.isInteger(roll) || roll < 1 || roll > 100)
     throw new RangeError("d100 fuera de rango");
-  if (roll === 1) return "critical";
-  if (roll === 100) return "fumble";
-  if (roll <= quarter) return "quarter";
-  if (roll <= half) return "half";
-  return roll <= normal ? "normal" : "miss";
+  return classifyModified(roll, roll, target, "alwaysCritical");
+}
+
+export function classifyModified(
+  natural: number,
+  modified: number,
+  target: number,
+  naturalOne: "alwaysCritical" | "requiresImpact",
+) {
+  const { normal, half, quarter } = thresholds(target);
+  if (
+    !Number.isInteger(natural) ||
+    natural < 1 ||
+    natural > 100 ||
+    !Number.isSafeInteger(modified) ||
+    modified < natural
+  )
+    throw new RangeError("Resultado de ataque fuera de rango");
+  if (natural === 100) return "fumble";
+  if (natural === 1 && naturalOne === "alwaysCritical") return "critical";
+  if (modified > normal) return "miss";
+  if (natural === 1) return "critical";
+  if (modified <= quarter) return "quarter";
+  if (modified <= half) return "half";
+  return "normal";
 }
 
 export function rollPercentile(

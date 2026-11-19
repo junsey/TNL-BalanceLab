@@ -16,3 +16,4 @@ export * from "./studies.ts";
 export * from "./metrics.ts";
 export * from "./resistance.ts";
 export * from "./coliseum.ts";
+export * from "./skills.ts";

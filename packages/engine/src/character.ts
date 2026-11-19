@@ -1,6 +1,9 @@
-import { character } from "../../schemas/src/index.ts";
+import { character, weapon } from "../../schemas/src/index.ts";
+import type { z } from "zod";
+import { skillValue } from "./skills.ts";
 
-export function deriveCharacter(input: unknown, protection = 0) {
+/** HISTORICO: retained exclusively for old formats and regression evidence. */
+export function deriveHistoricalCharacter(input: unknown, protection = 0) {
   const { attributes, training, mastery, weaponId } = character.parse(input);
   if (!Number.isSafeInteger(protection) || protection < 0)
     throw new RangeError("Protección inválida");
@@ -17,6 +20,25 @@ export function deriveCharacter(input: unknown, protection = 0) {
   };
 }
 
+export function deriveCharacter(
+  input: unknown,
+  model?: z.infer<typeof weapon>,
+) {
+  const { attributes: a, training: t, mastery } = character.parse(input);
+  return {
+    healthMax: 25 + Math.floor(a.strength / 2),
+    vigorMax: 4 + Math.floor((a.strength + a.will) / 20),
+    dodge: skillValue(a.dexterity, t.dodge ?? 0),
+    parry: skillValue(
+      a.dexterity,
+      model?.skill ? (mastery[model.skill.domain] ?? 0) : 0,
+    ),
+    endurance: skillValue(a.strength, t.endurance ?? 0),
+    alert: skillValue(a.perception, t.alert ?? 0),
+  };
+}
+
+/** HISTORICO: never used by core03-sheet-v1. */
 export function attackTarget(mastery: number, vulnerability: number) {
   if (
     !Number.isInteger(mastery) ||

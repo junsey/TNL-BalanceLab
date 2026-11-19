@@ -2,6 +2,7 @@ import { z } from "zod";
 import { fighterState, type Fighter } from "./attack.ts";
 import { resistanceExperiment } from "./resistance.ts";
 import { seedRng, rollDie, rngVersion, isolatedRngStreams } from "./rng.ts";
+import { attackSkill, bodyResistance, combatSkill } from "./skills.ts";
 import {
   getLegalActions,
   resolveAction,
@@ -27,6 +28,7 @@ export type ColiseumProfile = {
   instantiate: (seed: string, id: string) => ColiseumEntry;
 };
 export const coliseumSettings = z.strictObject({
+  calculationVersion: z.literal("core03-sheet-v1").optional(),
   rngStreams: z.literal(isolatedRngStreams).optional(),
   seed: z.string().min(1).max(512),
   mode: z.enum(["independent", "survival"]),
@@ -55,6 +57,7 @@ export const coliseumSettings = z.strictObject({
 });
 export type ColiseumSettings = z.infer<typeof coliseumSettings>;
 export const defaultColiseumSettings: ColiseumSettings = {
+  calculationVersion: "core03-sheet-v1",
   rngStreams: isolatedRngStreams,
   seed: "coliseo-1",
   mode: "independent",
@@ -134,33 +137,32 @@ export function packThreat(
 ) {
   const w = settings.weights;
   const referenceResistance =
-    party.reduce(
-      (n, p) => n + p.resistance.naturalResistance + p.resistance.armorBonus,
-      0,
-    ) / party.length;
+    party.reduce((n, p) => {
+      const r = settings.calculationVersion
+        ? bodyResistance(p.fighter)
+        : p.resistance;
+      return n + r.naturalResistance + r.armorBonus;
+    }, 0) / party.length;
   const individual = pack.reduce((sum, entry) => {
     const f = entry.fighter,
       model = f.weapon.model;
+    const capacity = settings.calculationVersion
+      ? attackSkill(f, model).capacity
+      : entry.resistance.associatedAttribute + entry.resistance.mastery;
+    const body = settings.calculationVersion
+      ? bodyResistance(f)
+      : entry.resistance;
     const chance = Math.max(
       0.01,
-      Math.min(
-        0.99,
-        (entry.resistance.associatedAttribute +
-          entry.resistance.mastery -
-          referenceResistance) /
-          100,
-      ),
+      Math.min(0.99, (capacity - referenceResistance) / 100),
     );
     const cost =
       model.vigorCost ?? { light: 1, medium: 2, heavy: 3 }[model.category];
     const sustained = cost === 0 ? 1 : Math.min(1, f.vigorMax / (cost * 4));
     const offense = chance * expectedDice(model.damage) * sustained;
     const survivability =
-      f.healthMax *
-        (1 +
-          (entry.resistance.naturalResistance + entry.resistance.armorBonus) /
-            100) +
-      f.dodge / 10;
+      f.healthMax * (1 + (body.naturalResistance + body.armorBonus) / 100) +
+      combatSkill(f, "dodge", !!settings.calculationVersion) / 10;
     return sum + offense * w.offense + survivability * w.survivability;
   }, 0);
   const pressure = (pack.length * pack.length) / party.length;
@@ -340,6 +342,9 @@ export function makeColiseumWave(
       stabilization: true,
     },
     rules: {
+      ...(settings.calculationVersion && {
+        calculationVersion: settings.calculationVersion,
+      }),
       fumbleConsequences: false,
       criticalInjuries: false,
       dodgeDisplacement: false,

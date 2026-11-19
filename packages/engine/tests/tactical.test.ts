@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { weapons, armors } from "../../fixtures/src/index.ts";
 import {
-  startTacticalEncounter,
+  startHistoricalTacticalEncounter as startTacticalEncounter,
   chooseEnemyAction,
   standardProfile,
   getLegalActions,

@@ -58,7 +58,9 @@ test("El preset aprobado inicia sin parámetros y conserva las fichas", () => {
       participant,
     );
   const legacy = { ...setup, rules: { ...setup.rules, resistance: undefined } };
-  assert.equal(presetDiagnostics(legacy).length, 3);
+  assert.deepEqual(presetDiagnostics(legacy), []);
+  delete legacy.rules.calculationVersion;
+  assert.match(presetDiagnostics(legacy)[0]!, /HISTORICO/);
 });
 test("La tirada principal usa el resultado modificado sin alterar grados ni defensas", () => {
   assert.deepEqual(

@@ -570,7 +570,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
           ...tacticalDemo(seed, map),
           ...(general && { roundLimit: general.roundLimit }),
         };
-    if (!setup.rules.resistance) {
+    if (!setup.rules.calculationVersion) {
       setMode("auto");
       setNotice(presetDiagnostics(setup).join(" "));
       return;

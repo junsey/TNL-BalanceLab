@@ -24,6 +24,7 @@ import {
   equippedAttacks,
   resolveAction,
   startTacticalEncounter,
+  startHistoricalTacticalEncounter,
   restoreTacticalEncounter,
   replayTacticalEvent,
   stateHash,
@@ -112,7 +113,7 @@ function validateRun(value: unknown): Run {
     resistanceExperiment.parse(p.resistance);
   }
   const verify = (active: Active) => {
-    let state = startTacticalEncounter(active.wave.setup).state;
+    let state = startHistoricalTacticalEncounter(active.wave.setup).state;
     if (
       stateHash(state) !== stateHash(restoreTacticalEncounter(active.initial))
     )
@@ -286,6 +287,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   function act(action: Action) {
     try {
       if (!run?.active || run.status !== "fighting" || !running) return;
+      if (!run.active.state.setup.rules.calculationVersion)
+        throw new Error(
+          "HISTORICO: esta carrera admite lectura y replay. Prepará una carrera nueva para simular.",
+        );
       const step = resolveAction(run.active.state, action);
       const next = {
         ...run.active,
@@ -348,7 +353,13 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       const t = setTimeout(() => nextWave(run), 500);
       return () => clearTimeout(t);
     }
-    if (!active || !state || run.status !== "fighting") return;
+    if (
+      !active ||
+      !state ||
+      run.status !== "fighting" ||
+      !state.setup.rules.calculationVersion
+    )
+      return;
     if (state.outcome) {
       if (!showExchange) setRun(complete(run, active));
       return;
@@ -425,6 +436,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       const parsed = coliseumSettings.parse({
           ...settings,
           rngStreams: "isolated-streams-v2",
+          calculationVersion: "core03-sheet-v1",
         }),
         party = partyFromSelection();
       const technicalLimit = limit === "" ? null : Number(limit);
@@ -484,6 +496,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       const parsed = coliseumSettings.parse({
         ...settings,
         rngStreams: "isolated-streams-v2",
+        calculationVersion: "core03-sheet-v1",
       });
       const w = new Worker(
         new URL("../lib/coliseum-worker.ts", import.meta.url),
@@ -689,24 +702,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                 onChange={(e) => setLimit(e.target.value)}
               />
             </label>
-            <label>
-              Resolución provisional del 01{" "}
-              <select
-                value={settings.naturalOne}
-                onChange={(e) =>
-                  setSettings({
-                    ...settings,
-                    naturalOne: e.target
-                      .value as ColiseumSettings["naturalOne"],
-                  })
-                }
-              >
-                <option value="requiresImpact">
-                  Crítico si supera Resistencia
-                </option>
-                <option value="alwaysCritical">Crítico natural siempre</option>
-              </select>
-            </label>
+            <p>
+              El 01 usa la política provisional del ensayo: crítico si confirma
+              impacto.
+            </p>
             <label>
               <input
                 type="checkbox"

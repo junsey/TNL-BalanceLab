@@ -1,8 +1,20 @@
 import { z } from "zod";
 import { character, weapon, armor } from "../../schemas/src/index.ts";
-import { attackTarget, deriveCharacter } from "./character.ts";
+import {
+  attackTarget,
+  deriveCharacter,
+  deriveHistoricalCharacter,
+} from "./character.ts";
 import { classify, parseDice, rollPercentile } from "./dice.ts";
-import { attackCost, rollWeaponDamage } from "./attack.ts";
+import {
+  attackCost,
+  attackVigorCost,
+  previewAttack,
+  rollWeaponDamage,
+  type Fighter,
+} from "./attack.ts";
+import { compareResistanceAttack } from "./resistance.ts";
+import { coreCalculationVersion } from "./skills.ts";
 import { rngVersion, seedRng } from "./rng.ts";
 import { rngState, stateHash } from "./state.ts";
 import { applyDamage, recoverVigor } from "./combat-math.ts";
@@ -14,6 +26,8 @@ const disabledModules = [
 ] as const;
 
 const playtestConfig = z.strictObject({
+  calculationVersion: z.literal(coreCalculationVersion).optional(),
+  targetNaturalResistance: z.number().int().nonnegative().optional(),
   schemaVersion: z.literal(1),
   model: z.literal("core03-passive-target"),
   disabledModules: z.tuple([
@@ -31,6 +45,19 @@ const playtestConfig = z.strictObject({
 
 export function runPassiveTargetPlaytest(input: unknown) {
   const config = playtestConfig.parse(input);
+  if (
+    !config.calculationVersion ||
+    config.targetNaturalResistance === undefined
+  )
+    throw new RangeError(
+      "HISTORICO: el ensayo nuevo requiere core03-sheet-v1 y Resistencia natural explícita",
+    );
+  return runHistoricalPassiveTargetPlaytest(config);
+}
+
+/** Historical execution retained for reproducibility of archived evidence. */
+export function runHistoricalPassiveTargetPlaytest(input: unknown) {
+  const config = playtestConfig.parse(input);
   const { attacker, weapon, target, targetArmor, roundLimit } = config;
   if (
     attacker.weaponId !== weapon.id ||
@@ -47,15 +74,61 @@ export function runPassiveTargetPlaytest(input: unknown) {
   ])
     parseDice(expression);
 
-  const offense = deriveCharacter(attacker);
-  const defense = deriveCharacter(target, targetArmor?.protection ?? 0);
-  const probability = attackTarget(
-    Object.hasOwn(attacker.mastery, weapon.id)
-      ? attacker.mastery[weapon.id]!
-      : 0,
-    defense.vulnerability,
-  );
-  const cost = attackCost[weapon.category];
+  const core = !!config.calculationVersion;
+  const offense = core
+    ? deriveCharacter(attacker)
+    : deriveHistoricalCharacter(attacker);
+  const legacyDefense = core
+    ? null
+    : deriveHistoricalCharacter(target, targetArmor?.protection ?? 0);
+  const defense = core ? deriveCharacter(target) : legacyDefense!;
+  const asFighter = (card: typeof attacker, defender: boolean): Fighter => ({
+    id: card.id,
+    sheet: {
+      name: card.id,
+      role: "Ensayo",
+      attributes: card.attributes,
+      training: card.training,
+      mastery: card.mastery,
+    },
+    health: 1,
+    healthMax: 1,
+    vigor: 9,
+    vigorMax: 9,
+    vulnerability: 0,
+    mastery: 0,
+    dodge: 0,
+    parry: 0,
+    alert: 0,
+    endurance: 0,
+    recovery: "none",
+    naturalResistance: defender ? config.targetNaturalResistance : 0,
+    weapon: { model: weapon, remaining: weapon.durability },
+    armor:
+      defender && targetArmor
+        ? { model: targetArmor, remaining: targetArmor.durability }
+        : null,
+    shield: null,
+  });
+  const preview = core
+    ? previewAttack(asFighter(attacker, false), asFighter(target, true), {
+        calculationVersion: coreCalculationVersion,
+        fumbleConsequences: false,
+        criticalInjuries: false,
+        equipmentWear: false,
+        defenseOverflow: false,
+        dodgeDisplacement: false,
+      })
+    : null;
+  const probability =
+    preview?.probability ??
+    attackTarget(
+      Object.hasOwn(attacker.mastery, weapon.id)
+        ? attacker.mastery[weapon.id]!
+        : 0,
+      legacyDefense!.vulnerability,
+    );
+  const cost = core ? attackVigorCost(weapon) : attackCost[weapon.category];
   let rng = seedRng(config.seed);
   let vigor = offense.vigorMax;
   let health = defense.healthMax;
@@ -78,7 +151,10 @@ export function runPassiveTargetPlaytest(input: unknown) {
       vigor -= cost;
       const test = rollPercentile(rng);
       rng = test.rng;
-      const grade = classify(test.roll, probability);
+      const check =
+        preview?.resistance &&
+        compareResistanceAttack(preview.resistance, test.roll).initial;
+      const grade = check ? check.grade : classify(test.roll, probability);
       const rolled =
         grade === "miss" || grade === "fumble"
           ? null
@@ -93,6 +169,11 @@ export function runPassiveTargetPlaytest(input: unknown) {
       );
       health -= effective;
       attack = {
+        ...(check && {
+          target: check.capacity,
+          modifiedRoll: check.modified,
+          resistance: check.resistance,
+        }),
         roll: test.roll,
         grade,
         probability,
@@ -115,7 +196,7 @@ export function runPassiveTargetPlaytest(input: unknown) {
   }
   const final = { vigor, health, rng: rngState.parse(rng), recovering };
   const result = {
-    engineVersion: "0.0.1",
+    engineVersion: core ? "0.7.0-core03-sheet" : "0.0.1",
     rngVersion,
     config,
     rounds,

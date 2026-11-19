@@ -157,7 +157,7 @@ export function applyCatalogItem(
     if (target !== setup.player)
       throw new RangeError("Elegí el PJ para usar la ficha de personaje");
     const card = character.parse(data);
-    const derived = deriveCharacter(card);
+    const derived = deriveCharacter(card, resolveWeapon(card.weaponId).model);
     const armorModel =
       card.armorId === null
         ? null

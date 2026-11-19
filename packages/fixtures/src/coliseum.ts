@@ -239,6 +239,7 @@ function creature(
   const actions = def.actions.map((a) => ({
     model: natural(a),
     attribute: strength,
+    attributeKey: "strength",
     value: a.value,
   }));
   const first = actions[0]!;
@@ -255,6 +256,7 @@ function creature(
     vigor,
     vigorMax: vigor,
     vulnerability: 0,
+    naturalResistance,
     mastery: first.value,
     dodge: def.dodge ? Math.min(100, stats.dexterity! + def.dodge) : 0,
     parry: 0,
@@ -340,7 +342,10 @@ export function coliseumHuman(
         dodge: spear ? 10 : 25,
         endurance: spear ? 20 : 15,
       },
-      mastery: { [model.id]: mastery, ...(!spear && { dagger: 20 }) },
+      mastery: {
+        [model.skill!.domain]: mastery,
+        ...(!spear && { daggers: 20 }),
+      },
     },
     health,
     healthMax: health,
@@ -349,6 +354,7 @@ export function coliseumHuman(
     vigor,
     vigorMax: vigor,
     vulnerability: 0,
+    naturalResistance: spear ? 9 : 8,
     mastery,
     dodge: spear ? 35 : 60,
     parry: 55,
