@@ -15,6 +15,7 @@ import {
 } from "./tactical.ts";
 import { stateHash } from "./state.ts";
 import { collectCombatMetrics, emptyCombatMetrics } from "./metrics.ts";
+import { attackVigorCost } from "./attack.ts";
 
 export function chooseTacticalAction(
   state: TacticalState,
@@ -58,9 +59,12 @@ export function chooseTacticalAction(
   const target = opponents[0];
   if (
     actor.fighter.actorType === "creature" &&
+    actor.major &&
     actor.fighter.creatureRecovery &&
-    !actions.some((a) => a.kind === "attack") &&
-    actor.fighter.vigor < actor.fighter.vigorMax
+    [
+      actor.fighter.weapon.model,
+      ...(actor.fighter.creatureActions ?? []).map((a) => a.model),
+    ].every((model) => attackVigorCost(model) > actor.fighter.vigor)
   ) {
     const recovery = actions.find((a) => a.kind === "creatureRecover");
     if (recovery)

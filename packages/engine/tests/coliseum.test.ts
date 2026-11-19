@@ -290,3 +290,48 @@ test("La IA se retira antes de recuperar y nunca recupera en una zona compartida
   assert.ok(retired);
   assert.ok(recovered);
 });
+
+test("La IA no inicia una retirada de recuperación después de gastar su Mayor", () => {
+  for (const waveNumber of [2, 3]) {
+    const wave = makeColiseumWave(
+      waveNumber,
+      [coliseumHuman("pale_raider", "hero")],
+      defaultColiseumSettings,
+      coliseumCatalog,
+    );
+    for (const p of wave.setup.participants) {
+      p.zone = "0,0";
+      if (p.fighter.actorType === "creature")
+        p.fighter.vigor = waveNumber === 2 ? 0 : 2;
+    }
+    let state = startTacticalEncounter(wave.setup).state;
+    for (
+      let i = 0;
+      i < 6 &&
+      !getLegalActions(state, "enemy-0").some((a) => a.kind === "attack");
+      i++
+    ) {
+      const end = state.actors
+        .flatMap((a) => getLegalActions(state, a.fighter.id))
+        .find((a) => a.kind === "end")!;
+      state = resolveAction(state, end).state;
+    }
+    const attack = getLegalActions(state, "enemy-0").find(
+      (a) => a.kind === "attack" && !a.weaponId,
+    )!;
+    assert.ok(attack);
+    state = resolveAction(state, attack).state;
+    if (state.pending)
+      state = resolveAction(state, {
+        kind: "defend",
+        actor: state.pending.defender,
+        defense: "none",
+      }).state;
+    assert.equal(
+      state.actors.find((a) => a.fighter.id === "enemy-0")!.major,
+      false,
+    );
+    const decision = chooseTacticalAction(state, "enemy-0", standardProfile);
+    assert.equal(decision?.action.kind, "end");
+  }
+});

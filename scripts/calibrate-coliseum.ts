@@ -1,5 +1,11 @@
 import { mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { stateHash } from "../packages/engine/src/state.ts";
+import {
+  Worker,
+  isMainThread,
+  parentPort,
+  workerData,
+} from "node:worker_threads";
 import type { CalibrationRow } from "../apps/web/lib/coliseum-worker.ts";
 import { calibrationCase } from "../apps/web/lib/coliseum-worker.ts";
 import {
@@ -10,7 +16,13 @@ import {
   coliseumHuman,
   coliseumCatalogVersion,
 } from "../packages/fixtures/src/coliseum.ts";
-const iterations = Number(process.argv[2] ?? 1000);
+const calibrationVersion = "coliseum-calibration-v2";
+const job = workerData as {
+  iterations: number;
+  size: number;
+  wave: number;
+} | null;
+const iterations = Number(job?.iterations ?? process.argv[2] ?? 1000);
 if (!Number.isSafeInteger(iterations) || iterations < 1 || iterations > 10000)
   throw new Error("Iteraciones: 1–10000");
 const settings = {
@@ -22,46 +34,72 @@ const party = [
   coliseumHuman("pale_raider", "hero-0"),
   coliseumHuman("pale_spearman", "hero-1"),
 ];
-let rows: CalibrationRow[] = [];
-if (
-  existsSync("reports/coliseum-baseline.json") &&
-  !process.argv.includes("--fresh")
-) {
-  const saved = JSON.parse(
-    readFileSync("reports/coliseum-baseline.json", "utf8"),
+if (!isMainThread) {
+  if (!job) throw new Error("Falta el caso de calibración");
+  parentPort!.postMessage(
+    calibrationCase(settings, party, job.size, job.wave, iterations),
   );
+} else {
+  let rows: CalibrationRow[] = [];
   if (
-    saved.version === coliseumVersion &&
-    saved.catalogVersion === coliseumCatalogVersion &&
-    saved.iterations === iterations &&
-    stateHash(saved.settings) === stateHash(settings) &&
-    stateHash(saved.party) === stateHash(party)
-  )
-    rows = saved.rows;
-}
-mkdirSync("reports", { recursive: true });
-for (let size = 1; size <= 4; size++)
-  for (let wave = 1; wave <= 6; wave++) {
-    if (rows.some((row) => row.size === size && row.wave === wave)) continue;
-    const row = calibrationCase(settings, party, size, wave, iterations);
-    rows.push(row);
-    writeFileSync(
-      "reports/coliseum-baseline.json",
-      JSON.stringify(
-        {
-          version: coliseumVersion,
-          catalogVersion: coliseumCatalogVersion,
-          settings,
-          party,
-          iterations,
-          complete: rows.length === 24,
-          rows,
-        },
-        null,
-        2,
-      ),
+    existsSync("reports/coliseum-baseline.json") &&
+    !process.argv.includes("--fresh")
+  ) {
+    const saved = JSON.parse(
+      readFileSync("reports/coliseum-baseline.json", "utf8"),
     );
-    console.log(
-      `${size} PJs · ola ${wave} · ${row.wins}/${iterations} victorias · ${row.censored} censuradas`,
-    );
+    if (
+      saved.calibrationVersion === calibrationVersion &&
+      saved.version === coliseumVersion &&
+      saved.catalogVersion === coliseumCatalogVersion &&
+      saved.iterations === iterations &&
+      stateHash(saved.settings) === stateHash(settings) &&
+      stateHash(saved.party) === stateHash(party)
+    )
+      rows = saved.rows;
   }
+  mkdirSync("reports", { recursive: true });
+  const jobs = Array.from({ length: 24 }, (_, i) => ({
+    size: Math.floor(i / 6) + 1,
+    wave: (i % 6) + 1,
+  })).filter((j) => !rows.some((r) => r.size === j.size && r.wave === j.wave));
+  await Promise.all(
+    Array.from({ length: Math.min(4, jobs.length) }, async () => {
+      for (;;) {
+        const next = jobs.shift();
+        if (!next) return;
+        const row = await new Promise<CalibrationRow>((resolve, reject) => {
+          const worker = new Worker(new URL(import.meta.url), {
+            workerData: { ...next, iterations },
+          });
+          worker.once("message", resolve);
+          worker.once("error", reject);
+          worker.once("exit", (code) => {
+            if (code !== 0) reject(new Error("Falló la calibración: " + code));
+          });
+        });
+        rows.push(row);
+        writeFileSync(
+          "reports/coliseum-baseline.json",
+          JSON.stringify(
+            {
+              calibrationVersion,
+              version: coliseumVersion,
+              catalogVersion: coliseumCatalogVersion,
+              settings,
+              party,
+              iterations,
+              complete: rows.length === 24,
+              rows: rows.sort((a, b) => a.size - b.size || a.wave - b.wave),
+            },
+            null,
+            2,
+          ),
+        );
+        console.log(
+          `${row.size} PJs · ola ${row.wave} · ${row.wins}/${iterations} victorias · ${row.censored} censuradas · ${rows.length}/24 casos`,
+        );
+      }
+    }),
+  );
+}

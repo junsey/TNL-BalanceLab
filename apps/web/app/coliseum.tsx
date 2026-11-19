@@ -63,6 +63,16 @@ type Run = {
   technicalLimit: number | null;
 };
 const storageKey = "tnl-coliseum-v1";
+const outcomeLabels: Record<string, string> = {
+  won_encounter: "Victoria",
+  escaped_encounter: "Retirada",
+  incapacitated: "Grupo incapacitado",
+  dead: "Grupo muerto",
+  censored_round_limit: "Límite de rondas",
+  failed_engine: "Error de resolución",
+};
+const outcomeLabel = (value: string | null) =>
+  outcomeLabels[value ?? ""] ?? "Interrumpido";
 function download(name: string, data: string, type: string) {
   const url = URL.createObjectURL(new Blob([data], { type }));
   const a = document.createElement("a");
@@ -183,7 +193,9 @@ function complete(run: Run, active: Active): Run {
     status: !metrics.won
       ? active.state.outcome?.startsWith("censored")
         ? "limited"
-        : "defeat"
+        : active.state.outcome === "escaped_encounter"
+          ? "stopped"
+          : "defeat"
       : run.technicalLimit && results.length >= run.technicalLimit
         ? "limited"
         : "between",
@@ -289,9 +301,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
         );
         return;
       }
-      setRun(
-        step.state.outcome ? complete(run, next) : { ...run, active: next },
-      );
+      setRun({ ...run, active: next });
       setCategory(null);
       setWeaponId(undefined);
       setZone(null);
@@ -339,6 +349,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       return () => clearTimeout(t);
     }
     if (!active || !state || run.status !== "fighting") return;
+    if (state.outcome) {
+      if (!showExchange) setRun(complete(run, active));
+      return;
+    }
     if (showExchange && !state.pending) return;
     const team = new Set(state.setup.playerTeam);
     const decision = state.actors
@@ -428,10 +442,14 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
         status: "between",
         technicalLimit,
       };
-      setRun(value);
-      setPreview(
-        makeColiseumWave(value.nextWave, party, parsed, coliseumCatalog),
+      const firstWave = makeColiseumWave(
+        value.nextWave,
+        party,
+        parsed,
+        coliseumCatalog,
       );
+      setRun(value);
+      setPreview(firstWave);
       setError("");
       setRunning(true);
     } catch (e) {
@@ -460,6 +478,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       )
         throw new Error("Cantidad de iteraciones inválida");
       const party = partyFromSelection();
+      const parsed = coliseumSettings.parse(settings);
       const w = new Worker(
         new URL("../lib/coliseum-worker.ts", import.meta.url),
       );
@@ -478,7 +497,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
         setWorker(null);
       };
       w.postMessage({
-        settings: coliseumSettings.parse(settings),
+        settings: parsed,
         party,
         iterations: calibrationCount,
       });
@@ -868,7 +887,8 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                       <thead>
                         <tr>
                           <th>PJs / ola</th>
-                          <th>Victorias</th>
+                          <th>Victorias resueltas</th>
+                          <th>Censuradas</th>
                           <th>Rondas medias</th>
                           <th>Salud perdida media</th>
                           <th>Cobertura</th>
@@ -881,8 +901,14 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                               {row.size} / {row.wave}
                             </td>
                             <td>
-                              {((100 * row.wins) / row.iterations).toFixed(1)}%
+                              {row.iterations > row.censored
+                                ? (
+                                    (100 * row.wins) /
+                                    (row.iterations - row.censored)
+                                  ).toFixed(1) + "%"
+                                : "Sin casos resueltos"}
                             </td>
+                            <td>{row.censored}</td>
                             <td>{(row.rounds / row.iterations).toFixed(1)}</td>
                             <td>
                               {(row.healthLost / row.iterations).toFixed(1)}
@@ -1129,10 +1155,9 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
             </div>
             {latest && (
               <p>
-                Última oleada:{" "}
-                {latest.metrics.won ? "victoria" : latest.metrics.outcome} ·{" "}
+                Última oleada: {outcomeLabel(latest.metrics.outcome)} ·{" "}
                 {latest.metrics.rounds} rondas · Salud perdida{" "}
-                {latest.metrics.healthLost} · Vigor gastado{" "}
+                {latest.metrics.healthLost} · Vigor total gastado{" "}
                 {latest.metrics.vigorSpent} / recuperado{" "}
                 {latest.metrics.vigorRecovered} · incapacitados del grupo{" "}
                 {latest.metrics.partyIncapacitated}.
@@ -1386,7 +1411,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                       <th>Resultado</th>
                       <th>Rondas</th>
                       <th>Salud perdida</th>
-                      <th>Vigor gastado</th>
+                      <th>Vigor total gastado</th>
                       <th>Amenaza estimada / objetivo</th>
                     </tr>
                   </thead>
@@ -1394,9 +1419,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                     {run.results.map((r) => (
                       <tr key={r.wave.number}>
                         <td>{r.wave.number}</td>
-                        <td>
-                          {r.metrics.won ? "Victoria" : r.metrics.outcome}
-                        </td>
+                        <td>{outcomeLabel(r.metrics.outcome)}</td>
                         <td>{r.metrics.rounds}</td>
                         <td>{r.metrics.healthLost}</td>
                         <td>{r.metrics.vigorSpent}</td>
