@@ -28,6 +28,7 @@ export type ColiseumProfile = {
   instantiate: (seed: string, id: string) => ColiseumEntry;
 };
 export const coliseumSettings = z.strictObject({
+  combatVersion: z.literal("core03-combat-v1").optional(),
   calculationVersion: z.literal("core03-sheet-v1").optional(),
   rngStreams: z.literal(isolatedRngStreams).optional(),
   seed: z.string().min(1).max(512),
@@ -57,6 +58,7 @@ export const coliseumSettings = z.strictObject({
 });
 export type ColiseumSettings = z.infer<typeof coliseumSettings>;
 export const defaultColiseumSettings: ColiseumSettings = {
+  combatVersion: "core03-combat-v1",
   calculationVersion: "core03-sheet-v1",
   rngStreams: isolatedRngStreams,
   seed: "coliseo-1",
@@ -338,10 +340,19 @@ export function makeColiseumWave(
     light: "sufficient",
     disabled: {
       opportunities: false,
-      preparedActions: true,
-      stabilization: true,
+      preparedActions: !settings.combatVersion,
+      stabilization: !settings.combatVersion,
     },
+    ...(settings.combatVersion && {
+      maneuvers: {
+        version: 1 as const,
+        kickVigor: 1,
+        sneakVigor: 1,
+        sweepSurcharge: 1,
+      },
+    }),
     rules: {
+      ...(settings.combatVersion && { combatVersion: settings.combatVersion }),
       ...(settings.calculationVersion && {
         calculationVersion: settings.calculationVersion,
       }),

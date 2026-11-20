@@ -291,6 +291,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       if (!run?.active || run.status !== "fighting" || !running) return;
       if (
         !run.active.state.setup.rules.calculationVersion ||
+        !run.active.state.setup.rules.combatVersion ||
         run.catalogVersion !== coliseumCatalogVersion
       )
         throw new Error(
@@ -324,6 +325,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
     try {
       if (
         !current.settings.calculationVersion ||
+        !current.settings.combatVersion ||
         current.catalogVersion !== coliseumCatalogVersion
       )
         throw new Error(
@@ -370,6 +372,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       !state ||
       run.status !== "fighting" ||
       !state.setup.rules.calculationVersion ||
+      !state.setup.rules.combatVersion ||
       run.catalogVersion !== coliseumCatalogVersion
     )
       return;
@@ -410,6 +413,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
     if (run?.status !== "between") return;
     if (
       !run.settings.calculationVersion ||
+      !run.settings.combatVersion ||
       run.catalogVersion !== coliseumCatalogVersion
     ) {
       setError(
@@ -460,6 +464,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
           ...settings,
           rngStreams: "isolated-streams-v2",
           calculationVersion: "core03-sheet-v1",
+          combatVersion: "core03-combat-v1",
         }),
         party = partyFromSelection();
       const technicalLimit = limit === "" ? null : Number(limit);
@@ -520,6 +525,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
         ...settings,
         rngStreams: "isolated-streams-v2",
         calculationVersion: "core03-sheet-v1",
+        combatVersion: "core03-combat-v1",
       });
       const w = new Worker(
         new URL("../lib/coliseum-worker.ts", import.meta.url),

@@ -97,22 +97,23 @@ export function migrateCombatScenario(input: unknown) {
   )
     ? ("CORE_DEFINIDO" as const)
     : ("BANCO_DE_PRUEBAS" as const);
+  const compatible =
+    original.rules.calculationVersion === coreCalculationVersion &&
+    !!original.rules.combatVersion &&
+    original.participants.every((p) => combatReadiness(p.fighter).ready);
   if (original.migration) {
     if (
       stateHash(original.migration.original) !== original.migration.sourceHash
     )
       throw new RangeError("Integridad de la migración inválida");
     return {
-      status,
+      status: compatible ? status : ("HISTORICO" as const),
       setup: original,
       sourceHash: original.migration.sourceHash,
       changed: false,
     };
   }
-  if (
-    original.rules.calculationVersion !== coreCalculationVersion ||
-    original.participants.some((p) => !combatReadiness(p.fighter).ready)
-  )
+  if (!compatible)
     return {
       status: "HISTORICO" as const,
       setup: original,

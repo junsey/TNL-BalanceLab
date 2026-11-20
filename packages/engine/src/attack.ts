@@ -205,6 +205,7 @@ export const fighterState = z
   });
 
 export const attackRules = z.strictObject({
+  combatVersion: z.literal("core03-combat-v1").optional(),
   calculationVersion: z.literal(coreCalculationVersion).optional(),
   fumbleConsequences: z.boolean(),
   criticalInjuries: z.boolean(),
@@ -406,10 +407,28 @@ export function attackVigorCost(model: Fighter["weapon"]["model"]) {
   return model.vigorCost ?? attackCost[model.category];
 }
 
-export function canAttack(fighter: Fighter) {
+export function isAttackTrained(
+  fighter: Fighter,
+  rules?: AttackRules,
+  model = attackWeapon(fighter),
+  thrown = false,
+) {
+  return (
+    !rules?.combatVersion ||
+    fighter.actorType === "creature" ||
+    (!!model && attackSkill(fighter, model, thrown).mastery > 0)
+  );
+}
+
+export function canAttack(
+  fighter: Fighter,
+  rules?: AttackRules,
+  thrown = false,
+) {
   const model = attackWeapon(fighter);
   return (
     model !== null &&
+    isAttackTrained(fighter, rules, model, thrown) &&
     fighter.health > 0 &&
     fighter.recovery === "none" &&
     fighter.weapon.remaining !== 0 &&
@@ -446,6 +465,7 @@ const blockCost = (fighter: Fighter) =>
 export function legalDefenses(
   fighter: Fighter,
   resistance?: Impact["resistance"],
+  rules?: AttackRules,
 ): Defense[] {
   const choices: Defense[] = ["none"];
   if (
@@ -464,6 +484,7 @@ export function legalDefenses(
     weapon &&
     weapon.remaining !== 0 &&
     weapon.model.parryCapacity !== null &&
+    isAttackTrained(fighter, rules, weapon.model) &&
     fighter.vigor >= parryCost(fighter)
   )
     choices.push("parry");
@@ -604,7 +625,7 @@ export function declareAttack(
     attacker.id === defender.id ||
     defender.health <= 0 ||
     !preview ||
-    (!sweep && !canAttack(attacker))
+    (!sweep && !canAttack(attacker, rules, thrown))
   )
     throw new RangeError("Ataque ilegal");
   const model = sweep?.model ?? preview!.model;
@@ -749,7 +770,7 @@ export function resolveImpact(
   if (
     impact.attacker !== attacker.id ||
     impact.defender !== defender.id ||
-    !legalDefenses(defender, impact.resistance).includes(defense)
+    !legalDefenses(defender, impact.resistance, rules).includes(defense)
   ) {
     throw new RangeError("Defensa ilegal");
   }

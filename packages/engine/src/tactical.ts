@@ -9,6 +9,8 @@ import {
   reserveWeapon,
   attackWeapon,
   canAttack,
+  isAttackTrained,
+  attackVigorCost,
   rechargeEnergy,
   attackRules,
   declareAttack,
@@ -131,6 +133,7 @@ const opportunityState = z.strictObject({
 const stateSchema = z.strictObject({
   setup: setupSchema,
   engineVersion: z.enum([
+    "0.8.0-core03-combat",
     "0.7.0-core03-sheet",
     "0.6.0-resistance-experimental",
     "0.1.0-tactical",
@@ -241,6 +244,15 @@ export function canSee(state: TacticalState, from: string, to: string) {
 
 function validateSetup(setup: Setup) {
   if (
+    setup.rules.combatVersion &&
+    setup.maneuvers &&
+    (setup.maneuvers.kickVigor !== 1 ||
+      setup.maneuvers.sneakVigor !== 1 ||
+      (setup.maneuvers.sweepSurcharge !== undefined &&
+        setup.maneuvers.sweepSurcharge !== 1))
+  )
+    throw new RangeError("Costes de maniobras incompatibles con CORE 03");
+  if (
     setup.migration &&
     stateHash(setup.migration.original) !== setup.migration.sourceHash
   )
@@ -298,7 +310,11 @@ function validateSetup(setup: Setup) {
         throw new RangeError("Umbrales de desgaste duplicados");
       }
     }
-    if (fighter.shield && fighter.shield.model.absorption === null) {
+    if (
+      fighter.shield &&
+      fighter.shield.model.absorption === null &&
+      !setup.rules.combatVersion
+    ) {
       throw new RangeError("UNRESOLVED_RULE: shield-absorption");
     }
   }
@@ -306,9 +322,9 @@ function validateSetup(setup: Setup) {
 
 export function startTacticalEncounter(input: unknown) {
   const setup = setupSchema.parse(input);
-  if (!setup.rules.calculationVersion)
+  if (!setup.rules.calculationVersion || !setup.rules.combatVersion)
     throw new RangeError(
-      "HISTORICO: este escenario solo admite lectura/replay; las partidas nuevas requieren core03-sheet-v1",
+      "HISTORICO: este escenario admite consulta y replay. Para jugar, iniciá un encuentro con las reglas actuales.",
     );
   return startHistoricalTacticalEncounter(setup);
 }
@@ -364,11 +380,13 @@ export function startHistoricalTacticalEncounter(input: unknown) {
   );
   const state: TacticalState = {
     setup,
-    engineVersion: setup.rules.calculationVersion
-      ? "0.7.0-core03-sheet"
-      : setup.rules.resistance
-        ? "0.6.0-resistance-experimental"
-        : tacticalVersion,
+    engineVersion: setup.rules.combatVersion
+      ? "0.8.0-core03-combat"
+      : setup.rules.calculationVersion
+        ? "0.7.0-core03-sheet"
+        : setup.rules.resistance
+          ? "0.6.0-resistance-experimental"
+          : tacticalVersion,
     rngVersion,
     rng,
     round: 1,
@@ -584,7 +602,11 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
   const { fighter } = actor;
   if (state.pending) {
     if (state.pending.defender !== id) return [];
-    return legalDefenses(fighter, state.pending.resistance).map((defense) => ({
+    return legalDefenses(
+      fighter,
+      state.pending.resistance,
+      state.setup.rules,
+    ).map((defense) => ({
       kind: "defend",
       actor: id,
       defense,
@@ -636,7 +658,14 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     }
   }
   const maneuvers = state.setup.maneuvers;
-  if (maneuvers && actor.minor && fighter.vigor >= maneuvers.kickVigor) {
+  const canManeuver =
+    !state.setup.rules.combatVersion || fighter.actorType !== "creature";
+  if (
+    canManeuver &&
+    maneuvers &&
+    actor.minor &&
+    fighter.vigor >= maneuvers.kickVigor
+  ) {
     for (const other of state.actors) {
       if (
         other.zone === actor.zone &&
@@ -711,6 +740,7 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
   const nearby = zonesWithin(state.setup.zones, actor.zone, 2);
   if (
     fighter.actorType !== "creature" &&
+    !state.setup.rules.combatVersion &&
     actor.minor &&
     !state.setup.disabled.preparedActions &&
     !actor.prepared
@@ -746,6 +776,7 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     if (distance > 0 && actor.major)
       actions.push({ kind: "run", actor: id, zone });
     if (
+      canManeuver &&
       maneuvers &&
       distance > 0 &&
       actor.major &&
@@ -768,7 +799,12 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     )
   )
     actions.push({ kind: "creatureRecover", actor: id });
-  if (!state.setup.disabled.stabilization && fighter.firstAid !== undefined) {
+  if (
+    !state.setup.disabled.stabilization &&
+    (state.setup.rules.combatVersion
+      ? !!fighter.sheet
+      : fighter.firstAid !== undefined)
+  ) {
     for (const other of state.actors) {
       if (
         other.zone === actor.zone &&
@@ -788,7 +824,13 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
     const hands = handLoadout(fighter);
     for (const { item, weaponId } of equippedAttacks(fighter)) {
       const slot = weaponId ? "reserve" : "weapon";
-      if (item.remaining === 0 || (hands.right !== slot && hands.left !== slot))
+      if (
+        item.remaining === 0 ||
+        !isAttackTrained(fighter, state.setup.rules, item.model) ||
+        (fighter.actorType !== "creature" &&
+          hands.right !== slot &&
+          hands.left !== slot)
+      )
         continue;
       for (const trigger of [
         "incomingAttack",
@@ -810,6 +852,7 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
   );
   if (
     !state.setup.disabled.preparedActions &&
+    !state.setup.rules.combatVersion &&
     !actor.prepared &&
     fighter.weapon.remaining !== 0
   ) {
@@ -853,7 +896,7 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
         item.remaining === 0 ||
         item.model.energyPerAttack ||
         fighter.groundWeapons?.some((entry) => entry.slot === slot) ||
-        fighter.vigor < attackCost[item.model.category] ||
+        fighter.vigor < attackVigorCost(item.model) ||
         (!(hands.right === slot || hands.left === slot) &&
           hands.right &&
           hands.left)
@@ -862,8 +905,10 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       for (const other of opponents) {
         const distance = nearby.get(other.zone);
         if (
-          distance &&
-          distance <= 2 &&
+          distance !== undefined &&
+          (state.setup.rules.combatVersion
+            ? distance <= 1
+            : distance > 0 && distance <= 2) &&
           alive(other.fighter) &&
           canSee(state, actor.zone, other.zone)
         )
@@ -880,9 +925,10 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
   const surcharge = maneuvers?.sweepSurcharge;
   if (
     surcharge !== undefined &&
+    canManeuver &&
     sweepWeapon?.twoHanded &&
-    canAttack(fighter) &&
-    fighter.vigor >= attackCost[sweepWeapon.category] + surcharge &&
+    canAttack(fighter, state.setup.rules) &&
+    fighter.vigor >= attackVigorCost(sweepWeapon) + surcharge &&
     opponents.some(
       (other) => other.zone === actor.zone && alive(other.fighter),
     ) &&
@@ -898,12 +944,15 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       continue;
     for (const { item, weaponId } of equippedAttacks(fighter)) {
       if (
-        canAttack({
-          ...fighter,
-          weapon: item,
-          hands: undefined,
-          energy: weaponId ? undefined : fighter.energy,
-        })
+        canAttack(
+          {
+            ...fighter,
+            weapon: item,
+            hands: undefined,
+            energy: weaponId ? undefined : fighter.energy,
+          },
+          state.setup.rules,
+        )
       )
         actions.push({
           kind: "attack",
@@ -942,9 +991,11 @@ export function actionBlockReasons(state: TacticalState, id: string) {
           ? "Arma inutilizada"
           : !weapon
             ? "Energía insuficiente"
-            : fighter.vigor < attackCost[weapon.category]
-              ? "Vigor insuficiente"
-              : "Sin rival visible en la misma zona",
+            : !isAttackTrained(fighter, state.setup.rules, weapon)
+              ? "Dominio del arma sin entrenar"
+              : fighter.vigor < attackCost[weapon.category]
+                ? "Vigor insuficiente"
+                : "Sin rival visible en la misma zona",
     });
   if (!legal.some((action) => action.kind === "breathe"))
     issues.push({
@@ -1100,10 +1151,12 @@ function opportunityCandidates(state: World, trigger: Trigger) {
     .filter(
       ({ fighter, zone }) =>
         zone === provoking.zone &&
-        (trigger.kind === "attack" || provoking.kicked !== fighter.id) &&
+        ((!state.setup.rules.combatVersion && trigger.kind === "attack") ||
+          provoking.kicked !== fighter.id) &&
         isPlayerTeam(state.setup, fighter.id) !==
           isPlayerTeam(state.setup, trigger.actor) &&
-        canAttack(fighter) &&
+        canAttack(fighter, state.setup.rules) &&
+        (!state.setup.rules.combatVersion || fighter.vigor > 0) &&
         !fighter.conditions?.some((condition) => condition.blocksReactions) &&
         canSee(state, zone, provoking.zone) &&
         !state.opportunities?.used.some(
@@ -1115,7 +1168,12 @@ function opportunityCandidates(state: World, trigger: Trigger) {
             reach[attackWeapon(fighter)!.reach] >
               reach[
                 (trigger.weaponId
-                  ? availableDagger(provoking.fighter)?.model
+                  ? (state.setup.rules.combatVersion
+                      ? equippedAttacks(provoking.fighter).find(
+                          (e) => e.weaponId === trigger.weaponId,
+                        )?.item
+                      : availableDagger(provoking.fighter)
+                    )?.model
                   : attackWeapon(provoking.fighter)
                 )?.reach ?? "short"
               ])),
@@ -1175,7 +1233,11 @@ function finishTrigger(
   }
   if (trigger.kind === "attack") {
     const dagger = trigger.weaponId
-      ? availableDagger(actor.fighter)
+      ? state.setup.rules.combatVersion
+        ? equippedAttacks(actor.fighter).find(
+            (e) => e.weaponId === trigger.weaponId,
+          )?.item
+        : availableDagger(actor.fighter)
       : undefined;
     if (
       (trigger.weaponId && dagger?.model.id !== trigger.weaponId) ||
@@ -1188,6 +1250,7 @@ function finishTrigger(
               energy: undefined,
             }
           : actor.fighter,
+        state.setup.rules,
       )
     ) {
       details.push({
@@ -1602,19 +1665,22 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         (entry) => entry.fighter.id === decision.target,
       )!;
       const model = { ...item.model, damage: item.model.damage };
-      const rules = {
-        ...state.setup.rules,
-        resistance: {
-          ...state.setup.rules.resistance!,
-          [decision.actor]: {
-            ...state.setup.rules.resistance![decision.actor]!,
-            weaponSkills: undefined,
-            associatedAttribute: original.throwing?.attribute ?? 0,
-            mastery: original.throwing?.mastery ?? 0,
-          },
-        },
-      };
-      delete rules.resistance[decision.actor]!.weaponSkills;
+      const rules = state.setup.rules.combatVersion
+        ? state.setup.rules
+        : {
+            ...state.setup.rules,
+            resistance: {
+              ...state.setup.rules.resistance!,
+              [decision.actor]: {
+                ...state.setup.rules.resistance![decision.actor]!,
+                weaponSkills: undefined,
+                associatedAttribute: original.throwing?.attribute ?? 0,
+                mastery: original.throwing?.mastery ?? 0,
+              },
+            },
+          };
+      if (!state.setup.rules.combatVersion)
+        delete rules.resistance![decision.actor]!.weaponSkills;
       const projection = {
         ...original,
         weapon: { ...item, model },
@@ -1869,20 +1935,25 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         canReact &&
         (!("weaponId" in preparation) ||
           (!!selectedWeapon &&
-            [handLoadout(fighter).right, handLoadout(fighter).left].includes(
-              selectedWeapon.weaponId ? "reserve" : "weapon",
-            ))) &&
+            ((state.setup.rules.combatVersion &&
+              fighter.actorType === "creature") ||
+              [handLoadout(fighter).right, handLoadout(fighter).left].includes(
+                selectedWeapon.weaponId ? "reserve" : "weapon",
+              )))) &&
         (breathing
           ? fighter.vigor < fighter.vigorMax
           : selectedWeapon
-            ? canAttack({
-                ...fighter,
-                weapon: selectedWeapon.item,
-                hands: undefined,
-                groundWeapons: undefined,
-                energy: selectedWeapon.weaponId ? undefined : fighter.energy,
-              })
-            : canAttack(fighter));
+            ? canAttack(
+                {
+                  ...fighter,
+                  weapon: selectedWeapon.item,
+                  hands: undefined,
+                  groundWeapons: undefined,
+                  energy: selectedWeapon.weaponId ? undefined : fighter.energy,
+                },
+                state.setup.rules,
+              )
+            : canAttack(fighter, state.setup.rules));
       details.push({ kind: "PREPARATION_TRIGGERED", actor: id, executed });
       if (executed && breathing) {
         fighter.vigor++;

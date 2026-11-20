@@ -6,7 +6,7 @@ import {
 
 /** Missing development data is a preset error, never a request for game rules. */
 export function presetDiagnostics(setup: TacticalSetup): string[] {
-  if (!setup.rules.calculationVersion)
+  if (!setup.rules.calculationVersion || !setup.rules.combatVersion)
     return [
       "HISTORICO: registro disponible para lectura y replay. Iniciá un encuentro nuevo para usar las reglas actuales.",
     ];

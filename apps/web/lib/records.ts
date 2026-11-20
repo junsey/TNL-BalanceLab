@@ -141,9 +141,10 @@ export function validateRecord(kind: Kind, input: unknown): Json {
     case "scenario": {
       const scenario = tacticalScenarioSchema.parse(input);
       const rules = "kind" in scenario ? scenario.base.rules : scenario.rules;
-      const validated = rules.calculationVersion
-        ? materializeScenario(scenario)
-        : materializeHistoricalScenario(scenario);
+      const validated =
+        rules.calculationVersion && rules.combatVersion
+          ? materializeScenario(scenario)
+          : materializeHistoricalScenario(scenario);
       return "kind" in scenario ? scenario : validated;
     }
     case "study":
@@ -164,8 +165,11 @@ export function validateRecord(kind: Kind, input: unknown): Json {
         planHash,
       } = summary;
       if (
-        validateBatchPlan(plan, !plan.setup.rules.calculationVersion)
-          .planHash !== planHash ||
+        validateBatchPlan(
+          plan,
+          !plan.setup.rules.calculationVersion ||
+            !plan.setup.rules.combatVersion,
+        ).planHash !== planHash ||
         requested !== plan.requested ||
         completed !== results.length ||
         reduced + censored + failed !== completed ||

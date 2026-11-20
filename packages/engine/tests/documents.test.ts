@@ -104,6 +104,9 @@ test("Documentos 1.3: migración explícita conserva original, verifica integrid
   const corrupt = structuredClone(migrated.setup);
   corrupt.migration!.sourceHash = "0".repeat(64);
   assert.throws(() => migrateCombatScenario(corrupt), /Integridad/);
+  const previousCombat = structuredClone(migrated.setup);
+  delete previousCombat.rules.combatVersion;
+  assert.equal(migrateCombatScenario(previousCombat).status, "HISTORICO");
   delete old.rules.calculationVersion;
   const historical = migrateCombatScenario(old);
   assert.equal(historical.status, "HISTORICO");
