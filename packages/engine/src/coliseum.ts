@@ -39,6 +39,7 @@ export const coliseumSettings = z.strictObject({
   seed: z.string().min(1).max(512),
   mode: z.enum(["independent", "survival"]),
   initialWave: z.number().int().min(1).safe(),
+  initialPack: z.array(z.string().min(1)).min(1).max(20).optional(),
   mixedPacks: z.boolean(),
   disabledProfiles: z.array(z.string()),
   naturalOne: z.enum(["alwaysCritical", "requiresImpact"]),
@@ -246,7 +247,17 @@ export function makeColiseumWave(
         );
       return cache.get(key)!;
     });
-  if (number <= 6) {
+  if (number === settings.initialWave && settings.initialPack) {
+    if (settings.initialPack.length > settings.enemyCap)
+      throw new Error("La composición supera el límite simultáneo");
+    if (settings.initialPack.some((id) => !legal.some((p) => p.id === id)))
+      throw new Error("La composición contiene perfiles no disponibles");
+    pack = [...settings.initialPack];
+    warnings.push(
+      "Composición inicial elegida para ensayo; no ajustada al presupuesto de amenaza.",
+    );
+  }
+  if (!pack.length && number <= 6) {
     const preset: readonly string[] =
       initialWavePresetMatrix[number - 1]![party.length - 1]!;
     const missing = preset.filter((id) => !legal.some((p) => p.id === id));
@@ -330,15 +341,18 @@ export function makeColiseumWave(
     player: party[0]!.fighter.id,
     playerTeam: party.map((p) => p.fighter.id),
     aggressor: "enemies",
-    zones: Array.from({ length: 15 }, (_, i) => ({
+    zones: Array.from({ length: 35 }, (_, i) => ({
       id: `${i % 5},${Math.floor(i / 5)}`,
       q: i % 5,
       r: Math.floor(i / 5),
       terrain: "Piedra",
     })),
     participants: [
-      ...party.map((p, i) => ({ fighter: p.fighter, zone: `0,${i % 3}` })),
-      ...enemies.map((p, i) => ({ fighter: p.fighter, zone: `3,${i % 3}` })),
+      ...party.map((p, i) => ({ fighter: p.fighter, zone: `0,${i}` })),
+      ...enemies.map((p, i) => ({
+        fighter: p.fighter,
+        zone: `${2 + (i % 3)},${Math.floor(i / 3)}`,
+      })),
     ],
     roundLimit: settings.roundLimit,
     stopAtIncapacitation: true,

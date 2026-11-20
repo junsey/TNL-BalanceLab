@@ -10,7 +10,14 @@ import { weapons, armors } from "./index.ts";
 
 export const historicalColiseumCatalogVersion =
   "coliseum-catalog-2026-11-18-v1";
-export const coliseumCatalogVersion = "coliseum-catalog-2026-11-19-v2";
+export const coliseumCatalogVersion = "coliseum-catalog-2026-11-20-v3";
+export const minorFaunaSource = {
+  sourceDoc:
+    "The Night Land · W. H. Hodgson · https://www.gutenberg.org/cache/epub/10662/pg10662.html.utf8",
+  sourceSection:
+    "Fauna junto a pozos de fuego y seres punzantes sin especie identificada. Nombres y todas las cifras: plan de ensayo 2.1, no canon literario ni CORE.",
+  status: "BANCO_DE_PRUEBAS" as const,
+};
 const benchSource = {
   sourceDoc: "CORE 03",
   sourceSection: "Bestiario y humanos de ensayo del Coliseo",
@@ -27,6 +34,22 @@ type Action = {
   type: Model["damageType"];
   category?: Model["category"];
   reach?: Model["reach"];
+};
+type Definition = {
+  id: string;
+  name: string;
+  bases: number[];
+  dice: string[];
+  health: number;
+  healthDice: string;
+  mental: number;
+  res: number;
+  resDice: string;
+  alert: number;
+  dodge: number;
+  pending: string[];
+  actions: Action[];
+  minorFauna?: boolean;
 };
 const natural = (a: Action): Model => ({
   schemaVersion: 1,
@@ -48,7 +71,7 @@ const natural = (a: Action): Model => ({
   reach: a.reach ?? "short",
   twoHanded: false,
 });
-const definitions = [
+const definitions: Definition[] = [
   {
     id: "night_hound",
     name: "Sabueso de la Noche",
@@ -199,21 +222,59 @@ const definitions = [
       },
     ],
   },
-] satisfies {
-  id: string;
-  name: string;
-  bases: number[];
-  dice: string[];
-  health: number;
-  healthDice: string;
-  mental: number;
-  res: number;
-  resDice: string;
-  alert: number;
-  dodge: number;
-  pending: string[];
-  actions: Action[];
-}[];
+  {
+    id: "fire_pit_scorpion",
+    name: "Escorpión de los Pozos de Fuego",
+    bases: [10, 5, 5, 5, 0, 0, 5],
+    dice: ["1d6", "1d6", "1d6", "1d4", "1d2", "1d2", "1d6"],
+    health: 3,
+    healthDice: "1d3",
+    mental: 1,
+    res: 1,
+    resDice: "1d2",
+    alert: 5,
+    dodge: 0,
+    pending: [],
+    minorFauna: true,
+    actions: [
+      {
+        id: "scorpion_sting",
+        name: "Picadura",
+        value: 10,
+        cost: 0,
+        damage: "1d4",
+        extra: "1d2",
+        type: "piercing",
+      },
+    ],
+  },
+  {
+    id: "small_stinging_creature",
+    name: "Pequeña criatura punzante",
+    bases: [5, 5, 5, 0, 0, 0, 5],
+    dice: ["1d4", "1d4", "1d4", "1d4", "1d2", "1d2", "1d4"],
+    health: 1,
+    healthDice: "1d3",
+    mental: 1,
+    res: 0,
+    resDice: "1d2",
+    alert: 5,
+    dodge: 0,
+    pending: [],
+    minorFauna: true,
+    actions: [
+      {
+        id: "small_sting",
+        name: "Picar",
+        value: 10,
+        cost: 0,
+        damage: "1d3",
+        extra: "1d2",
+        type: "piercing",
+      },
+    ],
+  },
+];
 
 function creature(
   def: (typeof definitions)[number],
@@ -248,7 +309,9 @@ function creature(
     will = stats.will!;
   const health = roll(def.healthDice, def.health + Math.floor(strength / 2));
   const mentalHealth = roll("1d6", def.mental + Math.floor(will / 2));
-  const vigor = roll("1d4", 2 + Math.floor((strength + will) / 20));
+  const vigor = def.minorFauna
+    ? 0
+    : roll("1d4", 2 + Math.floor((strength + will) / 20));
   const naturalResistance = roll(def.resDice, def.res);
   const actions = def.actions.map((a) => ({
     model: natural(a),
@@ -260,7 +323,7 @@ function creature(
     id,
     schemaVersion: 2,
     rulesVersion: "core03-sheet-v1",
-    source: benchSource,
+    source: def.minorFauna ? minorFaunaSource : benchSource,
     actorType: "creature",
     profileId: def.id,
     catalogVersion: coliseumCatalogVersion,
@@ -279,7 +342,7 @@ function creature(
     endurance: 0,
     weapon: { model: first.model, remaining: null },
     creatureActions: actions,
-    creatureRecovery: "1d4",
+    ...(!def.minorFauna && { creatureRecovery: "1d4" }),
     armor: null,
     shield: null,
     recovery: "none",

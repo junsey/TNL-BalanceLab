@@ -95,9 +95,11 @@ function validateRun(value: unknown): Run {
   const run = value as Run;
   if (
     run?.version !== coliseumVersion ||
-    ![coliseumCatalogVersion, "coliseum-catalog-2026-11-18-v1"].includes(
-      run.catalogVersion,
-    ) ||
+    ![
+      coliseumCatalogVersion,
+      "coliseum-catalog-2026-11-19-v2",
+      "coliseum-catalog-2026-11-18-v1",
+    ].includes(run.catalogVersion) ||
     run.rngVersion !== rngVersion
   )
     throw new Error("Versión de Coliseo incompatible");
@@ -774,6 +776,59 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                 onChange={(e) => setLimit(e.target.value)}
               />
             </label>
+            <label>
+              Composición inicial
+              <select
+                aria-label="Composición inicial"
+                value={settings.initialPack?.[0] ?? ""}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    initialPack: e.target.value ? [e.target.value] : undefined,
+                  })
+                }
+              >
+                <option value="">Según oleada</option>
+                {coliseumCatalog
+                  .filter(
+                    (p) =>
+                      !p.pending.length &&
+                      !settings.disabledProfiles.includes(p.id),
+                  )
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            {settings.initialPack && (
+              <label>
+                Cantidad inicial
+                <input
+                  aria-label="Cantidad inicial"
+                  type="number"
+                  min={1}
+                  max={settings.enemyCap}
+                  value={settings.initialPack.length}
+                  onChange={(e) => {
+                    const count = Number(e.target.value);
+                    if (
+                      Number.isInteger(count) &&
+                      count >= 1 &&
+                      count <= settings.enemyCap
+                    )
+                      setSettings({
+                        ...settings,
+                        initialPack: Array.from(
+                          { length: count },
+                          () => settings.initialPack![0]!,
+                        ),
+                      });
+                  }}
+                />
+              </label>
+            )}
             <p>
               El 01 usa la política provisional del ensayo: crítico si confirma
               impacto.
