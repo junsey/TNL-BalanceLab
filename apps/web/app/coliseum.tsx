@@ -35,10 +35,19 @@ import {
   simulationVersions,
   reportVersionsSchema,
   sameReportVersions,
+  coreResistance,
   type ReportVersions,
   type TacticalState,
 } from "../../../packages/engine/src/index.ts";
 import { fighterState } from "../../../packages/engine/src/attack.ts";
+import { weapons, armors } from "../../../packages/fixtures/src/index.ts";
+import {
+  applyLabLoadout,
+  exportEquipment,
+  importEquipment,
+  type LabLoadout,
+} from "../../../packages/engine/src/loadout.ts";
+import { LoadoutEditor } from "./loadout-editor";
 import { resistanceExperiment } from "../../../packages/engine/src/resistance.ts";
 import {
   TacticalBoard,
@@ -247,6 +256,7 @@ function complete(run: Run, active: Active): Run {
 export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   const [settings, setSettings] = useState(defaultColiseumSettings);
   const [presets, setPresets] = useState<string[]>(["pale_raider"]);
+  const [loadouts, setLoadouts] = useState<(LabLoadout | null)[]>([null]);
   const [injections, setInjections] = useState(false);
   const [limit, setLimit] = useState("");
   const [run, setRun] = useState<Run | null>(null);
@@ -279,7 +289,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
         setSettings(value.settings);
         setRunning(false);
         setNotice(
-          "Carrera recuperada del autoguardado; reanudá para continuar.",
+          value.catalogVersion === coliseumCatalogVersion &&
+            value.metricsVersion === metricsVersion
+            ? "Carrera recuperada del autoguardado; reanudá para continuar."
+            : "Carrera histórica: disponible para consulta y exportación. Prepará otra para jugar con el catálogo actual.",
         );
       }
     } catch {
@@ -482,24 +495,58 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       setError(String(error));
     }
   }, [run]);
+  function selectedEntry(preset: string, i: number) {
+    if (preset === "existing") {
+      if (!existing || existing.fighter.actorType === "creature")
+        throw new Error(
+          "El personaje actual necesita una ficha humana completa para combate",
+        );
+      return structuredClone({
+        ...existing,
+        fighter: { ...existing.fighter, id: "hero-" + i },
+      });
+    }
+    return coliseumHuman(
+      preset as "pale_raider" | "pale_spearman",
+      "hero-" + i,
+      injections,
+    );
+  }
   function partyFromSelection() {
     return presets.map((preset, i) => {
-      if (preset === "existing") {
-        if (!existing || existing.fighter.actorType === "creature")
-          throw new Error(
-            "El personaje actual necesita ser humano y tener su configuración de Resistencia",
-          );
-        return structuredClone({
-          ...existing,
-          fighter: { ...existing.fighter, id: "hero-" + i },
+      const entry = selectedEntry(preset, i);
+      if (loadouts[i])
+        entry.fighter = applyLabLoadout(entry.fighter, loadouts[i]!, {
+          weapons,
+          armors,
         });
-      }
-      return coliseumHuman(
-        preset as "pale_raider" | "pale_spearman",
-        "hero-" + i,
-        injections,
-      );
+      entry.resistance = coreResistance(entry.fighter, entry.fighter);
+      return entry;
     });
+  }
+  function equipmentFile() {
+    partyFromSelection();
+    return exportEquipment(
+      presets.map((preset, i) => ({
+        preset: preset as "pale_raider" | "pale_spearman" | "existing",
+        loadout: loadouts[i] ?? null,
+      })),
+    );
+  }
+  function restoreEquipment(value: unknown) {
+    const parsed = importEquipment(value);
+    const entries = parsed.entries.map((entry, i) => {
+      const initial = selectedEntry(entry.preset, i);
+      if (entry.loadout)
+        applyLabLoadout(initial.fighter, entry.loadout, { weapons, armors });
+      return entry;
+    });
+    setPresets(entries.map((e) => e.preset));
+    setLoadouts(entries.map((e) => e.loadout));
+    setNotice(
+      "Configuración de equipo restaurada; la ficha original se conserva.",
+    );
+    setError("");
   }
   function start() {
     try {
@@ -676,14 +723,20 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
               Personajes{" "}
               <select
                 value={presets.length}
-                onChange={(e) =>
+                onChange={(e) => {
                   setPresets(
                     Array.from(
                       { length: Number(e.target.value) },
                       (_, i) => presets[i] ?? "pale_raider",
                     ),
-                  )
-                }
+                  );
+                  setLoadouts(
+                    Array.from(
+                      { length: Number(e.target.value) },
+                      (_, i) => loadouts[i] ?? null,
+                    ),
+                  );
+                }}
               >
                 {[1, 2, 3, 4].map((n) => (
                   <option key={n}>{n}</option>
@@ -691,25 +744,112 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
               </select>
             </label>
             {presets.map((p, i) => (
-              <label key={i}>
-                Personaje {i + 1}
-                <select
-                  value={p}
-                  onChange={(e) =>
-                    setPresets(
-                      presets.map((v, j) => (j === i ? e.target.value : v)),
-                    )
-                  }
-                >
-                  <option value="pale_raider">Saqueador · espada y daga</option>
-                  <option value="pale_spearman">Lancero · lanza larga</option>
-                  <option value="existing" disabled={!existing}>
-                    Importar personaje actual{" "}
-                    {existing ? "" : "(configurá Resistencia primero)"}
-                  </option>
-                </select>
-              </label>
+              <div key={i}>
+                <label>
+                  Personaje {i + 1}
+                  <select
+                    value={p}
+                    onChange={(e) => {
+                      setPresets(
+                        presets.map((v, j) => (j === i ? e.target.value : v)),
+                      );
+                      setLoadouts(loadouts.map((v, j) => (j === i ? null : v)));
+                    }}
+                  >
+                    <option value="pale_raider">
+                      Saqueador · espada y daga
+                    </option>
+                    <option value="pale_spearman">Lancero · lanza larga</option>
+                    <option value="existing" disabled={!existing}>
+                      Importar personaje actual{" "}
+                      {existing ? "" : "(sin ficha humana actual)"}
+                    </option>
+                  </select>
+                </label>
+                {(p !== "existing" || existing) && (
+                  <LoadoutEditor
+                    index={i}
+                    fighter={selectedEntry(p, i).fighter}
+                    value={loadouts[i] ?? null}
+                    onChange={(value) =>
+                      setLoadouts(
+                        Array.from({ length: presets.length }, (_, j) =>
+                          i === j ? value : (loadouts[j] ?? null),
+                        ),
+                      )
+                    }
+                  />
+                )}
+              </div>
             ))}
+            <div className="coliseum-controls">
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.setItem(
+                      "tnl-coliseum-equipment-v1",
+                      JSON.stringify(equipmentFile()),
+                    );
+                    setNotice("Equipo guardado en este navegador.");
+                  } catch (e) {
+                    setError(String(e));
+                  }
+                }}
+              >
+                Guardar equipo
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    const value = localStorage.getItem(
+                      "tnl-coliseum-equipment-v1",
+                    );
+                    if (!value) throw new Error("No hay equipo guardado");
+                    restoreEquipment(JSON.parse(value));
+                  } catch (e) {
+                    setError(String(e));
+                  }
+                }}
+              >
+                Cargar equipo
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    download(
+                      "coliseo-equipo.json",
+                      JSON.stringify(equipmentFile(), null, 2),
+                      "application/json",
+                    );
+                  } catch (e) {
+                    setError(String(e));
+                  }
+                }}
+              >
+                Exportar equipo
+              </button>
+              <label>
+                Importar equipo
+                <input
+                  aria-label="Importar equipo"
+                  type="file"
+                  accept="application/json"
+                  onChange={async (e) => {
+                    try {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 100000)
+                        throw new Error("Archivo demasiado grande");
+                      restoreEquipment(JSON.parse(await file.text()));
+                    } catch (error) {
+                      setError(String(error));
+                    } finally {
+                      e.target.value = "";
+                    }
+                  }}
+                />
+              </label>
+            </div>
             <label>
               <input
                 type="checkbox"

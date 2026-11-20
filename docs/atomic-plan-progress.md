@@ -10,5 +10,6 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | 1.3 Fichas y migración | Publicada | 64debb7 | docs/combat-documents-1.3.md; 76 tests + web, tipos, lint y build |
 | 1.4 Cadena de combate | Publicada | e181215 | docs/core-combat-1.4.md; 97 tests + web, tipos, lint y build |
 | 1.5 Integración | Publicada | 355bc47 | docs/integration-1.5.md; 101 tests, integración, web y capturas; CI correcto |
-| 2.1 Fauna menor | Verificada; publicación en el commit de esta fila | base 355bc47 | docs/minor-fauna-2.1.md; 103 tests, 6000 fichas y encuentros 1/5/10/15 |
-| 2.2 y posteriores | Pendientes | — | docs/atomic-plan-v02.md |
+| 2.1 Fauna menor | Publicada | 79dbf8d | docs/minor-fauna-2.1.md; 103 tests, 6000 fichas y encuentros 1/5/10/15; CI correcto |
+| 2.2 Equipo por PJ | Verificada; publicación en el commit de esta fila | base 79dbf8d | docs/equipment-2.2.md; 106 tests, roundtrip, web y capturas |
+| 2.3 y posteriores | Pendientes | — | docs/atomic-plan-v02.md |
