@@ -192,6 +192,8 @@ test("CORE 1.2: blanco pasivo, vista previa y declaración usan idéntica compar
   const input = {
     schemaVersion: 1,
     calculationVersion: "core03-sheet-v1",
+    combatVersion: "core03-combat-v1",
+    catalogVersion: "core-fixtures-v2",
     model: "core03-passive-target",
     disabledModules: [
       "critical-injuries",

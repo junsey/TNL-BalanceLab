@@ -317,6 +317,15 @@ try {
       },
       body: JSON.stringify({ job, plan, chunk, canceled }),
     });
+  assert.equal(
+    (
+      await submit({
+        ...firstChunk,
+        versions: { ...firstChunk.versions!, metricsVersion: "old" },
+      })
+    ).status,
+    400,
+  );
   const firstCheckpoint = await submit(firstChunk);
   assert.equal(
     firstCheckpoint.status,

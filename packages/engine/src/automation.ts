@@ -16,6 +16,7 @@ import {
 import { stateHash } from "./state.ts";
 import { collectCombatMetrics, emptyCombatMetrics } from "./metrics.ts";
 import { attackVigorCost, previewAttack } from "./attack.ts";
+import { simulationVersions } from "./versions.ts";
 
 export function chooseTacticalAction(
   state: TacticalState,
@@ -111,6 +112,15 @@ export function chooseTacticalAction(
       continue;
     }
     if (priority === "attack" || priority === "prepareAttack") {
+      if (priority === "prepareAttack" && state.setup.rules.combatVersion) {
+        const prepared = actions.find(
+          (a) =>
+            a.kind === "prepareReactive" &&
+            a.trigger === "either" &&
+            !a.weaponId,
+        );
+        if (prepared) return { action: prepared, reason: "prepare-attack" };
+      }
       for (const opponent of opponents) {
         const candidates = actions.filter(
           (action) =>
@@ -263,6 +273,7 @@ export function runAutomaticEncounter(
       : "completed_reduced_model";
   return {
     metrics,
+    versions: simulationVersions(initial.setup, initial.engineVersion),
     state,
     status,
     events: options.recordEvents ? events : null,

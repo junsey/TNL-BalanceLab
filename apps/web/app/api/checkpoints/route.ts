@@ -6,6 +6,9 @@ import {
   restoreTacticalEncounter,
   stateHash,
   validateBatchPlan,
+  reportVersionsSchema,
+  simulationVersions,
+  sameReportVersions,
 } from "../../../../../packages/engine/src/index.ts";
 import { database } from "../../../lib/records";
 import { readBounded } from "../../../lib/request";
@@ -21,6 +24,7 @@ const payloadSchema = z.strictObject({
   plan: batchPlanSchema,
   canceled: z.boolean(),
   chunk: z.strictObject({
+    versions: reportVersionsSchema,
     planHash: z.string().regex(/^[a-f0-9]{64}$/),
     start: count,
     end: count,
@@ -59,6 +63,12 @@ export async function POST(request: Request) {
     const { plan, chunk } = payload;
     if (
       validateBatchPlan(plan).planHash !== chunk.planHash ||
+      !sameReportVersions(chunk.versions, simulationVersions(plan.setup)) ||
+      chunk.results.some(
+        (result) =>
+          !result.versions ||
+          !sameReportVersions(result.versions, chunk.versions),
+      ) ||
       chunk.end > plan.requested ||
       chunk.end - chunk.start !== chunk.results.length ||
       chunk.results.some((run, index) => run.index !== chunk.start + index)

@@ -22,6 +22,10 @@ import {
   type GeneralSettings,
   generalSettingsSchema,
   coreResistance,
+  simulationVersions,
+  sameReportVersions,
+  versionWarnings,
+  type ReportVersions,
 } from "../../../packages/engine/src/index.ts";
 import {
   maps,
@@ -53,6 +57,7 @@ import { Coliseum } from "./coliseum";
 
 type Event = ReturnType<typeof resolveAction>["event"] & { reason?: string };
 type Session = {
+  versions?: ReportVersions;
   initial: TacticalState;
   state: TacticalState;
   events: Event[];
@@ -62,6 +67,13 @@ type Session = {
 };
 type Mode = "manual" | "auto" | "batch" | "library" | "coliseum";
 type Action = Event["action"];
+const isCurrentSession = (session: Session) =>
+  !!session.versions &&
+  versionWarnings([session.versions]).length === 0 &&
+  sameReportVersions(
+    session.versions,
+    simulationVersions(session.state.setup, session.state.engineVersion),
+  );
 type SharedBatch = {
   id: string;
   alias: string;
@@ -177,6 +189,7 @@ function newSession(seed: string, map: string, roundLimit?: number): Session {
     roundLimit: roundLimit ?? setup.roundLimit,
   });
   return {
+    versions: simulationVersions(state.setup, state.engineVersion),
     initial: state,
     state,
     events: [],
@@ -184,6 +197,7 @@ function newSession(seed: string, map: string, roundLimit?: number): Session {
   };
 }
 function nextAuto(session: Session, profile: TacticalProfile) {
+  if (!isCurrentSession(session)) return session;
   const choice = chooseEnemyAction(session.state, profile);
   if (!choice) return session;
   const step = resolveAction(session.state, choice.action);
@@ -327,6 +341,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
 
   useEffect(() => {
     if (
+      !isCurrentSession(session) ||
       presetDiagnostics(session.state.setup).length > 0 ||
       !auto ||
       session.state.outcome ||
@@ -434,6 +449,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
         materializeScenario(scenario, encounterSeed),
       );
       setSession({
+        versions: simulationVersions(state.setup, state.engineVersion),
         initial: state,
         state,
         events: [],
@@ -491,6 +507,12 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     }
   }
   function take(action: Action) {
+    if (!isCurrentSession(session)) {
+      setNotice(
+        "Encuentro histórico: podés consultarlo y ver su replay. Iniciá otro para jugar con las reglas actuales.",
+      );
+      return;
+    }
     if (presetDiagnostics(session.state.setup).length) {
       setNotice(presetDiagnostics(session.state.setup).join(" "));
       return;
@@ -540,7 +562,11 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       setAuto(mode === "auto");
       setReplay(null);
       setSelection(state.setup.player);
-      setNotice("Encuentro restaurado.");
+      setNotice(
+        isCurrentSession({ ...saved, initial, state })
+          ? "Encuentro restaurado."
+          : "Encuentro histórico: disponible para consulta y replay. Iniciá otro para jugar.",
+      );
     } catch {
       setNotice("El encuentro guardado no es compatible.");
     }
@@ -1018,6 +1044,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
               setScenario(state.setup);
               setInitiativeOpen(true);
               setSession({
+                versions: simulationVersions(state.setup, state.engineVersion),
                 initial: state,
                 state,
                 events: [],
@@ -1052,6 +1079,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
             setScenario(source);
             setInitiativeOpen(true);
             setSession({
+              versions: simulationVersions(state.setup, state.engineVersion),
               initial: state,
               state,
               events: [],
@@ -1077,6 +1105,11 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
             setScenario(initial.setup);
             const state = saved.events.reduce(replayTacticalEvent, initial);
             setSession({ ...saved, initial, state });
+            setNotice(
+              isCurrentSession({ ...saved, initial, state })
+                ? "Encuentro restaurado."
+                : "Encuentro histórico: disponible para consulta y replay. Iniciá otro para jugar.",
+            );
             setInitiativeOpen(state.sequence === 0);
             setReplay(null);
             setAuto(saved.mode !== "manual");
@@ -1292,6 +1325,11 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                       Muestra pequeña. Revisá la amplitud de los intervalos.
                     </p>
                   )}
+                  {stats.versionWarnings.map((warning) => (
+                    <p className="notice" key={warning}>
+                      {warning}
+                    </p>
+                  ))}
                 </details>
               ) : null}
             </>

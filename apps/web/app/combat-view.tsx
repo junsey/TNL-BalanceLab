@@ -323,9 +323,11 @@ export function TacticalBoard({
           <i className="legend enemy" /> Enemigos
         </span>
         <span className="model-label">
-          {state.setup.rules.resistance
-            ? "Resistencia experimental v1"
-            : "Modelo histórico anterior a Resistencia"}
+          {state.setup.rules.calculationVersion
+            ? "Resistencia · ensayo"
+            : state.setup.rules.resistance
+              ? "Histórico · Resistencia experimental"
+              : "Modelo histórico anterior a Resistencia"}
         </span>
       </footer>
     </section>
@@ -825,18 +827,20 @@ export function CommandMenu({
                                     ? weapon
                                       ? attackCost[weapon.category] + " Vigor"
                                       : null
-                                    : [
-                                          "move",
-                                          "run",
-                                          "breathe",
-                                          "recover",
-                                          "flee",
-                                          "prepareReactive",
-                                          "prepareBreathe",
-                                          "stabilize",
-                                        ].includes(item.id)
-                                      ? "0 Vigor"
-                                      : null;
+                                    : item.id === "prepareReactive"
+                                      ? "Vigor al activarse"
+                                      : [
+                                            "move",
+                                            "run",
+                                            "breathe",
+                                            "recover",
+                                            "flee",
+                                            "prepareReactive",
+                                            "prepareBreathe",
+                                            "stabilize",
+                                          ].includes(item.id)
+                                        ? "0 Vigor"
+                                        : null;
                             return (
                               <button
                                 type="button"

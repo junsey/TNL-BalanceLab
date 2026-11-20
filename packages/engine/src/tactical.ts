@@ -326,6 +326,11 @@ export function startTacticalEncounter(input: unknown) {
     throw new RangeError(
       "HISTORICO: este escenario admite consulta y replay. Para jugar, iniciá un encuentro con las reglas actuales.",
     );
+  for (const { fighter } of setup.participants)
+    if (!fighter.catalogVersion || !fighter.source)
+      throw new RangeError(
+        "Falta la procedencia o versión de la ficha de " + fighter.id,
+      );
   return startHistoricalTacticalEncounter(setup);
 }
 
@@ -1861,6 +1866,14 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
     case "breathe":
       actor.minor = false;
       actor.fighter.vigor++;
+      if (state.setup.rules.combatVersion)
+        details.push({
+          kind: "RECOVERY",
+          actor: decision.actor,
+          amount: 1,
+          roll: null,
+          method: "breathe",
+        });
       break;
     case "creatureRecover": {
       const roll = rollDice(actor.fighter.creatureRecovery!, state.rng);

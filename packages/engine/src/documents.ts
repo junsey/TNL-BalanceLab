@@ -45,6 +45,16 @@ export function inspectCombatDocument(
 
 export function combatReadiness(fighter: Fighter) {
   const issues: { field: string; message: string }[] = [];
+  if (!fighter.catalogVersion)
+    issues.push({
+      field: "catalogVersion",
+      message: "Falta versión del catálogo",
+    });
+  if (!fighter.source)
+    issues.push({
+      field: "source",
+      message: "Falta procedencia de los datos de ficha",
+    });
   if (
     fighter.source &&
     ["HISTORICO", "PENDIENTE_DE_REGLAS"].includes(fighter.source.status)

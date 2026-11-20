@@ -18,3 +18,4 @@ export * from "./resistance.ts";
 export * from "./coliseum.ts";
 export * from "./skills.ts";
 export * from "./documents.ts";
+export * from "./versions.ts";

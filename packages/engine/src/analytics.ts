@@ -3,6 +3,7 @@ import {
   emptyCombatMetrics,
   type CombatMetrics,
 } from "./metrics.ts";
+import { versionWarnings, type ReportVersions } from "./versions.ts";
 
 export function wilson95(successes: number, sample: number) {
   if (
@@ -67,8 +68,13 @@ export function batchStatistics(
     victories: number;
     escapes: number;
     metrics?: CombatMetrics;
+    versions?: ReportVersions;
   }[],
 ) {
+  const versions = results.map((result) => result.versions);
+  const warnings = versionWarnings(versions);
+  if (warnings.length && versions.some((v) => !!v))
+    throw new RangeError(warnings[0]);
   const sample = results.filter(
     (result) => result.status === "completed_reduced_model",
   );
@@ -93,6 +99,8 @@ export function batchStatistics(
   const totals = emptyCombatMetrics();
   for (const metrics of metricsSample) addCombatMetrics(totals, metrics);
   return {
+    ...(versions.find((v) => !!v) && { versions: versions.find((v) => !!v)! }),
+    versionWarnings: warnings,
     metrics: metricsSample.length
       ? {
           totals,

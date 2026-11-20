@@ -12,9 +12,12 @@ import {
   runAutomaticEncounter,
   startTacticalEncounter,
   getLegalActions,
+  simulationVersions,
+  type ReportVersions,
 } from "../../../packages/engine/src/index.ts";
 
 export type CalibrationRow = {
+  versions?: ReportVersions;
   size: number;
   wave: number;
   iterations: number;
@@ -94,6 +97,7 @@ export function calibrationCase(
     row.targetThreat += wave.targetThreat;
     row.actualThreat += wave.actualThreat;
     const initial = startTacticalEncounter(wave.setup).state;
+    row.versions = simulationVersions(initial.setup, initial.engineVersion);
     const result = runAutomaticEncounter(initial, new Map(), {
       actionLimit: 20000,
       onStep: (before, after, action) => {
@@ -105,20 +109,16 @@ export function calibrationCase(
           getLegalActions(before, action.actor).every((a) => a.kind === "end")
         )
           row.noActionTurns++;
-        for (const a of after.actors) {
-          const f = before.actors.find(
-            (p) => p.fighter.id === a.fighter.id,
-          )!.fighter;
-          row.vigorSpent += Math.max(0, f.vigor - a.fighter.vigor);
-          row.vigorRecovered += Math.max(0, a.fighter.vigor - f.vigor);
-          row.damage += Math.max(0, f.health - a.fighter.health);
-        }
       },
     });
     row.wins += Number(result.state.outcome === "won_encounter");
     row.censored += Number(result.status !== "completed_reduced_model");
     row.rounds += result.state.round;
     row.attacks += result.metrics.attacks;
+    row.vigorSpent += result.metrics.vigorSpent;
+    row.vigorRecovered += result.metrics.vigorRecovered ?? 0;
+    row.damage +=
+      result.metrics.damageInflicted + result.metrics.damageReceived;
     row.criticals += result.metrics.criticalHits;
     row.equipmentWear += result.metrics.equipmentWear;
     for (const a of result.state.actors) {

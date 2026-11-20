@@ -4,14 +4,19 @@ import { resistanceExperiment } from "./resistance.ts";
 import { seedRng, rollDie, rngVersion, isolatedRngStreams } from "./rng.ts";
 import { attackSkill, bodyResistance, combatSkill } from "./skills.ts";
 import {
+  simulationVersions,
+  versionWarnings,
+  metricsVersion,
+} from "./versions.ts";
+import {
   getLegalActions,
   resolveAction,
   startTacticalEncounter,
   type TacticalState,
   type TacticalSetup,
 } from "./tactical.ts";
-import { chooseTacticalAction } from "./automation.ts";
-import { standardProfile } from "./profiles.ts";
+import { runAutomaticEncounter } from "./automation.ts";
+import { collectCombatMetrics, emptyCombatMetrics } from "./metrics.ts";
 import { stateHash } from "./state.ts";
 
 export const coliseumVersion = "coliseum-lab-v1";
@@ -390,6 +395,26 @@ export type ColiseumResult = {
   metrics: ReturnType<typeof coliseumMetrics>;
   hash: string;
 };
+export const coliseumMetricsSchema = z.object({
+  healthLost: z.number().int().nonnegative(),
+  vigorSpent: z.number().int().nonnegative(),
+  vigorRecovered: z.number().int().nonnegative(),
+  attacks: z.number().int().nonnegative(),
+  damage: z.number().int().nonnegative(),
+  criticals: z.number().int().nonnegative(),
+  equipmentWear: z.number().int().nonnegative(),
+  noActionTurns: z.number().int().nonnegative(),
+  controlApplications: z.null(),
+  poisonApplications: z.null(),
+  rounds: z.number().int().min(1),
+  partyIncapacitated: z.number().int().nonnegative(),
+  enemyIncapacitated: z.number().int().nonnegative(),
+  won: z.boolean(),
+  outcome: z.string().nullable(),
+  actions: z.number().int().nonnegative(),
+  damagePerAttack: z.number().finite().nonnegative(),
+});
+
 export function coliseumMetrics(
   initial: TacticalState,
   final: TacticalState,
@@ -417,10 +442,8 @@ export function coliseumMetrics(
     if (ids.has(a.fighter.id))
       totals.healthLost += Math.max(0, before.health - a.fighter.health);
   }
-  const previous = new Map(
-    initial.actors.map((a) => [a.fighter.id, a.fighter]),
-  );
   let snapshot = initial;
+  const shared = emptyCombatMetrics();
   for (const e of events) {
     if (
       e.action.kind === "end" &&
@@ -430,40 +453,24 @@ export function coliseumMetrics(
       getLegalActions(snapshot, e.action.actor).every((a) => a.kind === "end")
     )
       totals.noActionTurns++;
-    for (const a of e.changes.actors) {
-      const before = previous.get(a.fighter.id)!;
-      totals.vigorSpent += Math.max(0, before.vigor - a.fighter.vigor);
-      totals.vigorRecovered += Math.max(0, a.fighter.vigor - before.vigor);
-      totals.damage += Math.max(0, before.health - a.fighter.health);
-      for (const key of [
-        "weapon",
-        "reserveWeapon",
-        "armor",
-        "shield",
-      ] as const) {
-        const from = before[key]?.remaining,
-          to = a.fighter[key]?.remaining;
-        if (from != null && to != null)
-          totals.equipmentWear += Math.max(0, from - to);
-      }
-      previous.set(a.fighter.id, a.fighter);
-    }
     const changed = new Map(e.changes.actors.map((a) => [a.fighter.id, a]));
-    snapshot = {
+    const next = {
       ...snapshot,
       ...e.changes,
       sequence: e.sequence,
       actors: snapshot.actors.map((a) => changed.get(a.fighter.id) ?? a),
     };
-    for (const d of e.details) {
-      if (d.kind === "IMPACT" || d.kind === "ATTACK_FAILED") {
-        totals.attacks++;
-        if (d.grade === "critical") totals.criticals++;
-      }
-    }
+    collectCombatMetrics(shared, snapshot, next, e.action.actor, e.details);
+    snapshot = next;
   }
   return {
     ...totals,
+    vigorSpent: shared.vigorSpent,
+    vigorRecovered: shared.vigorRecovered ?? 0,
+    attacks: shared.attacks,
+    damage: shared.damageInflicted + shared.damageReceived,
+    criticals: shared.criticalHits,
+    equipmentWear: shared.equipmentWear,
     controlApplications: null,
     poisonApplications: null,
     rounds: final.round,
@@ -472,59 +479,44 @@ export function coliseumMetrics(
     won: final.outcome === "won_encounter",
     outcome: final.outcome,
     actions: events.length,
-    damagePerAttack: totals.attacks ? totals.damage / totals.attacks : 0,
+    damagePerAttack: shared.attacks
+      ? (shared.damageInflicted + shared.damageReceived) / shared.attacks
+      : 0,
   };
 }
+export function assertStoredColiseumMetrics(
+  initial: TacticalState,
+  final: TacticalState,
+  events: readonly ColiseumEvent[],
+  stored: unknown,
+  version?: string,
+) {
+  const parsed = coliseumMetricsSchema.parse(stored);
+  if (
+    parsed.outcome !== final.outcome ||
+    parsed.won !== (final.outcome === "won_encounter")
+  )
+    throw new Error("Resultado y métricas incompatibles");
+  if (
+    version === metricsVersion &&
+    stateHash(parsed) !== stateHash(coliseumMetrics(initial, final, events))
+  )
+    throw new Error("Métricas inconsistentes");
+  return parsed;
+}
+
 export function runColiseumWave(
   wave: ColiseumWave,
   actionLimit = 20000,
 ): ColiseumResult {
   const initial = startTacticalEncounter(wave.setup).state;
-  let state = initial;
-  const events: ColiseumEvent[] = [];
-  let vigorSpent = 0,
-    vigorRecovered = 0,
-    damage = 0,
-    noActionTurns = 0;
-  while (!state.outcome && events.length < actionLimit) {
-    const decisions = state.actors.map((a) =>
-      chooseTacticalAction(
-        state,
-        a.fighter.id,
-        a.fighter.ai ?? standardProfile,
-      ),
-    );
-    const decision = decisions.find(Boolean);
-    if (!decision) throw new Error("Coliseo: encuentro sin acciones legales");
-    if (
-      decision.action.kind === "end" &&
-      state.actors.some(
-        (a) => a.fighter.id === decision.action.actor && a.major && a.minor,
-      ) &&
-      getLegalActions(state, decision.action.actor).every(
-        (a) => a.kind === "end",
-      )
-    )
-      noActionTurns++;
-    const step = resolveAction(state, decision.action);
-    for (const a of step.state.actors) {
-      const before = state.actors.find(
-        (p) => p.fighter.id === a.fighter.id,
-      )!.fighter;
-      vigorSpent += Math.max(0, before.vigor - a.fighter.vigor);
-      vigorRecovered += Math.max(0, a.fighter.vigor - before.vigor);
-      damage += Math.max(0, before.health - a.fighter.health);
-    }
-    state = step.state;
-    events.push(step.event);
-  }
-  const metrics = {
-    ...coliseumMetrics(initial, state, events),
-    vigorSpent,
-    vigorRecovered,
-    damage,
-    noActionTurns,
-  };
+  const result = runAutomaticEncounter(initial, new Map(), {
+    recordEvents: true,
+    actionLimit,
+  });
+  const state = result.state;
+  const events = result.events!;
+  const metrics = coliseumMetrics(initial, state, events);
   return {
     wave,
     initial,
@@ -547,13 +539,27 @@ export function survivingParty(
     ),
   }));
 }
+function storedVersions(result: ColiseumResult, version: string | null) {
+  return {
+    ...simulationVersions(result.wave.setup, result.final.engineVersion),
+    metricsVersion: version ?? "historical-unversioned",
+  };
+}
+
 export function coliseumReport(
   settings: ColiseumSettings,
   party: readonly ColiseumEntry[],
   results: readonly ColiseumResult[],
+  storedMetricsVersion: string | null = metricsVersion,
 ) {
   return {
     schemaVersion: 1,
+    ...(results[0] && {
+      versions: storedVersions(results[0], storedMetricsVersion),
+    }),
+    versionWarnings: versionWarnings(
+      results.map((result) => storedVersions(result, storedMetricsVersion)),
+    ),
     version: coliseumVersion,
     rngVersion,
     ruleset: "resistance-experiment-v1",
@@ -567,9 +573,12 @@ export function coliseumReport(
     ),
   };
 }
-export function coliseumCsv(results: readonly ColiseumResult[]) {
+export function coliseumCsv(
+  results: readonly ColiseumResult[],
+  storedMetricsVersion: string | null = metricsVersion,
+) {
   return (
-    "wave,seed,pack,target_threat,actual_threat,prediction_error,outcome,rounds,health_lost,vigor_spent,vigor_recovered,party_incapacitated,enemy_incapacitated,damage_per_attack\n" +
+    "wave,seed,pack,target_threat,actual_threat,prediction_error,outcome,rounds,health_lost,vigor_spent,vigor_recovered,party_incapacitated,enemy_incapacitated,damage_per_attack,engine_version,rules_version,catalog_version,rng_version,metrics_version\n" +
     results
       .map((r) =>
         [
@@ -587,6 +596,18 @@ export function coliseumCsv(results: readonly ColiseumResult[]) {
           r.metrics.partyIncapacitated,
           r.metrics.enemyIncapacitated,
           r.metrics.attacks ? r.metrics.damage / r.metrics.attacks : 0,
+          ...[
+            "engineVersion",
+            "rulesVersion",
+            "catalogVersion",
+            "rngVersion",
+            "metricsVersion",
+          ].map(
+            (key) =>
+              storedVersions(r, storedMetricsVersion)[
+                key as keyof ReturnType<typeof simulationVersions>
+              ],
+          ),
         ]
           .map((v) => '"' + String(v).replaceAll('"', '""') + '"')
           .join(","),

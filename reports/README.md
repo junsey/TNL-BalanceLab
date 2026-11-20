@@ -16,4 +16,4 @@ Repetir con `node scripts/calibrate-coliseum.ts 1000 --fresh`. Sin `--fresh`, la
 
 rng-audit-v1.json contiene los 16 contrastes reproducibles; rng-trace-v1.json contiene trazas hasta presentación/replay. Ver docs/rng-audit-1.1.md.
 
-La referencia coliseum-baseline.json queda HISTORICO tras separar corrientes de composición y combate. Las futuras calibraciones escriben coliseum-baseline-streams-v2.json; no se ha ejecutado una nueva calibración de balance en esta etapa.
+La referencia coliseum-baseline.json queda HISTORICO tras separar corrientes de composición y combate. Las futuras calibraciones escriben coliseum-core03-metrics-v2.json; no se ha ejecutado una nueva calibración de balance en esta etapa.

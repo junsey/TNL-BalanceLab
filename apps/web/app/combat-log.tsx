@@ -312,8 +312,8 @@ export function Detail({
     case "RECOVERY":
       return (
         <p>
-          {name(print(detail.actor))} recuperó {print(detail.amount)} Vigor ·
-          dado {print(detail.roll)}
+          {name(print(detail.actor))} recuperó {print(detail.amount)} Vigor
+          {typeof detail.roll === "number" && " · dado " + print(detail.roll)}
         </p>
       );
     case "AGONY":

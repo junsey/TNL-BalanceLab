@@ -24,7 +24,7 @@ El estimador usa ofensiva sostenible, supervivencia, presión de acciones y sine
 
 La sección de calibración ejecuta los 24 casos (1–4 PJs × temas 1–6) en un trabajador separado. Por defecto usa 1.000 semillas por caso. Los presets elegidos se repiten para completar los tamaños de grupo y quedan registrados. Los resultados muestran cobertura, victorias, incapacitación, rondas, pérdidas de Salud, consumo/recuperación de Vigor, ataques, daño y críticos. Desgaste permanece en cero por estar deshabilitado; control y veneno no se consideran probados.
 
-Para generar una referencia con corrientes aisladas: `node scripts/calibrate-coliseum.ts 1000 --fresh`. Sin `--fresh` reanuda casos completos de la misma configuración en `reports/coliseum-baseline-streams-v2.json`. La referencia incluida `coliseum-baseline.json` conserva las corrientes históricas anteriores a la etapa 1.1 y no valida las nuevas. Estos resultados son una referencia del modelo reducido y no certifican balance del CORE ni supervivencia a largo plazo.
+Para generar una referencia con corrientes aisladas: `node scripts/calibrate-coliseum.ts 1000 --fresh`. Sin `--fresh` reanuda casos completos de la misma configuración en `reports/coliseum-core03-metrics-v2.json`. La referencia incluida `coliseum-baseline.json` conserva las corrientes históricas anteriores a la etapa 1.1 y no valida las nuevas. Estos resultados son una referencia del modelo reducido y no certifican balance del CORE ni supervivencia a largo plazo.
 
 ## Persistencia e informes
 

@@ -24,6 +24,9 @@ import {
   batchResultSchema,
   consequenceTables,
   attackRules,
+  reportVersionsSchema,
+  simulationVersions,
+  sameReportVersions,
   type StudyDependencies,
   validateBatchPlan,
 } from "../../../packages/engine/src/index.ts";
@@ -92,6 +95,7 @@ const batchReport = z.strictObject({
   schemaVersion: z.literal(1),
   plan: batchPlanSchema,
   summary: z.strictObject({
+    versions: reportVersionsSchema.optional(),
     planHash: z.string().regex(/^[a-f0-9]{64}$/),
     status: z.enum(["partial", "canceled", "completed"]),
     requested: z.number().int().min(1).max(10000),
@@ -165,9 +169,25 @@ export function validateRecord(kind: Kind, input: unknown): Json {
         planHash,
       } = summary;
       if (
+        summary.versions &&
+        (!sameReportVersions(
+          summary.versions,
+          simulationVersions(plan.setup),
+        ) ||
+          results.some(
+            (result) =>
+              !result.versions ||
+              !sameReportVersions(result.versions, summary.versions!),
+          ))
+      )
+        throw new RangeError("Informe con versiones incompatibles");
+      if (!summary.versions && results.some((result) => !!result.versions))
+        throw new RangeError("Falta la versión del informe");
+      if (
         validateBatchPlan(
           plan,
-          !plan.setup.rules.calculationVersion ||
+          !summary.versions ||
+            !plan.setup.rules.calculationVersion ||
             !plan.setup.rules.combatVersion,
         ).planHash !== planHash ||
         requested !== plan.requested ||
@@ -191,6 +211,7 @@ export function validateRecord(kind: Kind, input: unknown): Json {
       const payload = z
         .strictObject({
           initial: z.json(),
+          versions: reportVersionsSchema.optional(),
           state: z.json(),
           events: z.array(z.json()).max(2000),
           source: configurationSource.optional(),
@@ -208,6 +229,16 @@ export function validateRecord(kind: Kind, input: unknown): Json {
         })
         .parse(input);
       const initial = restoreTacticalEncounter(payload.initial);
+      if (
+        payload.versions &&
+        !sameReportVersions(payload.versions, {
+          ...simulationVersions(initial.setup, initial.engineVersion),
+          metricsVersion: payload.versions.metricsVersion,
+        })
+      )
+        throw new RangeError(
+          "La versión declarada no corresponde a esta partida",
+        );
       if (initial.sequence !== 0)
         throw new RangeError("Estado inicial inválido");
       const state = payload.events.reduce(replayTacticalEvent, initial);

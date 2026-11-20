@@ -1,3 +1,5 @@
+> Archivo de referencia histórica del 11/11/2026. Sus fórmulas y tablas anteriores a Resistencia no validan el CORE actual. La trazabilidad vigente se documenta en core-calculation-1.2.md, combat-documents-1.3.md y core-combat-1.4.md; CORE 01/02/03 tienen precedencia.
+
 # Trazabilidad de reglas
 
 Fuentes consultadas el 11 de noviembre de 2026. Las referencias apuntan al documento y a la sección de la revisión consultada. La columna de pruebas distingue cobertura disponible de criterios pendientes.

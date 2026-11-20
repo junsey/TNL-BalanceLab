@@ -21,6 +21,8 @@ const fighter = {
 const result = runPassiveTargetPlaytest({
   schemaVersion: 1,
   calculationVersion: "core03-sheet-v1",
+  combatVersion: "core03-combat-v1",
+  catalogVersion: "core-fixtures-v2",
   targetNaturalResistance: 4,
   model: "core03-passive-target",
   disabledModules: [

@@ -16,7 +16,7 @@ import {
   coliseumHuman,
   coliseumCatalogVersion,
 } from "../packages/fixtures/src/coliseum.ts";
-const calibrationVersion = "coliseum-calibration-v2";
+const calibrationVersion = "coliseum-calibration-v3";
 const job = workerData as {
   iterations: number;
   size: number;
@@ -42,11 +42,11 @@ if (!isMainThread) {
 } else {
   let rows: CalibrationRow[] = [];
   if (
-    existsSync("reports/coliseum-baseline-streams-v2.json") &&
+    existsSync("reports/coliseum-core03-metrics-v2.json") &&
     !process.argv.includes("--fresh")
   ) {
     const saved = JSON.parse(
-      readFileSync("reports/coliseum-baseline-streams-v2.json", "utf8"),
+      readFileSync("reports/coliseum-core03-metrics-v2.json", "utf8"),
     );
     if (
       saved.calibrationVersion === calibrationVersion &&
@@ -80,10 +80,11 @@ if (!isMainThread) {
         });
         rows.push(row);
         writeFileSync(
-          "reports/coliseum-baseline-streams-v2.json",
+          "reports/coliseum-core03-metrics-v2.json",
           JSON.stringify(
             {
               calibrationVersion,
+              versions: rows[0]?.versions,
               version: coliseumVersion,
               catalogVersion: coliseumCatalogVersion,
               settings,

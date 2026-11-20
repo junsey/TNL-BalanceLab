@@ -934,6 +934,11 @@ export function Library(props: Props) {
               ) && (
                 <p>Muestra pequeña. Revisá la amplitud de los intervalos.</p>
               )}
+              {studyResult.versionWarnings.map((warning) => (
+                <p className="notice" key={warning}>
+                  {warning}
+                </p>
+              ))}
               {studyResult.ruleChanges && (
                 <p>Los escenarios usan configuraciones de reglas distintas.</p>
               )}

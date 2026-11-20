@@ -14,6 +14,12 @@ import {
 } from "./automation.ts";
 import { stateHash } from "./state.ts";
 import {
+  simulationVersions,
+  reportVersionsSchema,
+  sameReportVersions,
+  type ReportVersions,
+} from "./versions.ts";
+import {
   setupSchema,
   startTacticalEncounter,
   startHistoricalTacticalEncounter,
@@ -132,6 +138,7 @@ export function runSurvivalChain(
   });
   return {
     status,
+    versions: simulationVersions(first),
     outcome,
     victories,
     escapes,
@@ -154,6 +161,7 @@ export const batchPlanSchema = z.strictObject({
 });
 export type BatchPlan = z.infer<typeof batchPlanSchema>;
 export const batchResultSchema = z.strictObject({
+  versions: reportVersionsSchema.optional(),
   index: count,
   hash: z.string().regex(/^[a-f0-9]{64}$/),
   status: z.enum([
@@ -182,6 +190,7 @@ export const batchResultSchema = z.strictObject({
 });
 type BatchResult = z.infer<typeof batchResultSchema>;
 export type BatchChunk = {
+  versions?: ReportVersions;
   planHash: string;
   start: number;
   end: number;
@@ -219,6 +228,7 @@ export function validateBatchPlan(plan: BatchPlan, historical = false) {
     profiles,
     planHash: stateHash({
       ...plan,
+      ...(!historical && { reportVersions: simulationVersions(setup) }),
       setup,
       profiles: Object.fromEntries(profiles),
     }),
@@ -263,6 +273,7 @@ export function runBatchChunk(
     const { hash, status, outcome, victories, escapes } = chain;
     results.push(
       batchResultSchema.parse({
+        versions: simulationVersions(setup),
         index,
         hash,
         status,
@@ -280,7 +291,14 @@ export function runBatchChunk(
     );
     if (capture.has(index)) captures.push({ index, chain });
   }
-  return { planHash, start, end, results, captures };
+  return {
+    planHash,
+    versions: simulationVersions(setup),
+    start,
+    end,
+    results,
+    captures,
+  };
 }
 
 export function summarizeBatch(
@@ -289,12 +307,15 @@ export function summarizeBatch(
   canceled = false,
 ) {
   const { planHash } = validateBatchPlan(plan);
+  const versions = simulationVersions(plan.setup);
   const results = new Map<number, BatchResult>();
   const captures = new Map<number, BatchChunk["captures"][number]>();
   const requestedCaptures = new Set(plan.capture);
   for (const chunk of chunks) {
     if (
       chunk.planHash !== planHash ||
+      !chunk.versions ||
+      !sameReportVersions(chunk.versions, versions) ||
       chunk.start < 0 ||
       chunk.end > plan.requested ||
       chunk.end <= chunk.start ||
@@ -303,6 +324,8 @@ export function summarizeBatch(
       throw new RangeError("Checkpoint incompatible con el lote");
     }
     for (const [offset, result] of chunk.results.entries()) {
+      if (!result.versions || !sameReportVersions(result.versions, versions))
+        throw new RangeError("Resultado de otra versión dentro del checkpoint");
       if (result.index !== chunk.start + offset)
         throw new RangeError("Índice de checkpoint incorrecto");
       const existing = results.get(result.index);
@@ -334,6 +357,7 @@ export function summarizeBatch(
   ).length;
   return {
     planHash,
+    versions,
     requested: plan.requested,
     completed,
     reduced,

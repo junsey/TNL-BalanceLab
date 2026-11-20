@@ -92,7 +92,7 @@ test("T01–T04: grados, extremos y cancelación de ventajas", () => {
   assert.equal(high.rng.draws, 3);
 });
 
-test("T05–T07: derivados y Protección independiente del daño", () => {
+test("HISTORICO · T05–T07: derivados y Protección independiente del daño", () => {
   assert.equal(attackTarget(20, 30), 50);
   assert.equal(deriveCharacter(player).parry, 70);
   assert.equal(deriveCharacter(player, 9).vulnerability, 16);
@@ -129,7 +129,7 @@ test("Serialización ordenada y SHA-256 de referencia", () => {
   );
 });
 
-test("Ensayo CORE 03 contra blanco pasivo, repetición y censura", () => {
+test("HISTORICO · Ensayo CORE 03 contra blanco pasivo, repetición y censura", () => {
   const config = {
     schemaVersion: 1,
     model: "core03-passive-target",

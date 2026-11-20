@@ -1,3 +1,5 @@
+> Archivo de referencia histórica del 11/11/2026. Sus fórmulas y tablas anteriores a Resistencia no validan el CORE actual. La trazabilidad vigente se documenta en core-calculation-1.2.md, combat-documents-1.3.md y core-combat-1.4.md; CORE 01/02/03 tienen precedencia.
+
 # Reglas pendientes
 
 | Vacío | Procedimiento afectado |

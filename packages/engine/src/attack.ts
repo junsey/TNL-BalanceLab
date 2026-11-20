@@ -138,6 +138,11 @@ export const fighterState = z
     shield: equippedShield.nullable(),
   })
   .superRefine((fighter, ctx) => {
+    if (fighter.reserveWeapon && fighter.stowedDagger)
+      ctx.addIssue({
+        code: "custom",
+        message: "La reserva de arma está duplicada",
+      });
     if (
       fighter.hands &&
       !validHands(fighter, fighter.hands.right, fighter.hands.left)

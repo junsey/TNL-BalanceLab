@@ -15,6 +15,7 @@ import {
 } from "./attack.ts";
 import { compareResistanceAttack } from "./resistance.ts";
 import { coreCalculationVersion } from "./skills.ts";
+import { reportVersionsSchema } from "./versions.ts";
 import { rngVersion, seedRng } from "./rng.ts";
 import { rngState, stateHash } from "./state.ts";
 import { applyDamage, recoverVigor } from "./combat-math.ts";
@@ -26,6 +27,8 @@ const disabledModules = [
 ] as const;
 
 const playtestConfig = z.strictObject({
+  combatVersion: z.literal("core03-combat-v1").optional(),
+  catalogVersion: z.string().min(1).optional(),
   calculationVersion: z.literal(coreCalculationVersion).optional(),
   targetNaturalResistance: z.number().int().nonnegative().optional(),
   schemaVersion: z.literal(1),
@@ -47,6 +50,8 @@ export function runPassiveTargetPlaytest(input: unknown) {
   const config = playtestConfig.parse(input);
   if (
     !config.calculationVersion ||
+    !config.combatVersion ||
+    !config.catalogVersion ||
     config.targetNaturalResistance === undefined
   )
     throw new RangeError(
@@ -196,7 +201,23 @@ export function runHistoricalPassiveTargetPlaytest(input: unknown) {
   }
   const final = { vigor, health, rng: rngState.parse(rng), recovering };
   const result = {
-    engineVersion: core ? "0.7.0-core03-sheet" : "0.0.1",
+    engineVersion: config.combatVersion
+      ? "0.8.0-core03-combat"
+      : core
+        ? "0.7.0-core03-sheet"
+        : "0.0.1",
+    ...(config.combatVersion && {
+      versions: reportVersionsSchema.parse({
+        schemaVersion: 2,
+        engineVersion: "0.8.0-core03-combat",
+        rulesVersion: "core03-sheet-v1/core03-combat-v1",
+        catalogVersion: config.catalogVersion,
+        rngVersion,
+        metricsVersion: "passive-metrics-v2",
+        model: "passive-target",
+        naturalOnePolicy: "BANCO_DE_PRUEBAS:requiresImpact",
+      }),
+    }),
     rngVersion,
     config,
     rounds,

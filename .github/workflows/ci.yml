@@ -28,6 +28,7 @@ jobs:
       - run: npm run format:check
       - run: npm run typecheck
       - run: npm test
+      - run: npm run audit:integration
       - run: npm run build
       - run: npm run test:web
         env:

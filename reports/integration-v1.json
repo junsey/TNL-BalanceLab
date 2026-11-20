@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "auditVersion": "integration-v1",
+  "baseSha": "e181215e4f2038119acfc8ca6c0d1f9148e4ea26",
+  "scope": "Consistencia técnica; no es calibración de balance. Semillas de lotes e individuales se comparan desde el mismo snapshot inicial capturado.",
+  "cases": [
+    {
+      "context": "laboratorio",
+      "seed": "integration-01",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"integration-01\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.8.0-core03-combat",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "d9161450551785c66b64ae86f63f0a18ebf738fb2ae1ec75d15d25d35cc41ff6",
+      "finalHash": "f392dc24f5abe0722b05709dfcd32b236144bfdf408bd9f5b8cdb8c94a6412ec",
+      "actions": 55,
+      "draws": 48,
+      "metrics": {
+        "attacks": 16,
+        "hits": 4,
+        "criticalHits": 0,
+        "defenses": 3,
+        "dodges": 2,
+        "opportunities": 0,
+        "damageInflicted": 10,
+        "damageReceived": 1,
+        "damageMitigated": 0,
+        "vigorSpent": 22,
+        "vigorRecovered": 8,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 20,
+      "equalManualAutomaticBatchStudyReplay": true
+    },
+    {
+      "context": "coliseo",
+      "seed": "integration-01",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"[\\\\\\\"coliseum-lab-v1\\\\\\\",\\\\\\\"integration-01\\\\\\\",1]\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.8.0-core03-combat",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "coliseum-catalog-2026-11-19-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "af2a7d4b1d10514a6effd1f03334b5a84cd3537ad4dfb20015af0d3870e0460c",
+      "finalHash": "4ffd53c0eac43bb2b781dca52184cb09ee739331b6b38422bed0f4251015a72d",
+      "actions": 56,
+      "draws": 51,
+      "metrics": {
+        "attacks": 15,
+        "hits": 8,
+        "criticalHits": 0,
+        "defenses": 5,
+        "dodges": 3,
+        "opportunities": 0,
+        "damageInflicted": 9,
+        "damageReceived": 19,
+        "damageMitigated": 0,
+        "vigorSpent": 25,
+        "vigorRecovered": 14,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 23,
+      "equalManualAutomaticBatchStudyReplay": true
+    },
+    {
+      "context": "laboratorio",
+      "seed": "integration-02",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"integration-02\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.8.0-core03-combat",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "b26e0ec4c34b3348532aa705fb3c621874efd0a64fd136823c06bc160fc352e6",
+      "finalHash": "353a04325b31ffa62bcefc510d35a6a532998635694cc0aa2dcb443e5219281a",
+      "actions": 54,
+      "draws": 56,
+      "metrics": {
+        "attacks": 16,
+        "hits": 8,
+        "criticalHits": 0,
+        "defenses": 3,
+        "dodges": 2,
+        "opportunities": 0,
+        "damageInflicted": 36,
+        "damageReceived": 2,
+        "damageMitigated": 0,
+        "vigorSpent": 22,
+        "vigorRecovered": 7,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 24,
+      "equalManualAutomaticBatchStudyReplay": true
+    },
+    {
+      "context": "coliseo",
+      "seed": "integration-02",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"[\\\\\\\"coliseum-lab-v1\\\\\\\",\\\\\\\"integration-02\\\\\\\",1]\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.8.0-core03-combat",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "coliseum-catalog-2026-11-19-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "4a835a21d3c640710b8b80456187e32453547f410fa99d57349b9bdd012fd90b",
+      "finalHash": "fa0751e46ec4e3790686ae7f1ecdb1d50c16f5b3d63edc7d1dbf423be66e9b66",
+      "actions": 56,
+      "draws": 49,
+      "metrics": {
+        "attacks": 15,
+        "hits": 8,
+        "criticalHits": 0,
+        "defenses": 5,
+        "dodges": 4,
+        "opportunities": 0,
+        "damageInflicted": 17,
+        "damageReceived": 4,
+        "damageMitigated": 0,
+        "vigorSpent": 25,
+        "vigorRecovered": 14,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 23,
+      "equalManualAutomaticBatchStudyReplay": true
+    },
+    {
+      "context": "laboratorio",
+      "seed": "integration-ñ",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"integration-ñ\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.8.0-core03-combat",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "f01a33e310faa7e141c0105bfa3af980ddc227bcbd7fc857cfcb0c6dacf1e45d",
+      "finalHash": "d83a486e8c4e9943ccc00efd6691452ba13a2a2c98eb7b750ac2a6f96f5db916",
+      "actions": 59,
+      "draws": 64,
+      "metrics": {
+        "attacks": 16,
+        "hits": 10,
+        "criticalHits": 1,
+        "defenses": 3,
+        "dodges": 1,
+        "opportunities": 0,
+        "damageInflicted": 20,
+        "damageReceived": 30,
+        "damageMitigated": 0,
+        "vigorSpent": 22,
+        "vigorRecovered": 7,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 26,
+      "equalManualAutomaticBatchStudyReplay": true
+    },
+    {
+      "context": "coliseo",
+      "seed": "integration-ñ",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"[\\\\\\\"coliseum-lab-v1\\\\\\\",\\\\\\\"integration-ñ\\\\\\\",1]\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.8.0-core03-combat",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "coliseum-catalog-2026-11-19-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "5a9ce00a71ebcbddade010bd036e79b156892b7fcdecb9a3d4b60f1f10873a30",
+      "finalHash": "eb82d4620a7eb8a359c591a05aab5d605dbdbc5fc533b4126a5bdf54da151d9b",
+      "actions": 53,
+      "draws": 44,
+      "metrics": {
+        "attacks": 15,
+        "hits": 5,
+        "criticalHits": 0,
+        "defenses": 4,
+        "dodges": 3,
+        "opportunities": 0,
+        "damageInflicted": 5,
+        "damageReceived": 4,
+        "damageMitigated": 0,
+        "vigorSpent": 23,
+        "vigorRecovered": 14,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 20,
+      "equalManualAutomaticBatchStudyReplay": true
+    }
+  ],
+  "passive": [
+    {
+      "seed": "passive-a",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.8.0-core03-combat",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "passive-metrics-v2",
+        "model": "passive-target",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "natural": 31,
+      "grade": "normal",
+      "equalComparisonDamageAndDraws": true
+    },
+    {
+      "seed": "passive-b",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.8.0-core03-combat",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "passive-metrics-v2",
+        "model": "passive-target",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "natural": 67,
+      "grade": "miss",
+      "equalComparisonDamageAndDraws": true
+    },
+    {
+      "seed": "passive-ñ",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.8.0-core03-combat",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "passive-metrics-v2",
+        "model": "passive-target",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "natural": 98,
+      "grade": "miss",
+      "equalComparisonDamageAndDraws": true
+    }
+  ],
+  "pass": true
+}

@@ -11,6 +11,8 @@ import {
   coliseumSettings,
   makeColiseumWave,
   coliseumMetrics,
+  assertStoredColiseumMetrics,
+  coliseumCsv,
   type ColiseumEntry,
   type ColiseumEvent,
   type ColiseumResult,
@@ -29,6 +31,11 @@ import {
   replayTacticalEvent,
   stateHash,
   rngVersion,
+  metricsVersion,
+  simulationVersions,
+  reportVersionsSchema,
+  sameReportVersions,
+  type ReportVersions,
   type TacticalState,
 } from "../../../packages/engine/src/index.ts";
 import { fighterState } from "../../../packages/engine/src/attack.ts";
@@ -52,6 +59,8 @@ type Active = {
   before?: TacticalState["actors"];
 };
 type Run = {
+  metricsVersion?: string;
+  versions?: ReportVersions;
   version: typeof coliseumVersion;
   catalogVersion: string;
   rngVersion: string;
@@ -93,6 +102,17 @@ function validateRun(value: unknown): Run {
   )
     throw new Error("Versión de Coliseo incompatible");
   coliseumSettings.parse(run.settings);
+  const current =
+    run.metricsVersion === metricsVersion &&
+    run.catalogVersion === coliseumCatalogVersion;
+  if (
+    run.metricsVersion !== undefined &&
+    typeof run.metricsVersion !== "string"
+  )
+    throw new Error("Versión de métricas inválida");
+  if (run.versions) reportVersionsSchema.parse(run.versions);
+  if (current && !run.versions)
+    throw new Error("Falta versión completa de la carrera");
   if (
     !Array.isArray(run.party) ||
     run.party.length < 1 ||
@@ -130,15 +150,15 @@ function validateRun(value: unknown): Run {
   let expected = run.settings.initialWave;
   let party = run.party;
   for (const r of run.results) {
-    const generated = makeColiseumWave(
-      expected,
-      party,
-      run.settings,
-      coliseumCatalog,
-    );
+    if (r.wave.number !== expected)
+      throw new Error("Secuencia de oleadas inválida");
+    const generated = current
+      ? makeColiseumWave(expected, party, run.settings, coliseumCatalog)
+      : null;
     if (
+      generated &&
       stateHash({ ...generated, warnings: [] }) !==
-      stateHash({ ...r.wave, warnings: [] })
+        stateHash({ ...r.wave, warnings: [] })
     )
       throw new Error("Composición de oleada inconsistente");
     verify({
@@ -149,7 +169,13 @@ function validateRun(value: unknown): Run {
     });
     if (!r.final.outcome || r.hash !== stateHash(r.final))
       throw new Error("Resultado inválido");
-    r.metrics = coliseumMetrics(r.initial, r.final, r.events);
+    assertStoredColiseumMetrics(
+      r.initial,
+      r.final,
+      r.events,
+      r.metrics,
+      run.metricsVersion,
+    );
     if (run.settings.mode === "survival")
       party = party.map((p) => ({
         ...p,
@@ -161,6 +187,7 @@ function validateRun(value: unknown): Run {
   if (run.nextWave !== expected)
     throw new Error("Secuencia de oleadas inválida");
   if (
+    current &&
     run.active &&
     stateHash({ ...run.active.wave, warnings: [] }) !==
       stateHash({
@@ -170,6 +197,16 @@ function validateRun(value: unknown): Run {
   )
     throw new Error("Oleada activa incompatible");
   if (run.active) verify(run.active);
+  const firstSetup = run.results[0]?.initial ?? run.active?.initial;
+  if (
+    run.versions &&
+    firstSetup &&
+    !sameReportVersions(run.versions, {
+      ...simulationVersions(firstSetup.setup, firstSetup.engineVersion),
+      metricsVersion: run.metricsVersion ?? run.versions.metricsVersion,
+    })
+  )
+    throw new Error("La versión declarada no coincide con la carrera");
   if (
     (run.status === "fighting" && !run.active) ||
     (run.active && !["fighting", "stopped", "limited"].includes(run.status))
@@ -292,7 +329,8 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       if (
         !run.active.state.setup.rules.calculationVersion ||
         !run.active.state.setup.rules.combatVersion ||
-        run.catalogVersion !== coliseumCatalogVersion
+        run.catalogVersion !== coliseumCatalogVersion ||
+        run.metricsVersion !== metricsVersion
       )
         throw new Error(
           "HISTORICO: esta carrera admite lectura y replay. Prepará una carrera nueva para simular.",
@@ -326,7 +364,8 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       if (
         !current.settings.calculationVersion ||
         !current.settings.combatVersion ||
-        current.catalogVersion !== coliseumCatalogVersion
+        current.catalogVersion !== coliseumCatalogVersion ||
+        current.metricsVersion !== metricsVersion
       )
         throw new Error(
           "HISTORICO: iniciá otra carrera para usar el catálogo actual.",
@@ -373,7 +412,8 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       run.status !== "fighting" ||
       !state.setup.rules.calculationVersion ||
       !state.setup.rules.combatVersion ||
-      run.catalogVersion !== coliseumCatalogVersion
+      run.catalogVersion !== coliseumCatalogVersion ||
+      run.metricsVersion !== metricsVersion
     )
       return;
     if (state.outcome) {
@@ -414,7 +454,8 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
     if (
       !run.settings.calculationVersion ||
       !run.settings.combatVersion ||
-      run.catalogVersion !== coliseumCatalogVersion
+      run.catalogVersion !== coliseumCatalogVersion ||
+      run.metricsVersion !== metricsVersion
     ) {
       setError(
         "HISTORICO: carrera disponible para consulta y replay; iniciá otra con el catálogo actual.",
@@ -474,6 +515,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       )
         throw new Error("Ingresá un límite técnico entero o dejalo vacío");
       const value: Run = {
+        metricsVersion,
         version: coliseumVersion,
         catalogVersion: coliseumCatalogVersion,
         rngVersion,
@@ -491,6 +533,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
         parsed,
         coliseumCatalog,
       );
+      value.versions = simulationVersions(firstWave.setup);
       setRun(value);
       setPreview(firstWave);
       setError("");
@@ -1039,53 +1082,9 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
             </button>
             <button
               onClick={() => {
-                const columns = [
-                  "wave",
-                  "seed",
-                  "pack",
-                  "targetThreat",
-                  "actualThreat",
-                  "predictionError",
-                  "won",
-                  "outcome",
-                  "rounds",
-                  "healthLost",
-                  "vigorSpent",
-                  "vigorRecovered",
-                  "partyIncapacitated",
-                  "enemyIncapacitated",
-                  "damagePerAttack",
-                  "criticals",
-                  "equipmentWear",
-                  "warnings",
-                ];
-                const quote = (v: unknown) =>
-                  '"' + String(v ?? "").replaceAll('"', '""') + '"';
-                const rows = run.results.map((r) => [
-                  r.wave.number,
-                  r.wave.seed,
-                  r.wave.pack.join(" | "),
-                  r.wave.targetThreat,
-                  r.wave.actualThreat,
-                  r.wave.actualThreat - r.wave.targetThreat,
-                  r.metrics.won,
-                  r.metrics.outcome,
-                  r.metrics.rounds,
-                  r.metrics.healthLost,
-                  r.metrics.vigorSpent,
-                  r.metrics.vigorRecovered,
-                  r.metrics.partyIncapacitated,
-                  r.metrics.enemyIncapacitated,
-                  r.metrics.damagePerAttack,
-                  r.metrics.criticals,
-                  r.metrics.equipmentWear,
-                  r.wave.warnings.join(" | "),
-                ]);
                 download(
                   "coliseo-resultados.csv",
-                  [columns, ...rows]
-                    .map((row) => row.map(quote).join(","))
-                    .join("\r\n"),
+                  coliseumCsv(run.results, run.metricsVersion ?? null),
                   "text/csv;charset=utf-8",
                 );
               }}

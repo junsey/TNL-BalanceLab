@@ -8,6 +8,7 @@ import { startTacticalEncounter, type TacticalSetup } from "./tactical.ts";
 import { batchStatistics, distribution } from "./analytics.ts";
 import { runBatchChunk, type BatchPlan } from "./simulation.ts";
 import { canonicalJson } from "./state.ts";
+import { simulationVersions, versionWarnings } from "./versions.ts";
 
 type Json = z.infer<ReturnType<typeof z.json>>;
 export const generalSettingsSchema = z.strictObject({
@@ -88,6 +89,14 @@ export function compareTacticalVariant(
   };
   return {
     reference: summarize(base),
+    versions: {
+      reference: simulationVersions(base.setup),
+      variant: simulationVersions(variant.setup),
+    },
+    versionWarnings: versionWarnings([
+      simulationVersions(base.setup),
+      simulationVersions(variant.setup),
+    ]),
     variant: summarize(variant),
     ruleChanges:
       JSON.stringify(base.setup.rules) !==
@@ -133,6 +142,14 @@ export function compareTacticalSamples(
   }
   return {
     requested,
+    versions: {
+      reference: simulationVersions(reference),
+      variant: simulationVersions(variant),
+    },
+    versionWarnings: versionWarnings([
+      simulationVersions(reference),
+      simulationVersions(variant),
+    ]),
     reference: sample(reference),
     variant: sample(variant),
     variantSetup: variant,

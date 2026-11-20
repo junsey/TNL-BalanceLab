@@ -90,7 +90,7 @@ const setup = {
 const attack = { kind: "attack", actor: "player", target: "opponent" };
 const block = { kind: "defend", actor: "opponent", defense: "block" };
 
-test("Respirar preparado reserva la Menor y recupera Vigor antes del ataque", () => {
+test("HISTORICO · Respirar preparado reserva la Menor y recupera Vigor antes del ataque", () => {
   const state = startTacticalEncounter({
     ...setup,
     disabled: { ...setup.disabled, preparedActions: false },
@@ -124,7 +124,7 @@ test("Respirar preparado reserva la Menor y recupera Vigor antes del ataque", ()
   assert.deepEqual(replayTacticalEvent(turn, hit.event), hit.state);
 });
 
-test("Un efecto de fin de turno aplica su pérdida antes de expirar", () => {
+test("HISTORICO · Un efecto de fin de turno aplica su pérdida antes de expirar", () => {
   const initial = startTacticalEncounter({
     ...setup,
     participants: [
@@ -159,7 +159,7 @@ test("Un efecto de fin de turno aplica su pérdida antes de expirar", () => {
   );
 });
 
-test("La vista previa usa Protección y conserva el umbral de la tirada real", () => {
+test("HISTORICO · La vista previa usa Protección y conserva el umbral de la tirada real", () => {
   const target = { ...opponent, vulnerability: 38 };
   const actor = { ...player, mastery: 34 };
   const armor = armorProfile(target);
@@ -183,7 +183,7 @@ test("La vista previa usa Protección y conserva el umbral de la tirada real", (
   );
 });
 
-test("La apertura se conserva y los snapshots anteriores siguen cargando", () => {
+test("HISTORICO · La apertura se conserva y los snapshots anteriores siguen cargando", () => {
   const { state, initiative } = startTacticalEncounter(setup);
   assert.deepEqual(
     restoreTacticalEncounter(JSON.parse(JSON.stringify(state))).initiative,
@@ -199,7 +199,7 @@ test("La apertura se conserva y los snapshots anteriores siguen cargando", () =>
   assert.equal(restored.initiative, undefined);
 });
 
-test("El Diskos solo cambia de modo o alcance con controles explícitos", () => {
+test("HISTORICO · El Diskos solo cambia de modo o alcance con controles explícitos", () => {
   const equipped = {
     ...player,
     weapon: { model: weapons[7]!, remaining: null },
@@ -280,7 +280,7 @@ test("El Diskos solo cambia de modo o alcance con controles explícitos", () => 
   );
 });
 
-test("Automático solo actúa por los enemigos y espera la defensa del PJ", () => {
+test("HISTORICO · Automático solo actúa por los enemigos y espera la defensa del PJ", () => {
   const initial = startTacticalEncounter(setup).state;
   assert.equal(chooseEnemyAction(initial, standardProfile), null);
   const playerAttack = resolveAction(initial, attack).state;
@@ -308,7 +308,7 @@ test("Automático solo actúa por los enemigos y espera la defensa del PJ", () =
 const actor = (state: TacticalState, id: string) =>
   state.actors.find((actor) => actor.fighter.id === id)!;
 
-test("T11, T14, T28 y T39: pausa, bloqueo, persistencia y replay", () => {
+test("HISTORICO · T11, T14, T28 y T39: pausa, bloqueo, persistencia y replay", () => {
   const initial = startTacticalEncounter(setup).state;
   const impact = resolveAction(initial, attack);
   assert.ok(impact.state.pending);
@@ -350,7 +350,7 @@ test("T11, T14, T28 y T39: pausa, bloqueo, persistencia y replay", () => {
   );
 });
 
-test("T08, T17 y T21: Respirar habilita ataque, posición compartida y huida", () => {
+test("HISTORICO · T08, T17 y T21: Respirar habilita ataque, posición compartida y huida", () => {
   const initial = startTacticalEncounter({
     ...setup,
     participants: [
@@ -392,7 +392,7 @@ test("T08, T17 y T21: Respirar habilita ataque, posición compartida y huida", (
   );
 });
 
-test("T09: un impacto con daño cero por armadura interrumpe el descanso", () => {
+test("HISTORICO · T09: un impacto con daño cero por armadura interrumpe el descanso", () => {
   const initial = startTacticalEncounter({
     ...setup,
     aggressor: "player",
@@ -447,7 +447,7 @@ test("T09: un impacto con daño cero por armadura interrumpe el descanso", () =>
   assert.equal(actor(nextRound.state, "player").fighter.recovery, "none");
 });
 
-test("T32 y T38: censura y diagnóstico por desgaste sin tabla", () => {
+test("HISTORICO · T32 y T38: censura y diagnóstico por desgaste sin tabla", () => {
   const initial = startTacticalEncounter({ ...setup, roundLimit: 1 }).state;
   const playerEnd = resolveAction(initial, {
     kind: "end",
@@ -483,7 +483,7 @@ test("T32 y T38: censura y diagnóstico por desgaste sin tabla", () => {
   );
 });
 
-test("T10: un fallo consume Vigor ofensivo y no abre una defensa", () => {
+test("HISTORICO · T10: un fallo consume Vigor ofensivo y no abre una defensa", () => {
   const initial = startTacticalEncounter({
     ...setup,
     participants: [
@@ -501,7 +501,7 @@ test("T10: un fallo consume Vigor ofensivo y no abre una defensa", () => {
   );
 });
 
-test("T13: Parar intercepta antes de aplicar la reducción directa", () => {
+test("HISTORICO · T13: Parar intercepta antes de aplicar la reducción directa", () => {
   const initial = startTacticalEncounter(setup).state;
   const impact = resolveAction(initial, attack).state;
   const result = resolveAction(impact, { ...block, defense: "parry" });
@@ -518,7 +518,7 @@ test("T13: Parar intercepta antes de aplicar la reducción directa", () => {
   assert.equal(damage.effective, damage.residual - 2);
 });
 
-test("T19: Salud cero impide actuar y Agonía alcanza el umbral de muerte", () => {
+test("HISTORICO · T19: Salud cero impide actuar y Agonía alcanza el umbral de muerte", () => {
   const enemiesFirst = startTacticalEncounter({
     ...setup,
     aggressor: "enemies",
@@ -562,7 +562,7 @@ test("T19: Salud cero impide actuar y Agonía alcanza el umbral de muerte", () =
   assert.ok(actor(state, "player").fighter.health <= -10);
 });
 
-test("T15–T16: alcance relativo y retirada comparten el límite de oportunidad", () => {
+test("HISTORICO · T15–T16: alcance relativo y retirada comparten el límite de oportunidad", () => {
   const enabled = {
     ...setup,
     disabled: { ...setup.disabled, opportunities: false },
@@ -618,7 +618,7 @@ test("T15–T16: alcance relativo y retirada comparten el límite de oportunidad
   assert.deepEqual(replayed, moved.state);
 });
 
-test("un ataque preparado reserva la Mayor y se ejecuta antes del ataque entrante", () => {
+test("HISTORICO · un ataque preparado reserva la Mayor y se ejecuta antes del ataque entrante", () => {
   const initial = startTacticalEncounter({
     ...setup,
     disabled: { ...setup.disabled, preparedActions: false },
@@ -646,7 +646,7 @@ test("un ataque preparado reserva la Mayor y se ejecuta antes del ataque entrant
   );
 });
 
-test("Primeros Auxilios detiene la Agonía sin recuperar Salud", () => {
+test("HISTORICO · Primeros Auxilios detiene la Agonía sin recuperar Salud", () => {
   const initial = startTacticalEncounter({
     ...setup,
     disabled: { ...setup.disabled, stabilization: false },
@@ -701,7 +701,7 @@ test("Primeros Auxilios detiene la Agonía sin recuperar Salud", () => {
   );
 });
 
-test("T20: crítico con tabla ausente y crítico con lesión configurada", () => {
+test("HISTORICO · T20: crítico con tabla ausente y crítico con lesión configurada", () => {
   const start = Array.from({ length: 256 }, (_, index) => String(index))
     .map((seed) => startTacticalEncounter({ ...setup, seed }).state)
     .find(
@@ -776,7 +776,7 @@ test("T20: crítico con tabla ausente y crítico con lesión configurada", () =>
   assert.deepEqual(actor(next.state, "opponent").fighter.conditions, []);
 });
 
-test("T23: carga finita, modo de reserva y Energía infinita independiente de Vigor", () => {
+test("HISTORICO · T23: carga finita, modo de reserva y Energía infinita independiente de Vigor", () => {
   const diskos = {
     ...player,
     weapon: { model: weapons[7]!, remaining: null },
@@ -834,7 +834,7 @@ test("T23: carga finita, modo de reserva y Energía infinita independiente de Vi
   assert.equal(actor(infiniteHit, "player").fighter.energy?.remaining, null);
 });
 
-test("T27: la oscuridad bloquea ataques visuales sin tocar el RNG ni imponer penalizadores", () => {
+test("HISTORICO · T27: la oscuridad bloquea ataques visuales sin tocar el RNG ni imponer penalizadores", () => {
   const normal = startTacticalEncounter(setup).state;
   const dark = startTacticalEncounter({ ...setup, light: "dark" }).state;
   const bright = startTacticalEncounter({
@@ -856,7 +856,7 @@ test("T27: la oscuridad bloquea ataques visuales sin tocar el RNG ni imponer pen
   );
 });
 
-test("T12: tres defensas en la misma ronda consumen Vigor por golpe", () => {
+test("HISTORICO · T12: tres defensas en la misma ronda consumen Vigor por golpe", () => {
   const config = {
     ...setup,
     aggressor: "enemies",
@@ -898,7 +898,7 @@ test("T12: tres defensas en la misma ronda consumen Vigor por golpe", () => {
   assert.equal(actor(end, "player").fighter.health, 37);
 });
 
-test("Una Esquiva exitosa solo desplaza por una ruta experimental explícita", () => {
+test("HISTORICO · Una Esquiva exitosa solo desplaza por una ruta experimental explícita", () => {
   const build = (
     rules: typeof setup.rules & { dodgeRoutes?: Record<string, string> },
   ) => startTacticalEncounter({ ...setup, rules }).state;
@@ -949,7 +949,7 @@ test("Una Esquiva exitosa solo desplaza por una ruta experimental explícita", (
     /zonas del mapa/,
   );
 });
-test("Barrido conserva un d100 para dos defensas y cobra Vigor una sola vez", () => {
+test("HISTORICO · Barrido conserva un d100 para dos defensas y cobra Vigor una sola vez", () => {
   const initial = startTacticalEncounter({
     ...setup,
     maneuvers: { version: 1, sneakVigor: 1, kickVigor: 1, sweepSurcharge: 1 },
@@ -992,7 +992,7 @@ test("Barrido conserva un d100 para dos defensas y cobra Vigor una sola vez", ()
     Math.floor(damage.dice.reduce((total, die) => total + die.total, 0) / 2),
   );
 });
-test("La daga guardada ataca con una mano libre y la espada sigue equipada", () => {
+test("HISTORICO · La daga guardada ataca con una mano libre y la espada sigue equipada", () => {
   const armed = {
     ...player,
     stowedDagger: { model: weapons[0]!, remaining: null },
@@ -1018,7 +1018,7 @@ test("La daga guardada ataca con una mano libre y la espada sigue equipada", () 
   assert.equal(result.state.pending?.alternateWeapon?.id, "daga");
   assert.deepEqual(replayTacticalEvent(state, result.event), result.state);
 });
-test("Cambiar arma consume solo la Menor e intercambia el equipo en el replay", () => {
+test("HISTORICO · Cambiar arma consume solo la Menor e intercambia el equipo en el replay", () => {
   const state = startTacticalEncounter({
     ...setup,
     participants: [
@@ -1050,7 +1050,7 @@ test("Cambiar arma consume solo la Menor e intercambia el equipo en el replay", 
   );
   assert.deepEqual(replayTacticalEvent(state, result.event), result.state);
 });
-test("El selector aplica dos manos en una Menor y solo permite Parar con armas equipadas", () => {
+test("HISTORICO · El selector aplica dos manos en una Menor y solo permite Parar con armas equipadas", () => {
   const state = startTacticalEncounter({
     ...setup,
     participants: [
@@ -1088,7 +1088,7 @@ test("El selector aplica dos manos en una Menor y solo permite Parar con armas e
   assert.deepEqual(replayTacticalEvent(state, result.event), result.state);
 });
 
-test("Un arma de dos manos requiere ambos slots y excluye al escudo", () => {
+test("HISTORICO · Un arma de dos manos requiere ambos slots y excluye al escudo", () => {
   const state = startTacticalEncounter({
     ...setup,
     participants: [
@@ -1114,7 +1114,7 @@ test("Un arma de dos manos requiere ambos slots y excluye al escudo", () => {
     ),
   );
 });
-test("Arrojar deja el arma en destino, añade 1d6 y permite recogerla sin regenerarla", () => {
+test("HISTORICO · Arrojar deja el arma en destino, añade 1d6 y permite recogerla sin regenerarla", () => {
   const participants = [
     {
       fighter: {
@@ -1218,7 +1218,7 @@ test("Arrojar deja el arma en destino, añade 1d6 y permite recogerla sin regene
     [],
   );
 });
-test("La habilidad de cada arma se toma de sus parámetros de Resistencia", () => {
+test("HISTORICO · La habilidad de cada arma se toma de sus parámetros de Resistencia", () => {
   const base = {
     version: "resistance-experiment-v1" as const,
     associatedAttribute: 30,
@@ -1251,7 +1251,7 @@ test("La habilidad de cada arma se toma de sus parámetros de Resistencia", () =
   );
 });
 
-test("Usar consumibles conserva stock y recursos al restaurar un replay", () => {
+test("HISTORICO · Usar consumibles conserva stock y recursos al restaurar un replay", () => {
   const initial = startTacticalEncounter({
     ...setup,
     participants: [
@@ -1279,7 +1279,7 @@ test("Usar consumibles conserva stock y recursos al restaurar un replay", () => 
   assert.deepEqual(fighter.injections, { stamina: 1, medical: 2 });
   assert.deepEqual(replayTacticalEvent(initial, result.event), result.state);
 });
-test("El replay valida el grado con la misma Resistencia aplicada al ataque", () => {
+test("HISTORICO · El replay valida el grado con la misma Resistencia aplicada al ataque", () => {
   const config = {
     version: "resistance-experiment-v1",
     associatedAttribute: 30,
