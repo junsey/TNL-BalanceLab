@@ -24,6 +24,14 @@ import {
 export type CombatAction = ReturnType<typeof getLegalActions>[number];
 type Actor = TacticalState["actors"][number];
 type Name = (id: string) => string;
+function initiativeAlert(state: TacticalState, id: string) {
+  const fighter = state.setup.participants.find(
+    (p) => p.fighter.id === id,
+  )?.fighter;
+  return fighter
+    ? combatSkill(fighter, "alert", !!state.setup.rules.calculationVersion)
+    : "—";
+}
 export const weaponControlLabels = {
   powerOn: "Encender",
   powerOff: "Apagar",
@@ -1292,10 +1300,8 @@ export function InitiativeSequence({
                 <p className="initiative-portrait" key={entry.id}>
                   {portrait(entry.id)}
                   <span>
-                    Alerta{" "}
-                    {state.actors.find((actor) => actor.fighter.id === entry.id)
-                      ?.fighter.alert ?? "—"}{" "}
-                    · Tirada {entry.roll} ·{" "}
+                    Alerta {initiativeAlert(state, entry.id)} · Tirada{" "}
+                    {entry.roll} ·{" "}
                     {entry.anticipated ? "✓ Se anticipa" : "× No se anticipa"}
                   </span>
                 </p>
@@ -1347,10 +1353,7 @@ export function Initiative({
             <ul>
               {result.defenderRolls.map((roll) => (
                 <li key={roll.id}>
-                  {name(roll.id)} · Alerta{" "}
-                  {state.setup.participants.find(
-                    ({ fighter }) => fighter.id === roll.id,
-                  )?.fighter.alert ?? "—"}
+                  {name(roll.id)} · Alerta {initiativeAlert(state, roll.id)}
                   {" · Tirada "}
                   {roll.roll} ·{" "}
                   {roll.anticipated

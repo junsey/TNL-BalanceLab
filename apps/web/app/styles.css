@@ -571,9 +571,14 @@ h3 {
   .modes {
     margin-left: 0;
     width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .modes button {
     flex: 1;
+    min-width: 0;
+    padding-inline: 6px;
+    font-size: 0.8rem;
   }
   .battlefield {
     justify-content: start;
@@ -1936,8 +1941,7 @@ h3 {
   display: grid;
   gap: 16px;
 }
-.coliseum-grid,
-.coliseum-combat {
+.coliseum-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
   gap: 16px;
@@ -1972,7 +1976,7 @@ h3 {
   gap: 5px;
 }
 .coliseum-profile small,
-.coliseum-roster small {
+.coliseum-party-preview small {
   display: block;
   color: #abc3d1;
 }
@@ -1993,28 +1997,18 @@ h3 {
   display: block;
   margin-top: 6px;
 }
-.coliseum-roster {
+.coliseum-party-preview {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
 }
-.coliseum-roster > * {
+.coliseum-party-preview > * {
   padding: 12px;
   text-align: left;
   min-width: 0;
 }
-.coliseum-roster button[aria-pressed="true"] {
+.coliseum-party-preview button[aria-pressed="true"] {
   border-color: #7addd3;
-}
-.coliseum-command {
-  min-width: 0;
-  padding: 16px;
-}
-.coliseum-command .dock-commands > .command-pane {
-  position: static;
-  width: 100%;
-  max-height: 70dvh;
-  margin-top: 8px;
 }
 .coliseum-table {
   overflow: auto;
@@ -2140,8 +2134,42 @@ h3 {
   text-align: left;
 }
 @media (max-width: 800px) {
-  .coliseum-grid,
-  .coliseum-combat {
+  .coliseum-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Both combat screens share the same bounded scene and party slots. */
+.combat-layout .enemy-panel {
+  max-height: 72dvh;
+  overflow: auto;
+}
+.combat-layout .battlefield {
+  max-height: 62dvh;
+  overflow: auto;
+}
+@media (max-width: 650px) {
+  .party-bar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .party-bar > .dock-commands {
+    grid-column: 1 / -1;
+  }
+  .party-bar .dock-commands > .command-pane {
+    width: min(350px, calc(100vw - 12px));
+    max-height: 55dvh;
+  }
+  .party-bar .party-toggle .pixel-sprite {
+    display: none;
+  }
+  .party-bar .party-actions {
+    display: flex;
+    font-size: 9px;
+  }
+  .party-bar .party-toggle strong {
+    font-size: 11px;
+  }
+  .with-party {
+    padding-bottom: 230px;
   }
 }

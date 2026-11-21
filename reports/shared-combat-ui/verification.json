@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "versions": {
+    "schemaVersion": 2,
+    "engineVersion": "0.8.0-core03-combat",
+    "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+    "catalogVersion": "coliseum-catalog-2026-11-20-v4",
+    "rngVersion": "mulberry32-utf8-v1",
+    "metricsVersion": "combat-metrics-v2",
+    "model": "tactical",
+    "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+  },
+  "checks": [
+    "1/4 PJ en ambos modos",
+    "15 enemigos",
+    "390/1440 px sin desborde",
+    "sin contenedores antiguos",
+    "sin errores de página",
+    "cuatro actores seleccionables",
+    "cambio de manos y preparación por capas",
+    "tres accesos directos en una fila",
+    "defensa pendiente y resultado modificado idénticos",
+    "replay conserva la resolución"
+  ]
+}

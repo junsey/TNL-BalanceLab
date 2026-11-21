@@ -35,17 +35,13 @@ import { Library } from "./library";
 import {
   CharacterSheet,
   CombatDialog,
-  CommandMenu,
-  EnemyPanel,
-  InitiativeSequence,
-  TacticalBoard,
   type Command,
   weaponControlLabels,
 } from "./combat-view";
-import { CombatLog, LatestResolution } from "./combat-log";
-import { PartyBar } from "./party-bar";
-import { EncounterWindow } from "./encounter-window";
-import { selectEncounterFrame } from "../lib/encounter-frames";
+import { CombatLog } from "./combat-log";
+import { CombatLayout } from "./combat-layout";
+import { useCombatPresentation } from "./use-combat-presentation";
+import { CombatExchange, CombatInitiative } from "./combat-presentation";
 import {
   layerConfigurationSource,
   withFieldSources,
@@ -226,11 +222,6 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   const [autoContinue, setAutoContinue] = useState(false);
   const [playbackPaused, setPlaybackPaused] = useState(false);
   const [animations, setAnimations] = useState(true);
-  const [visual, setVisual] = useState<{
-    event: Event;
-    index: number;
-    ready: boolean;
-  } | null>(null);
   const [auto, setAuto] = useState(true);
   const [speed, setSpeed] = useState(1);
   const [replay, setReplay] = useState<number | null>(null);
@@ -262,82 +253,26 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
             .reduce(replayTacticalEvent, session.initial),
     [replay, session],
   );
-  const latestEvent =
-    replay === null ? session.events.at(-1) : session.events[replay - 1];
-  const playback = visual?.event === latestEvent ? visual : null;
-  const frameIndex = playback?.index ?? 0;
-  const pendingManual =
-    replay === null &&
-    !!displayed.pending &&
-    (mode === "manual" ||
-      displayed.pending.defender === displayed.setup.player);
-  const showEncounter =
-    !initiativeOpen && !sheetActor && (mode === "auto" || mode === "manual");
-  const { frame, waiting } = selectEncounterFrame(
-    showEncounter ? (latestEvent?.details ?? []) : [],
-    frameIndex,
-    {
-      instant: false,
-      pending: replay === null && !!displayed.pending,
-      manual: pendingManual,
-    },
-  );
-  const ready = !animations || speed === 0 || playback?.ready === true;
-  const hasNextFrame = !!selectEncounterFrame(
-    latestEvent?.details ?? [],
-    frameIndex + 1,
-    { instant: false, pending: false, manual: false },
-  ).frame;
-  const visibleEvents = replay === null ? session.events.length : replay;
-  const hold = !!frame && (!waiting || !ready);
-  const delay = animations && speed ? 420 / speed : 0;
-  useEffect(() => {
-    if (
-      !frame &&
-      autoContinue &&
-      !playbackPaused &&
-      !initiativeOpen &&
-      replay !== null &&
-      replay < session.events.length
-    ) {
-      const timer = window.setTimeout(
-        () => setReplay(replay + 1),
-        Math.max(160, 420 / (speed || 1)),
-      );
-      return () => window.clearTimeout(timer);
-    }
-    if (
-      !frame ||
-      !latestEvent ||
-      playbackPaused ||
-      (ready && (waiting || (!hasNextFrame && !autoContinue)))
-    )
-      return;
-    const timer = window.setTimeout(
-      () =>
-        setVisual({
-          event: latestEvent,
-          index: ready ? frameIndex + 1 : frameIndex,
-          ready: !ready,
-        }),
-      ready ? Math.max(350, 640 / (speed || 1)) : delay,
-    );
-    return () => window.clearTimeout(timer);
-  }, [
-    frame,
-    latestEvent,
+  const showEncounter = !sheetActor && (mode === "auto" || mode === "manual");
+  const presentation = useCombatPresentation({
+    initial: session.initial,
+    state: displayed,
+    events: session.events,
+    cursor: replay,
+    manual:
+      mode === "manual" ||
+      (displayed.setup.playerTeam ?? [displayed.setup.player]).includes(
+        displayed.pending?.defender ?? "",
+      ),
+    enabled: showEncounter,
+    animations,
     speed,
-    waiting,
-    ready,
-    frameIndex,
-    delay,
     autoContinue,
-    hasNextFrame,
     playbackPaused,
     initiativeOpen,
-    replay,
-    session.events.length,
-  ]);
+    onReplayAdvance: setReplay,
+  });
+  const { hold, setVisual, advance } = presentation;
 
   useEffect(() => {
     if (
@@ -388,7 +323,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       const actor = current.state.actors.find(
         (item) =>
           (mode === "manual" ||
-            item.fighter.id === current.state.setup.player) &&
+            (
+              current.state.setup.playerTeam ?? [current.state.setup.player]
+            ).includes(item.fighter.id)) &&
           !item.major &&
           !item.minor &&
           getLegalActions(current.state, item.fighter.id).some(
@@ -519,7 +456,10 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     }
     setSession((current) => {
       if (
-        (mode === "auto" && action.actor !== current.state.setup.player) ||
+        (mode === "auto" &&
+          !(
+            current.state.setup.playerTeam ?? [current.state.setup.player]
+          ).includes(action.actor)) ||
         !getLegalActions(current.state, action.actor).some(
           (candidate) => JSON.stringify(candidate) === JSON.stringify(action),
         )
@@ -812,12 +752,12 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       : (displayed.actors.find(
           ({ fighter }) => getLegalActions(displayed, fighter.id).length,
         )?.fighter.id ?? selection));
-  const player = displayed.actors.find(
-    (actor) => actor.fighter.id === displayed.setup.player,
-  )!;
   const manualBoard =
     replay === null &&
-    (mode === "manual" || active === displayed.setup.player) &&
+    (mode === "manual" ||
+      (displayed.setup.playerTeam ?? [displayed.setup.player]).includes(
+        active,
+      )) &&
     !displayed.pending;
   const choices =
     manualBoard && command
@@ -850,47 +790,6 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     );
     if (action) take(action);
   }
-  const attackEvent =
-    frame?.kind === "DEFENSE"
-      ? session.events.slice(0, visibleEvents).findLast((event) => {
-          const details =
-            event === latestEvent
-              ? event.details.slice(0, event.details.indexOf(frame))
-              : event.details;
-          return details.some(
-            (detail) =>
-              detail.kind === "IMPACT" &&
-              detail.actor === frame.attacker &&
-              detail.targetActor === frame.actor,
-          );
-        })
-      : undefined;
-  const previousAttack = attackEvent?.details
-    .slice(
-      0,
-      attackEvent === latestEvent && frame
-        ? attackEvent.details.indexOf(frame)
-        : undefined,
-    )
-    .findLast(
-      (detail) =>
-        detail.kind === "IMPACT" &&
-        detail.actor === frame?.attacker &&
-        detail.targetActor === frame?.actor,
-    );
-  const beforeFrame = useMemo(() => {
-    if (!frame) return [];
-    const actors = new Map(
-      session.initial.actors.map((actor) => [actor.fighter.id, actor]),
-    );
-    for (const event of session.events.slice(
-      0,
-      attackEvent ? session.events.indexOf(attackEvent) : visibleEvents - 1,
-    ))
-      for (const actor of event.changes.actors)
-        actors.set(actor.fighter.id, actor);
-    return [...actors.values()];
-  }, [frame, attackEvent, session.initial, session.events, visibleEvents]);
   const sheet = displayed.actors.find(
     (actor) => actor.fighter.id === sheetActor,
   );
@@ -902,7 +801,10 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
   return (
     <main
       className={
-        "shell " + (mode === "auto" || mode === "manual" ? "with-party" : "")
+        "shell " +
+        (mode === "auto" || mode === "manual" || mode === "coliseum"
+          ? "with-party"
+          : "")
       }
     >
       <header className="mast">
@@ -1337,105 +1239,84 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
         </section>
       ) : (
         <>
-          <div className="combat-layout">
-            <PartyBar
-              actors={[player]}
-              name={name}
-              onSheet={setSheetActor}
-              state={displayed}
-              paused={replay !== null || !!displayed.outcome}
-            >
-              <CommandMenu
-                key={
-                  mode +
-                  ":" +
-                  (session.events.findLast((event) => event.reason === "manual")
-                    ?.sequence ?? 0)
-                }
-                state={displayed}
-                active={active}
-                manual={
-                  replay === null &&
-                  (mode === "manual" || active === displayed.setup.player)
-                }
-                category={command}
-                attackWeaponId={attackWeaponId}
-                returnToAttack={latestEvent?.action.kind === "equipHands"}
-                onCategory={(value, weaponId) => {
-                  setCommand(value);
-                  setAttackWeaponId(weaponId);
-                }}
-                actionName={(action) => actionName(action, name)}
-                onAction={take}
-                heading={
-                  displayed.outcome
-                    ? outcomeNames[displayed.outcome]
-                    : replay !== null
-                      ? "Replay"
-                      : mode === "auto" && active !== displayed.setup.player
-                        ? "Turno de la IA · " + name(active)
-                        : (displayed.pending ? "Defensa · " : "Comandos · ") +
-                          name(active)
-                }
-              />
-            </PartyBar>
-            <div className="combat-center">
-              <TacticalBoard
-                state={displayed}
-                name={name}
-                zone={null}
-                onZone={(id) => {
-                  const movement = choices.find(
-                    (action) =>
-                      (action.kind === "move" ||
-                        action.kind === "run" ||
-                        action.kind === "sneak") &&
-                      action.zone === id,
-                  );
-                  if (movement) return take(movement);
-                  if (targets.length) {
-                    const inZone = displayed.actors.filter(
-                      (actor) =>
-                        actor.zone === id && targets.includes(actor.fighter.id),
-                    );
-                    if (inZone.length === 1)
-                      attackTarget(inZone[0]!.fighter.id);
-                  }
-                }}
-                destinations={destinations}
-                targets={targets}
-                selectedTarget={null}
-                onTarget={attackTarget}
-                onPickup={(owner, slot) => {
-                  if (owner !== active || !manualBoard) return;
-                  const actions = getLegalActions(displayed, active).filter(
-                    (action) =>
-                      action.kind === "pickUpWeapon" && action.slot === slot,
-                  );
-                  if (actions.length === 1) take(actions[0]!);
-                  else if (actions.length) setPickupSlot(slot);
-                }}
-              />
-              <LatestResolution
-                events={session.events}
-                cursor={replay}
-                name={name}
-              />
-            </div>
-            <EnemyPanel
-              state={displayed}
-              name={name}
-              active={active}
-              onSelect={(id) => {
+          <CombatLayout
+            state={displayed}
+            name={name}
+            active={active}
+            paused={replay !== null || !!displayed.outcome}
+            onSheet={setSheetActor}
+            onActor={(id) => {
+              if (getLegalActions(displayed, id).length) {
                 setSelection(id);
                 setCommand(null);
-              }}
-              selectable={mode === "manual" && replay === null}
-              targets={targets}
-              selectedTarget={null}
-              onTarget={attackTarget}
-            />
-          </div>
+              }
+            }}
+            events={session.events}
+            cursor={replay}
+            commands={{
+              active,
+              manual:
+                replay === null &&
+                (mode === "manual" ||
+                  (
+                    displayed.setup.playerTeam ?? [displayed.setup.player]
+                  ).includes(active)),
+              category: command,
+              attackWeaponId,
+              onCategory: (value, weaponId) => {
+                setCommand(value);
+                setAttackWeaponId(weaponId);
+              },
+              actionName: (action) => actionName(action, name),
+              onAction: take,
+              heading: displayed.outcome
+                ? outcomeNames[displayed.outcome]
+                : replay !== null
+                  ? "Replay"
+                  : mode === "auto" &&
+                      !(
+                        displayed.setup.playerTeam ?? [displayed.setup.player]
+                      ).includes(active)
+                    ? "Turno de la IA · " + name(active)
+                    : (displayed.pending ? "Defensa · " : "Comandos · ") +
+                      name(active),
+            }}
+            board={{
+              zone: null,
+              destinations,
+              targets,
+              selectedTarget: null,
+              onTarget: attackTarget,
+              onZone: (id) => {
+                const movement = choices.find(
+                  (a) =>
+                    (a.kind === "move" ||
+                      a.kind === "run" ||
+                      a.kind === "sneak") &&
+                    a.zone === id,
+                );
+                if (movement) return take(movement);
+                const inZone = displayed.actors.filter(
+                  (a) => a.zone === id && targets.includes(a.fighter.id),
+                );
+                if (inZone.length === 1) attackTarget(inZone[0]!.fighter.id);
+              },
+              onPickup: (owner, slot) => {
+                if (owner !== active || !manualBoard) return;
+                const actions = getLegalActions(displayed, active).filter(
+                  (a) => a.kind === "pickUpWeapon" && a.slot === slot,
+                );
+                if (actions.length === 1) take(actions[0]!);
+                else if (actions.length) setPickupSlot(slot);
+              },
+            }}
+            enemies={{
+              selectable: mode === "manual" && replay === null,
+              targets,
+              selectedTarget: null,
+              onTarget: attackTarget,
+            }}
+          />
           <div className="combat-playback">
             <label>
               <input
@@ -1480,7 +1361,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                   disabled={
                     auto ||
                     !!displayed.outcome ||
-                    active === displayed.setup.player
+                    (
+                      displayed.setup.playerTeam ?? [displayed.setup.player]
+                    ).includes(active)
                   }
                   onClick={() =>
                     setSession((current) => nextAuto(current, profile))
@@ -1492,96 +1375,37 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
             )}
             <ConfigurationDetails state={displayed} source={session.source} />
           </div>
-          {initiativeOpen && (
-            <CombatDialog
-              title="Iniciativa del encuentro"
-              className="initiative-dialog"
-              onClose={() => setInitiativeOpen(false)}
-            >
-              <InitiativeSequence
-                state={session.initial}
-                name={name}
-                replay={replay !== null}
-                onContinue={() => setInitiativeOpen(false)}
-              />
-            </CombatDialog>
-          )}
-          {frame && latestEvent && (
-            <EncounterWindow
-              key={latestEvent.sequence + ":" + frameIndex}
-              state={displayed}
-              detail={frame}
-              attack={previousAttack}
-              effects={latestEvent.details.filter((detail) =>
-                [
-                  "CONDITION_TICK",
-                  "AGONY",
-                  "DODGE_MOVE",
-                  "PREPARATION_TRIGGERED",
-                  "PREPARED_RECOVERY",
-                ].includes(detail.kind),
-              )}
-              before={beforeFrame}
-              name={name}
-              ready={ready}
-              canContinue={ready && !waiting && !hasNextFrame}
-              waiting={waiting}
-              manual={pendingManual}
-              onAction={take}
-              delay={delay}
-              reduced={!animations || speed === 0}
-              paused={!auto || playbackPaused}
-              playbackPaused={playbackPaused}
-              onPause={() => setPlaybackPaused(!playbackPaused)}
-              autoContinue={autoContinue}
-              onAutoContinue={setAutoContinue}
-              speed={speed}
-              onSpeed={setSpeed}
-              declaration={
-                frame.maneuver === "sweep" ||
-                previousAttack?.maneuver === "sweep"
-                  ? "Barrido"
-                  : latestEvent.details.some(
-                        (detail) =>
-                          detail.kind === "OPPORTUNITY_DECISION" &&
-                          detail.accepted,
-                      )
-                    ? "Ataque de oportunidad"
-                    : latestEvent.details.some(
-                          (detail) =>
-                            detail.kind === "PREPARATION_TRIGGERED" &&
-                            detail.executed,
-                        )
-                      ? "Ataque preparado"
-                      : undefined
-              }
-              onResume={() => {
-                setPlaybackPaused(false);
-                setAuto(true);
-              }}
-              onSkip={() => {
-                if (ready && !waiting) {
-                  setPlaybackPaused(false);
-                  if (
-                    replay !== null &&
-                    replay < session.events.length &&
-                    !selectEncounterFrame(latestEvent.details, frameIndex + 1, {
-                      instant: false,
-                      pending: false,
-                      manual: false,
-                    }).frame
-                  ) {
-                    setReplay(replay + 1);
-                  }
-                }
-                setVisual({
-                  event: latestEvent,
-                  index: ready && !waiting ? frameIndex + 1 : frameIndex,
-                  ready: !ready || waiting,
-                });
-              }}
-            />
-          )}
+          <CombatInitiative
+            open={initiativeOpen}
+            initial={session.initial}
+            name={name}
+            replay={replay !== null}
+            onClose={() => setInitiativeOpen(false)}
+            autoContinue={autoContinue}
+            speed={speed}
+          />
+          <CombatExchange
+            presentation={presentation}
+            state={displayed}
+            name={name}
+            animations={animations}
+            onAction={take}
+            paused={!auto || playbackPaused}
+            playbackPaused={playbackPaused}
+            onPause={() => setPlaybackPaused(!playbackPaused)}
+            autoContinue={autoContinue}
+            onAutoContinue={setAutoContinue}
+            speed={speed}
+            onSpeed={setSpeed}
+            onResume={() => {
+              setPlaybackPaused(false);
+              setAuto(true);
+            }}
+            onAdvance={() => {
+              setPlaybackPaused(false);
+              advance();
+            }}
+          />
           {pickupSlot && (
             <CombatDialog
               title="Recoger arma"

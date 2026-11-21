@@ -5,6 +5,9 @@ import {
   handLoadout,
   reserveWeapon,
   getLegalActions,
+  attackSkill,
+  combatSkill,
+  bodyResistance,
   type TacticalState,
 } from "../../../packages/engine/src/index.ts";
 import { Conditions, PixelSprite, Resource } from "./combat-view";
@@ -16,6 +19,8 @@ export function PartyBar({
   name,
   onSheet,
   paused,
+  onSelect,
+  selected,
   children,
 }: {
   actors: readonly Actor[];
@@ -23,6 +28,8 @@ export function PartyBar({
   name: (id: string) => string;
   onSheet: (id: string) => void;
   paused: boolean;
+  onSelect?: (id: string) => void;
+  selected?: string;
   children: React.ReactNode;
 }) {
   const [toggle, setToggle] = useState<{ turn: string; open: boolean } | null>(
@@ -104,15 +111,12 @@ export function PartyBar({
                   {durability(fighter.shield)}
                 </p>
               )}
-              {state.setup.rules.resistance?.[id] && (
+              {state.setup.rules.calculationVersion && (
                 <p>
                   Resistencia natural{" "}
-                  {state.setup.rules.resistance[id].naturalResistance}
+                  {bodyResistance(fighter).naturalResistance}
                   {" + "}
-                  {fighter.armor && fighter.armor.remaining !== 0
-                    ? state.setup.rules.resistance[id].armorBonus
-                    : 0}{" "}
-                  de armadura
+                  {bodyResistance(fighter).armorBonus} de armadura
                 </p>
               )}
               {armor.reduction > 0 && (
@@ -126,9 +130,29 @@ export function PartyBar({
                 </p>
               )}
               <p>
-                Dominio {fighter.mastery} · Esquivar {fighter.dodge} · Parar{" "}
-                {fighter.parry} · Alerta {fighter.alert} · Aguante{" "}
-                {fighter.endurance}
+                Ataque{" "}
+                {state.setup.rules.calculationVersion
+                  ? attackSkill(fighter).capacity
+                  : fighter.mastery}
+                % · Esquivar{" "}
+                {combatSkill(
+                  fighter,
+                  "dodge",
+                  !!state.setup.rules.calculationVersion,
+                )}
+                % · Alerta{" "}
+                {combatSkill(
+                  fighter,
+                  "alert",
+                  !!state.setup.rules.calculationVersion,
+                )}
+                % · Aguante{" "}
+                {combatSkill(
+                  fighter,
+                  "endurance",
+                  !!state.setup.rules.calculationVersion,
+                )}
+                %
               </p>
               <button type="button" onClick={() => onSheet(id)}>
                 Equipo y hoja
@@ -138,7 +162,11 @@ export function PartyBar({
               type="button"
               className="party-toggle"
               aria-expanded={expanded}
-              onClick={() => setToggle({ turn, open: !expanded })}
+              aria-current={selected === id ? "true" : undefined}
+              onClick={() => {
+                if (active) onSelect?.(id);
+                setToggle({ turn, open: !expanded });
+              }}
             >
               <PixelSprite player />
               <span>

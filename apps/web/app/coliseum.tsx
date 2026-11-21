@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   coliseumCatalog,
   coliseumCatalogVersion,
@@ -50,13 +50,15 @@ import {
 import { LoadoutEditor } from "./loadout-editor";
 import { resistanceExperiment } from "../../../packages/engine/src/resistance.ts";
 import {
-  TacticalBoard,
-  CommandMenu,
   Resource,
+  CharacterSheet,
+  CombatDialog,
   type Command,
 } from "./combat-view";
-import { CombatLog, LatestResolution } from "./combat-log";
-import { EncounterWindow } from "./encounter-window";
+import { CombatLog } from "./combat-log";
+import { CombatLayout } from "./combat-layout";
+import { CombatExchange, CombatInitiative } from "./combat-presentation";
+import { useCombatPresentation } from "./use-combat-presentation";
 import type { CalibrationRow } from "../lib/coliseum-worker";
 
 type Action = ColiseumEvent["action"];
@@ -280,7 +282,13 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   } | null>(null);
   const [calibrationCount, setCalibrationCount] = useState(1000);
   const [worker, setWorker] = useState<Worker | null>(null);
-  const [dismissedExchange, setDismissedExchange] = useState("");
+  const [replay, setReplay] = useState<number | null>(null);
+  const [review, setReview] = useState<ColiseumResult | null>(null);
+  const [initiativeOpen, setInitiativeOpen] = useState(false);
+  const [sheetActor, setSheetActor] = useState<string | null>(null);
+  const [animations, setAnimations] = useState(true);
+  const [autoContinue, setAutoContinue] = useState(false);
+  const [playbackPaused, setPlaybackPaused] = useState(false);
   useEffect(() => {
     try {
       const text = localStorage.getItem(storageKey + "-active");
@@ -314,16 +322,41 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   }, [run]);
   const locked = !!run;
   const active = run?.active;
-  const state = active?.state;
-  const lastEvent = active?.events.at(-1);
-  const exchange = lastEvent?.details.findLast((d) =>
-    ["IMPACT", "ATTACK_FAILED", "DEFENSE"].includes(d.kind),
+  const shown = review
+    ? { initial: review.initial, state: review.final, events: review.events }
+    : active;
+  const state = useMemo(
+    () =>
+      !shown
+        ? undefined
+        : replay === null
+          ? shown.state
+          : shown.events
+              .slice(0, replay)
+              .reduce(replayTacticalEvent, shown.initial),
+    [shown, replay],
   );
-  const exchangeKey = active ? active.wave.number + ":" + state?.sequence : "";
-  const showExchange =
-    run?.status === "fighting" &&
-    !!exchange &&
-    dismissedExchange !== exchangeKey;
+  const currentRun =
+    !!run &&
+    run.catalogVersion === coliseumCatalogVersion &&
+    run.metricsVersion === metricsVersion;
+  const presentation = useCombatPresentation({
+    initial: shown?.initial,
+    state,
+    events: shown?.events ?? [],
+    cursor: replay,
+    manual:
+      !automatic &&
+      (state?.setup.playerTeam ?? []).includes(state?.pending?.defender ?? ""),
+    enabled: !!shown && !sheetActor,
+    animations,
+    speed,
+    autoContinue,
+    playbackPaused,
+    initiativeOpen,
+    onReplayAdvance: setReplay,
+  });
+  const { hold } = presentation;
   const name = (id: string) => {
     const fighter = state?.actors.find((a) => a.fighter.id === id)?.fighter;
     const base =
@@ -341,7 +374,13 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   };
   function act(action: Action) {
     try {
-      if (!run?.active || run.status !== "fighting" || !running) return;
+      if (
+        !run?.active ||
+        run.status !== "fighting" ||
+        replay !== null ||
+        review
+      )
+        return;
       if (
         !run.active.state.setup.rules.calculationVersion ||
         !run.active.state.setup.rules.combatVersion ||
@@ -408,6 +447,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
         status: "fighting",
       });
       setPreview(null);
+      setReplay(null);
+      setReview(null);
+      setInitiativeOpen(true);
+      setPlaybackPaused(false);
       setRunning(true);
       setError("");
       setNotice("");
@@ -417,7 +460,16 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
     }
   }
   useEffect(() => {
-    if (!run || !running) return;
+    if (
+      !run ||
+      !running ||
+      replay !== null ||
+      review ||
+      initiativeOpen ||
+      sheetActor ||
+      playbackPaused
+    )
+      return;
     if (run.status === "between" && autoAdvance) {
       const t = setTimeout(() => nextWave(run), 500);
       return () => clearTimeout(t);
@@ -433,10 +485,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
     )
       return;
     if (state.outcome) {
-      if (!showExchange) setRun(complete(run, active));
+      if (!hold) setRun(complete(run, active));
       return;
     }
-    if (showExchange && !state.pending) return;
+    if (hold) return;
     const team = new Set(state.setup.playerTeam);
     const decision = state.actors
       .map((a) => ({
@@ -455,15 +507,19 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
     );
     return () => clearTimeout(t);
     // Actions are scheduled from this exact snapshot; each step cancels the old timer.
-  }, [run, running, automatic, autoAdvance, showExchange, speed]);
-  useEffect(() => {
-    if (!showExchange || !automatic || !running || state?.pending) return;
-    const t = setTimeout(
-      () => setDismissedExchange(exchangeKey),
-      speed === 0 ? 0 : 600 / speed,
-    );
-    return () => clearTimeout(t);
-  }, [showExchange, automatic, running, state?.pending, exchangeKey, speed]);
+  }, [
+    run,
+    running,
+    automatic,
+    autoAdvance,
+    hold,
+    speed,
+    replay,
+    review,
+    initiativeOpen,
+    sheetActor,
+    playbackPaused,
+  ]);
   useEffect(() => () => worker?.terminate(), [worker]);
   useEffect(() => {
     if (run?.status !== "between") return;
@@ -585,6 +641,8 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
       );
       value.versions = simulationVersions(firstWave.setup);
       setRun(value);
+      setReview(null);
+      setReplay(null);
       setPreview(firstWave);
       setError("");
       setRunning(true);
@@ -652,10 +710,16 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   const legalIds = [...new Set(allLegal.map((a) => a.actor))].filter((id) =>
     humans.includes(id),
   );
-  const actorId = legalIds.includes(selection)
-    ? selection
-    : (legalIds[0] ?? "");
-  const legal = allLegal.filter((a) => a.actor === actorId);
+  const actorId =
+    state?.pending?.defender ??
+    state?.opportunities?.continuation?.waiting[0] ??
+    (legalIds.includes(selection)
+      ? selection
+      : (legalIds[0] ?? humans[0] ?? ""));
+  const legal =
+    currentRun && replay === null && !review
+      ? allLegal.filter((a) => a.actor === actorId)
+      : [];
   const options = legal.filter(
     (a) =>
       a.kind === category && (a.kind !== "attack" || a.weaponId === weaponId),
@@ -698,24 +762,26 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
     };
     return labels[a.kind] ?? a.kind;
   }
-  const displayWave = active?.wave ?? preview;
+  const displayWave = review?.wave ?? active?.wave ?? preview;
   const latest = run?.results.at(-1);
   return (
     <section className="coliseum">
-      <header className="pane-head">
-        <div>
-          <p className="series">LABORATORIO · RESISTENCIA</p>
-          <h2>Coliseo</h2>
-          <p>Encuentros para 1–4 personajes y oleadas sin tope de diseño.</p>
-        </div>
-        <span>{coliseumVersion}</span>
-      </header>
+      {!shown && (
+        <header className="pane-head">
+          <div>
+            <p className="series">LABORATORIO · RESISTENCIA</p>
+            <h2>Coliseo</h2>
+            <p>Encuentros para 1–4 personajes y oleadas sin tope de diseño.</p>
+          </div>
+          <span>{coliseumVersion}</span>
+        </header>
+      )}
       {error && (
         <p role="alert" className="coliseum-warning">
           {error}
         </p>
       )}
-      {notice && <p role="status">{notice}</p>}
+      {notice && !shown && <p role="status">{notice}</p>}
       {!locked && (
         <div className="coliseum-grid">
           <section className="pane coliseum-settings">
@@ -1007,7 +1073,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
               <input
                 type="checkbox"
                 checked={automatic}
-                onChange={(e) => setAutomatic(e.target.checked)}
+                onChange={(e) => {
+                  setAutomatic(e.target.checked);
+                  setAutoContinue(e.target.checked);
+                }}
               />{" "}
               Autoejecución de todos los combatientes
             </label>
@@ -1237,81 +1306,85 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
           </section>
         </div>
       )}
-      <div className="coliseum-toolbar">
-        <button
-          onClick={() => {
-            try {
-              const text = localStorage.getItem(storageKey);
-              if (!text) throw new Error("No hay carrera guardada");
-              load(text);
-            } catch (e) {
-              setError(String(e));
-            }
-          }}
-        >
-          Cargar carrera
-        </button>
-        <label className="button">
-          Importar JSON
-          <input
-            type="file"
-            accept=".json,application/json"
-            onChange={async (e) => {
-              const f = e.target.files?.[0];
-              if (f) {
-                if (f.size > 50_000_000) setError("El archivo excede 50 MB");
-                else load(await f.text());
+      <details className="coliseum-file-tools" open={!shown}>
+        <summary>Guardar, cargar y exportar</summary>
+        <div className="coliseum-toolbar">
+          <button
+            onClick={() => {
+              try {
+                const text = localStorage.getItem(storageKey);
+                if (!text) throw new Error("No hay carrera guardada");
+                load(text);
+              } catch (e) {
+                setError(String(e));
               }
-              e.target.value = "";
             }}
-          />
-        </label>
-        {run && (
-          <>
-            <button
-              onClick={() => {
-                try {
-                  localStorage.setItem(storageKey, JSON.stringify(run));
-                  setNotice("Carrera guardada.");
-                } catch {
-                  setError(
-                    "No hay espacio local. Exportá el JSON para conservar la carrera.",
-                  );
+          >
+            Cargar carrera
+          </button>
+          <label className="button">
+            Importar JSON
+            <input
+              type="file"
+              accept=".json,application/json"
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  if (f.size > 50_000_000) setError("El archivo excede 50 MB");
+                  else load(await f.text());
                 }
+                e.target.value = "";
               }}
-            >
-              Guardar carrera
-            </button>
-            <button
-              onClick={() =>
-                download(
-                  "coliseo-" +
-                    run.settings.seed.replace(/[^a-z0-9-]/gi, "_") +
-                    ".json",
-                  JSON.stringify(run, null, 2),
-                  "application/json",
-                )
-              }
-            >
-              Exportar JSON
-            </button>
-            <button
-              onClick={() => {
-                download(
-                  "coliseo-resultados.csv",
-                  coliseumCsv(run.results, run.metricsVersion ?? null),
-                  "text/csv;charset=utf-8",
-                );
-              }}
-            >
-              Exportar CSV
-            </button>
-          </>
-        )}
-      </div>
+            />
+          </label>
+          {run && (
+            <>
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.setItem(storageKey, JSON.stringify(run));
+                    setNotice("Carrera guardada.");
+                  } catch {
+                    setError(
+                      "No hay espacio local. Exportá el JSON para conservar la carrera.",
+                    );
+                  }
+                }}
+              >
+                Guardar carrera
+              </button>
+              <button
+                onClick={() =>
+                  download(
+                    "coliseo-" +
+                      run.settings.seed.replace(/[^a-z0-9-]/gi, "_") +
+                      ".json",
+                    JSON.stringify(run, null, 2),
+                    "application/json",
+                  )
+                }
+              >
+                Exportar JSON
+              </button>
+              <button
+                onClick={() => {
+                  download(
+                    "coliseo-resultados.csv",
+                    coliseumCsv(run.results, run.metricsVersion ?? null),
+                    "text/csv;charset=utf-8",
+                  );
+                }}
+              >
+                Exportar CSV
+              </button>
+            </>
+          )}
+        </div>
+      </details>
       {run && (
         <>
-          <section className="pane coliseum-settings">
+          <details className="pane coliseum-settings" open={!shown}>
+            <summary>Estado y controles de carrera</summary>
             <h3>
               {
                 {
@@ -1342,7 +1415,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                 <input
                   type="checkbox"
                   checked={automatic}
-                  onChange={(e) => setAutomatic(e.target.checked)}
+                  onChange={(e) => {
+                    setAutomatic(e.target.checked);
+                    setAutoContinue(e.target.checked);
+                  }}
                 />{" "}
                 Autoejecutar combate
               </label>
@@ -1412,7 +1488,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
               </p>
             )}
             {!active && (
-              <div className="coliseum-roster">
+              <div className="coliseum-party-preview">
                 {run.party.map((p) => {
                   const f =
                     run.settings.mode === "survival" && latest
@@ -1442,7 +1518,7 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                 })}
               </div>
             )}
-          </section>
+          </details>
           {run.status === "between" && !displayWave && (
             <button
               onClick={() => {
@@ -1473,7 +1549,10 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
             </button>
           )}
           {displayWave && (
-            <section className="pane coliseum-settings">
+            <details className="pane coliseum-settings" open={!shown}>
+              <summary>
+                Oleada {displayWave.number} · composición y presupuesto
+              </summary>
               <h3>Oleada {displayWave.number}</h3>
               <p>
                 {displayWave.pack
@@ -1509,58 +1588,58 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                   </p>
                 ))}
               </details>
-            </section>
+            </details>
           )}
-          {active && state && (
+          {shown && state && (
             <>
-              <div className="coliseum-roster">
-                {state.actors.map((a) => (
-                  <button
-                    key={a.fighter.id}
-                    className="pane"
-                    aria-pressed={actorId === a.fighter.id}
-                    onClick={() => {
-                      if (targetIds.includes(a.fighter.id))
-                        target(a.fighter.id);
-                      else if (humans.includes(a.fighter.id)) {
-                        setSelection(a.fighter.id);
-                        setCategory(null);
-                      }
-                    }}
-                  >
-                    <strong>{name(a.fighter.id)}</strong>
-                    <small>
-                      {humans.includes(a.fighter.id)
-                        ? "Tu grupo"
-                        : "Adversario"}{" "}
-                      · {a.zone}
-                    </small>
-                    <Resource
-                      label="Salud"
-                      value={a.fighter.health}
-                      max={a.fighter.healthMax}
-                      kind="health"
-                    />
-                    <Resource
-                      label="Vigor"
-                      value={a.fighter.vigor}
-                      max={a.fighter.vigorMax}
-                      kind="vigor"
-                    />
-                  </button>
-                ))}
-              </div>
-              <div className="coliseum-combat">
-                <TacticalBoard
-                  state={state}
-                  name={name}
-                  zone={zone}
-                  destinations={options.flatMap((a) =>
+              <CombatLayout
+                state={state}
+                name={name}
+                active={actorId}
+                paused={replay !== null || !!review || !!state.outcome}
+                onSheet={setSheetActor}
+                onActor={(id) => {
+                  if (legalIds.includes(id)) {
+                    setSelection(id);
+                    setCategory(null);
+                  }
+                }}
+                events={shown.events}
+                cursor={replay}
+                commands={{
+                  active: actorId,
+                  manual:
+                    currentRun &&
+                    replay === null &&
+                    !review &&
+                    !automatic &&
+                    humans.includes(actorId),
+                  heading:
+                    replay !== null || review
+                      ? "Replay"
+                      : state.outcome
+                        ? outcomeLabel(state.outcome)
+                        : !humans.includes(actorId)
+                          ? "Turno de la IA · " + name(actorId)
+                          : (state.pending ? "Defensa · " : "Comandos · ") +
+                            name(actorId),
+                  category,
+                  attackWeaponId: weaponId,
+                  onCategory: (c, id) => {
+                    setCategory(c);
+                    setWeaponId(id);
+                  },
+                  actionName,
+                  onAction: act,
+                }}
+                board={{
+                  zone,
+                  destinations: options.flatMap((a) =>
                     "zone" in a ? [a.zone] : [],
-                  )}
-                  targets={targetIds}
-                  onTarget={target}
-                  onZone={(id) => {
+                  ),
+                  targets: targetIds,
+                  onTarget: target,
+                  onZone: (id) => {
                     setZone(id);
                     const move = options.find(
                       (a) => "zone" in a && a.zone === id,
@@ -1573,80 +1652,139 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                       );
                       if (ids.length === 1) target(ids[0]!.fighter.id);
                     }
+                  },
+                  onPickup: (owner, slot) => {
+                    const pickup = legal.find(
+                      (a) =>
+                        a.kind === "pickUpWeapon" &&
+                        a.actor === owner &&
+                        a.slot === slot,
+                    );
+                    if (pickup) act(pickup);
+                  },
+                }}
+                enemies={{
+                  selectable: false,
+                  targets: targetIds,
+                  onTarget: target,
+                }}
+              />
+              <div className="combat-playback">
+                <button onClick={() => setRunning(!running)}>
+                  {running ? "Pausar IA" : "Reanudar IA"}
+                </button>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={autoContinue}
+                    onChange={(e) => setAutoContinue(e.target.checked)}
+                  />
+                  Continuación automática
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={animations}
+                    onChange={(e) => setAnimations(e.target.checked)}
+                  />
+                  Animaciones
+                </label>
+                <button onClick={() => setInitiativeOpen(true)}>
+                  Ver iniciativa
+                </button>
+                <button
+                  disabled={!shown.events.length}
+                  onClick={() => {
+                    setRunning(false);
+                    setReplay(replay === null ? 0 : null);
+                    presentation.setVisual(null);
+                    setInitiativeOpen(replay === null);
+                    setPlaybackPaused(false);
                   }}
-                />
-                {!automatic && actorId && (
-                  <div className="coliseum-command">
-                    <h3>{name(actorId)}</h3>
-                    <CommandMenu
-                      key={state.sequence + ":" + actorId}
-                      state={state}
-                      active={actorId}
-                      manual={running}
-                      heading="Comandos"
-                      category={category}
-                      attackWeaponId={weaponId}
-                      returnToAttack={lastEvent?.action.kind === "equipHands"}
-                      onCategory={(c, id) => {
-                        setCategory(c);
-                        setWeaponId(id);
+                >
+                  {replay === null ? "Ver replay" : "Salir del replay"}
+                </button>
+                {review && (
+                  <button
+                    onClick={() => {
+                      setReview(null);
+                      setReplay(null);
+                      presentation.setVisual(null);
+                    }}
+                  >
+                    Volver a la carrera
+                  </button>
+                )}
+                {replay !== null && (
+                  <label>
+                    Evento {replay} / {shown.events.length}
+                    <input
+                      aria-label="Evento del replay"
+                      type="range"
+                      min={0}
+                      max={shown.events.length}
+                      value={replay}
+                      onChange={(e) => {
+                        presentation.setVisual(null);
+                        setReplay(Number(e.target.value));
                       }}
-                      actionName={actionName}
-                      onAction={act}
                     />
-                  </div>
+                  </label>
                 )}
               </div>
-              <LatestResolution
-                events={active.events}
-                cursor={null}
+              <CombatInitiative
+                open={initiativeOpen}
+                initial={shown.initial}
                 name={name}
+                replay={replay !== null}
+                onClose={() => setInitiativeOpen(false)}
+                autoContinue={autoContinue}
+                speed={speed}
               />
+              <CombatExchange
+                presentation={presentation}
+                state={state}
+                name={name}
+                animations={animations}
+                onAction={act}
+                paused={!running || playbackPaused}
+                playbackPaused={playbackPaused}
+                onPause={() => setPlaybackPaused(!playbackPaused)}
+                autoContinue={autoContinue}
+                onAutoContinue={setAutoContinue}
+                speed={speed}
+                onSpeed={setSpeed}
+                onResume={() => {
+                  setRunning(true);
+                  setPlaybackPaused(false);
+                }}
+                onAdvance={() => {
+                  setPlaybackPaused(false);
+                  presentation.advance();
+                }}
+              />
+              {sheetActor &&
+                state.actors.some((a) => a.fighter.id === sheetActor) && (
+                  <CombatDialog
+                    title="Hoja de personaje"
+                    onClose={() => setSheetActor(null)}
+                  >
+                    <CharacterSheet
+                      actor={state.actors.find(
+                        (a) => a.fighter.id === sheetActor,
+                      )!}
+                      state={state}
+                      name={name}
+                    />
+                  </CombatDialog>
+                )}
               <CombatLog
-                initial={active.initial}
-                events={active.events}
-                cursor={null}
+                initial={shown.initial}
+                events={shown.events}
+                cursor={replay}
                 name={name}
                 actionName={actionName}
               />
-              {showExchange && exchange && (
-                <EncounterWindow
-                  key={active.wave.number}
-                  state={state}
-                  detail={exchange}
-                  attack={active.events
-                    .flatMap((e) => e.details)
-                    .findLast(
-                      (d) => d.kind === "IMPACT" || d.kind === "ATTACK_FAILED",
-                    )}
-                  effects={lastEvent?.details ?? []}
-                  before={active.before ?? active.initial.actors}
-                  name={name}
-                  ready={true}
-                  canContinue={!state.pending}
-                  manual={
-                    !automatic &&
-                    !!state.pending &&
-                    humans.includes(state.pending.defender)
-                  }
-                  waiting={!!state.pending}
-                  onAction={act}
-                  onSkip={() => setDismissedExchange(exchangeKey)}
-                  delay={300}
-                  reduced={false}
-                  paused={!running}
-                  playbackPaused={!running}
-                  onPause={() => setRunning(!running)}
-                  autoContinue={automatic}
-                  onAutoContinue={setAutomatic}
-                  onResume={() => {
-                    setRunning(true);
-                    setDismissedExchange(exchangeKey);
-                  }}
-                  speed={speed}
-                  onSpeed={setSpeed}
-                />
-              )}
             </>
           )}
           {!!run.results.length && (
@@ -1667,7 +1805,20 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                   <tbody>
                     {run.results.map((r) => (
                       <tr key={r.wave.number}>
-                        <td>{r.wave.number}</td>
+                        <td>
+                          {r.wave.number}{" "}
+                          <button
+                            onClick={() => {
+                              setReview(r);
+                              setReplay(0);
+                              setRunning(false);
+                              setInitiativeOpen(true);
+                              presentation.setVisual(null);
+                            }}
+                          >
+                            Ver replay
+                          </button>
+                        </td>
                         <td>{outcomeLabel(r.metrics.outcome)}</td>
                         <td>{r.metrics.rounds}</td>
                         <td>{r.metrics.healthLost}</td>

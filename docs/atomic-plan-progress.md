@@ -12,5 +12,8 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | 1.5 Integración | Publicada | 355bc47 | docs/integration-1.5.md; 101 tests, integración, web y capturas; CI correcto |
 | 2.1 Fauna menor | Publicada | 79dbf8d | docs/minor-fauna-2.1.md; 103 tests, 6000 fichas y encuentros 1/5/10/15; CI correcto |
 | 2.2 Equipo por PJ | Publicada | 700a3aa | docs/equipment-2.2.md; 106 tests, roundtrip, web y capturas; CI correcto |
-| 2.3 Escalado y balance | Verificada; publicación en el commit de esta fila | base 700a3aa | docs/scaling-2.3.md; 108 tests, 36000 ensayos, 72 extremos reproducidos y captura |
-| 2.4 y posteriores | Pendientes | — | docs/atomic-plan-v02.md |
+| 2.3 Escalado y balance | Publicada | 095a82f | docs/scaling-2.3.md; 108 tests, 36000 ensayos, 72 extremos reproducidos y captura; CI correcto |
+| 2.4 Combate compartido | Publicada en este commit | base 095a82f | docs/shared-combat-2.4.md; comparativas, responsive, defensa y replay |
+| 3.1–3.4 Creación | Pendientes | — | docs/atomic-plan-v02.md |
+| Ampliaciones posteriores | En cola, después de 3.4 | — | docs/queued-combat-additions.md |
+

@@ -16,6 +16,7 @@
     "start": "next start apps/web",
     "typecheck": "tsc --noEmit && tsc -p apps/web/tsconfig.json --incremental false",
     "test:web": "node scripts/test-web.ts",
+    "test:ui": "node scripts/test-combat-ui.ts",
     "benchmark": "node scripts/benchmark.ts",
     "audit:rng": "node scripts/audit-rng.ts",
     "audit:integration": "node scripts/audit-integration.ts",
@@ -39,6 +40,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.16",
     "@electric-sql/pglite-socket": "^0.2.19",
+    "@playwright/test": "^1.65.1",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
