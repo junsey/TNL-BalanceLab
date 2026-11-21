@@ -103,6 +103,7 @@ test("Fauna menor: 1, 5, 10 y 15 criaturas inician en hexágonos distintos y con
         party,
         {
           ...defaultColiseumSettings,
+          enemyCap: 8,
           initialPack: Array<string>(15).fill(ids[0]),
         },
         coliseumCatalog,

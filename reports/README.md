@@ -16,4 +16,8 @@ Repetir con `node scripts/calibrate-coliseum.ts 1000 --fresh`. Sin `--fresh`, la
 
 rng-audit-v1.json contiene los 16 contrastes reproducibles; rng-trace-v1.json contiene trazas hasta presentación/replay. Ver docs/rng-audit-1.1.md.
 
+## Fauna menor 2.3
+
+`minor-fauna-balance-v1.json` contiene 36000 encuentros independientes, 1000 por composición, en el catálogo v4. Incluye censura, errores, Salud, Vigor, acciones, dados, hashes y tiempos informativos. Reproducir con `npm run balance:minor-fauna -- 1000`; verificar extremos con `npm run balance:minor-fauna -- 1000 --verify`. Ver `docs/scaling-2.3.md` para límites e interpretación. El piloto v3 está separado; no valida el catálogo actual.
+
 La referencia coliseum-baseline.json queda HISTORICO tras separar corrientes de composición y combate. Las futuras calibraciones escriben coliseum-core03-metrics-v2.json; no se ha ejecutado una nueva calibración de balance en esta etapa.

@@ -106,6 +106,7 @@ function validateRun(value: unknown): Run {
     run?.version !== coliseumVersion ||
     ![
       coliseumCatalogVersion,
+      "coliseum-catalog-2026-11-20-v3",
       "coliseum-catalog-2026-11-19-v2",
       "coliseum-catalog-2026-11-18-v1",
     ].includes(run.catalogVersion) ||
@@ -940,6 +941,25 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
                       {p.name}
                     </option>
                   ))}
+              </select>
+            </label>
+            <label>
+              Dificultad de las oleadas
+              <select
+                aria-label="Dificultad de las oleadas"
+                value={settings.encounterTier ?? "minor"}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    encounterTier: e.target.value as
+                      "minor" | "mixed" | "dangerous" | "random",
+                  })
+                }
+              >
+                <option value="minor">Fauna menor</option>
+                <option value="mixed">Fauna mixta</option>
+                <option value="dangerous">Peligrosa</option>
+                <option value="random">Sortear dificultad</option>
               </select>
             </label>
             {settings.initialPack && (

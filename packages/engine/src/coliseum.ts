@@ -40,6 +40,7 @@ export const coliseumSettings = z.strictObject({
   mode: z.enum(["independent", "survival"]),
   initialWave: z.number().int().min(1).safe(),
   initialPack: z.array(z.string().min(1)).min(1).max(20).optional(),
+  encounterTier: z.enum(["minor", "mixed", "dangerous", "random"]).optional(),
   mixedPacks: z.boolean(),
   disabledProfiles: z.array(z.string()),
   naturalOne: z.enum(["alwaysCritical", "requiresImpact"]),
@@ -70,6 +71,7 @@ export const defaultColiseumSettings: ColiseumSettings = {
   seed: "coliseo-1",
   mode: "independent",
   initialWave: 1,
+  encounterTier: "minor",
   mixedPacks: false,
   disabledProfiles: [],
   naturalOne: "requiresImpact",
@@ -83,11 +85,11 @@ export const defaultColiseumSettings: ColiseumSettings = {
   },
   milestoneEvery: 5,
   milestoneBonus: 0.15,
-  enemyCap: 8,
+  enemyCap: 15,
   tolerance: 1.2,
   roundLimit: 100,
 };
-export const initialWavePresetMatrix = [
+export const dangerousWavePresetMatrix = [
   [
     ["pale_raider"],
     ["pale_raider"],
@@ -130,6 +132,20 @@ export const initialWavePresetMatrix = [
     ["fourteen_legged_beast", "pale_raider", "pale_raider"],
   ],
 ] as const;
+
+const stingers = (count: number) =>
+  Array<string>(count).fill("small_stinging_creature");
+const scorpions = (count: number) =>
+  Array<string>(count).fill("fire_pit_scorpion");
+export const initialWavePresetMatrix = [
+  [stingers(1), stingers(3), stingers(5), stingers(7)],
+  [scorpions(1), scorpions(2), scorpions(3), scorpions(4)],
+  Array.from({ length: 4 }, (_, i) => [
+    ...scorpions(i + 1),
+    ...stingers(i + 1),
+  ]),
+  ...dangerousWavePresetMatrix.slice(3),
+];
 
 function expectedDice(expression: string) {
   const match = /^(\d+)d(\d+)(?:\+(\d+))?$/.exec(expression);
@@ -228,6 +244,13 @@ export function makeColiseumWave(
   );
   if (!legal.length)
     throw new Error("No quedan perfiles con mecánicas disponibles");
+  let tier = settings.encounterTier ?? "minor";
+  if (tier === "random") {
+    const [pick, next] = rollDie(rng, 3);
+    rng = next;
+    tier = (["minor", "mixed", "dangerous"] as const)[pick - 1]!;
+    warnings.push("Dificultad sorteada para esta oleada: " + tier);
+  }
   const targetThreat =
     settings.capacity[party.length - 1]! *
     (1 +
@@ -259,7 +282,11 @@ export function makeColiseumWave(
   }
   if (!pack.length && number <= 6) {
     const preset: readonly string[] =
-      initialWavePresetMatrix[number - 1]![party.length - 1]!;
+      tier === "dangerous"
+        ? dangerousWavePresetMatrix[number - 1]![party.length - 1]!
+        : tier === "mixed" && number <= 3
+          ? [...scorpions(party.length), ...stingers(party.length)]
+          : initialWavePresetMatrix[number - 1]![party.length - 1]!;
     const missing = preset.filter((id) => !legal.some((p) => p.id === id));
     if (missing.length)
       warnings.push(
@@ -281,9 +308,15 @@ export function makeColiseumWave(
     }
   }
   if (!pack.length) {
-    const cap = Math.min(settings.enemyCap, 2 + party.length * 2);
+    const cap = settings.enemyCap;
     for (let attempt = 0; attempt < 128 && pack.length < cap; attempt++) {
-      let options = legal;
+      let options =
+        tier === "minor" || tier === "mixed"
+          ? legal.filter((p) =>
+              ["fire_pit_scorpion", "small_stinging_creature"].includes(p.id),
+            )
+          : legal;
+      if (!options.length) options = legal;
       if (pack.length && !settings.mixedPacks)
         options = options.filter(
           (p) => p.kind === catalog.find((p) => p.id === pack[0])!.kind,

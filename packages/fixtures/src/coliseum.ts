@@ -10,7 +10,7 @@ import { weapons, armors } from "./index.ts";
 
 export const historicalColiseumCatalogVersion =
   "coliseum-catalog-2026-11-18-v1";
-export const coliseumCatalogVersion = "coliseum-catalog-2026-11-20-v3";
+export const coliseumCatalogVersion = "coliseum-catalog-2026-11-20-v4";
 export const minorFaunaSource = {
   sourceDoc:
     "The Night Land · W. H. Hodgson · https://www.gutenberg.org/cache/epub/10662/pg10662.html.utf8",

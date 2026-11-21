@@ -63,7 +63,7 @@ test("Sabueso agotado conserva Mordisco gratis, no especiales ni recuperación h
   const wave = makeColiseumWave(
     2,
     party,
-    defaultColiseumSettings,
+    { ...defaultColiseumSettings, encounterTier: "dangerous" },
     coliseumCatalog,
   );
   const setup = structuredClone(wave.setup);
@@ -133,7 +133,10 @@ test("Matriz, temas pendientes, amenaza y generación sin tope de oleadas", () =
         defaultColiseumSettings,
         coliseumCatalog,
       );
-      assert.ok(wave.pack.length > 0 && wave.pack.length <= 8);
+      assert.ok(
+        wave.pack.length > 0 &&
+          wave.pack.length <= defaultColiseumSettings.enemyCap,
+      );
       assert.ok(
         !wave.pack.some(
           (id) => coliseumCatalog.find((p) => p.id === id)!.pending.length,
@@ -252,7 +255,7 @@ test("La IA se retira antes de recuperar y nunca recupera en una zona compartida
   const wave = makeColiseumWave(
     3,
     [coliseumHuman("pale_raider", "hero")],
-    defaultColiseumSettings,
+    { ...defaultColiseumSettings, encounterTier: "dangerous" },
     coliseumCatalog,
   );
   for (const p of wave.setup.participants) {
@@ -296,7 +299,7 @@ test("La IA no inicia una retirada de recuperación después de gastar su Mayor"
     const wave = makeColiseumWave(
       waveNumber,
       [coliseumHuman("pale_raider", "hero")],
-      defaultColiseumSettings,
+      { ...defaultColiseumSettings, encounterTier: "dangerous" },
       coliseumCatalog,
     );
     for (const p of wave.setup.participants) {
