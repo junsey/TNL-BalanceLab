@@ -279,6 +279,9 @@ export function Coliseum({
   const [notice, setNotice] = useState("");
   const [selection, setSelection] = useState("");
   const [category, setCategory] = useState<Command | null>(null);
+  const [attackActionCost, setAttackActionCost] = useState<
+    "minor" | undefined
+  >();
   const [weaponId, setWeaponId] = useState<string | undefined>();
   const [zone, setZone] = useState<string | null>(null);
   const [preview, setPreview] = useState<ColiseumWave | null>(null);
@@ -732,7 +735,9 @@ export function Coliseum({
       : [];
   const options = legal.filter(
     (a) =>
-      a.kind === category && (a.kind !== "attack" || a.weaponId === weaponId),
+      a.kind === category &&
+      (a.kind !== "attack" ||
+        (a.weaponId === weaponId && a.actionCost === attackActionCost)),
   );
   const targetIds = options.flatMap((a) => ("target" in a ? [a.target] : []));
   function target(id: string) {
@@ -1635,7 +1640,9 @@ export function Coliseum({
                             name(actorId),
                   category,
                   attackWeaponId: weaponId,
-                  onCategory: (c, id) => {
+                  attackActionCost,
+                  onCategory: (c, id, cost) => {
+                    setAttackActionCost(cost);
                     setCategory(c);
                     setWeaponId(id);
                   },

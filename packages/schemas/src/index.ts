@@ -197,6 +197,7 @@ export const action = z.discriminatedUnion("kind", [
     actor: id,
     target: id,
     weaponId: id.optional(),
+    actionCost: z.literal("minor").optional(),
   }),
   z.strictObject({ kind: z.enum(["move", "run"]), actor: id, zone: id }),
   z.strictObject({

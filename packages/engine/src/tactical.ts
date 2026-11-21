@@ -114,6 +114,7 @@ const continuation = z.strictObject({
       actor: id,
       target: id,
       weaponId: id.optional(),
+      actionCost: z.literal("minor").optional(),
     }),
     z.strictObject({
       kind: z.enum(["move", "run", "sneak"]),
@@ -134,6 +135,7 @@ const stateSchema = z.strictObject({
   setup: setupSchema,
   engineVersion: z.enum([
     "0.8.0-core03-combat",
+    "0.9.0-secondary-dagger",
     "0.7.0-core03-sheet",
     "0.6.0-resistance-experimental",
     "0.1.0-tactical",
@@ -386,7 +388,7 @@ export function startHistoricalTacticalEncounter(input: unknown) {
   const state: TacticalState = {
     setup,
     engineVersion: setup.rules.combatVersion
-      ? "0.8.0-core03-combat"
+      ? "0.9.0-secondary-dagger"
       : setup.rules.calculationVersion
         ? "0.7.0-core03-sheet"
         : setup.rules.resistance
@@ -583,7 +585,7 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
         !alive(striker.fighter) ||
         !alive(target.fighter) ||
         (!state.opportunities?.continuation &&
-          (striker.major ||
+          ((pending.actionCost === "minor" ? striker.minor : striker.major) ||
             striker.ended ||
             !state.groups[state.phase]?.includes(striker.fighter.id))) ||
         isPlayerTeam(state.setup, striker.fighter.id) ===
@@ -788,6 +790,41 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       fighter.vigor >= maneuvers.sneakVigor
     )
       actions.push({ kind: "sneak", actor: id, zone });
+  }
+  if (state.setup.rules.combatVersion && actor.minor) {
+    const slot = handLoadout(fighter).left;
+    const entry = equippedAttacks(fighter).find((e) =>
+      slot === "weapon"
+        ? !e.weaponId
+        : slot === "reserve"
+          ? !!e.weaponId
+          : false,
+    );
+    if (
+      entry &&
+      ["daga", "dagger"].includes(entry.item.model.id) &&
+      canAttack(
+        { ...fighter, weapon: entry.item, hands: undefined, energy: undefined },
+        state.setup.rules,
+      )
+    )
+      for (const other of state.actors.filter(
+        (other) =>
+          isPlayerTeam(state.setup, other.fighter.id) !==
+          isPlayerTeam(state.setup, id),
+      ))
+        if (
+          other.zone === actor.zone &&
+          alive(other.fighter) &&
+          canSee(state, actor.zone, other.zone)
+        )
+          actions.push({
+            kind: "attack",
+            actor: id,
+            target: other.fighter.id,
+            ...(entry.weaponId ? { weaponId: entry.weaponId } : {}),
+            actionCost: "minor",
+          });
   }
   if (!actor.major) return actions;
   if (fighter.actorType !== "creature")
@@ -1226,7 +1263,11 @@ function finishTrigger(
   const actor = state.actors.find(
     (actor) => actor.fighter.id === trigger.actor,
   )!;
-  if (trigger.kind === "move") actor.minor = false;
+  if (
+    trigger.kind === "move" ||
+    (trigger.kind === "attack" && trigger.actionCost === "minor")
+  )
+    actor.minor = false;
   else actor.major = false;
   if (!alive(actor.fighter)) {
     details.push({
@@ -1401,6 +1442,13 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         ? { ...result.impact, alternateWeapon: dagger.model }
         : result.impact;
     state.rng = result.rng;
+    if (
+      state.pending &&
+      decision.kind === "attack" &&
+      decision.actionCost === "minor" &&
+      attacker.fighter.id === decision.actor
+    )
+      state.pending.actionCost = "minor";
     details.push({
       ...result.event,
       actor: attacker.fighter.id,

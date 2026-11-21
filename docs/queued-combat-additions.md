@@ -8,6 +8,6 @@ El usuario pidió completar primero el plan atómico v0.2 y después estos docum
 
 Se consultaron las revisiones del 20/11/2026. El primer documento contiene discusión, propuestas, decisiones aprobadas y correcciones posteriores: no se trata todo su contenido como regla aprobada. Se aplicará la decisión más reciente que sustituya expresamente otra. Los objetivos/elementos interactivos del punto 5 están pospuestos por decisión expresa.
 
-La adenda y el CORE dejan abiertos el coste del segundo golpe de Dos Dagas y su interrupción. Se solicitó al usuario el cierre de esos datos mientras continúa el plan original. No se concede gratuitamente ese golpe ni se inventa su coste. La adquisición canónica de Talentos sigue pendiente; los ensayos deben declararse aparte de la creación reglamentaria.
+Actualización directa del usuario en este chat: **Dos Dagas cuesta 1 Vigor por pareja de golpes**, no uno por golpe. Esta decisión sustituye el coste pendiente de la adenda. Debe cobrarse una vez por acción doble; cada golpe conserva resolución, defensa, armadura y efectos independientes. El usuario respondió únicamente sobre el coste; no se registra una confirmación de reglas adicionales de interrupción o cambio de objetivo. La adquisición canónica de Talentos sigue pendiente; los ensayos deben declararse aparte de la creación reglamentaria.
 
 Antes de ejecutar el lote, releer las fuentes y consolidar dependencias y etapas. Esta nota registra la cola de trabajo; no afirma que las ampliaciones ya estén implementadas.

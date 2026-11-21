@@ -235,6 +235,7 @@ export const attackRules = z.strictObject({
   resistance: z.record(id, resistanceExperiment).optional(),
 });
 export const pendingImpact = z.strictObject({
+  actionCost: z.literal("minor").optional(),
   attacker: id,
   defender: id,
   grade: z.enum(["critical", "quarter", "half", "normal"]),

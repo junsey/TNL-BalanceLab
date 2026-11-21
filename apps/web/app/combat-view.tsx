@@ -534,6 +534,7 @@ export function CommandMenu({
   category,
   onCategory,
   attackWeaponId,
+  attackActionCost,
   returnToAttack = false,
 }: {
   state: TacticalState;
@@ -543,7 +544,12 @@ export function CommandMenu({
   onAction: (action: CombatAction) => void;
   heading: string;
   category: Command | null;
-  onCategory: (command: Command | null, weaponId?: string) => void;
+  onCategory: (
+    command: Command | null,
+    weaponId?: string,
+    cost?: "minor",
+  ) => void;
+  attackActionCost?: "minor";
   attackWeaponId?: string;
   returnToAttack?: boolean;
 }) {
@@ -728,15 +734,32 @@ export function CommandMenu({
                             }
                             if (item.id === "attack" && current) {
                               const { fighter } = current;
-                              const weapons = equippedAttacks(fighter).map(
-                                ({ item, weaponId }) => ({
-                                  model: item.model,
-                                  id: weaponId,
-                                }),
+                              const weapons = equippedAttacks(fighter).flatMap(
+                                ({ item, weaponId }) => [
+                                  {
+                                    model: item.model,
+                                    id: weaponId,
+                                    cost: undefined as "minor" | undefined,
+                                  },
+                                  ...(matching.some(
+                                    (a) =>
+                                      a.kind === "attack" &&
+                                      a.weaponId === weaponId &&
+                                      a.actionCost === "minor",
+                                  )
+                                    ? [
+                                        {
+                                          model: item.model,
+                                          id: weaponId,
+                                          cost: "minor" as const,
+                                        },
+                                      ]
+                                    : []),
+                                ],
                               );
                               const resistance =
                                 state.setup.rules.resistance?.[fighter.id];
-                              return weapons.map(({ model, id }) => {
+                              return weapons.map(({ model, id, cost }) => {
                                 const weaponSkill =
                                   resistance?.weaponSkills?.[model.id];
                                 const skill = state.setup.rules
@@ -752,16 +775,18 @@ export function CommandMenu({
                                 const enabled = matching.some(
                                   (action) =>
                                     action.kind === "attack" &&
-                                    action.weaponId === id,
+                                    action.weaponId === id &&
+                                    action.actionCost === cost,
                                 );
                                 return (
                                   <button
                                     type="button"
                                     className="command-attack-option"
-                                    key={model.id}
+                                    key={model.id + ":" + (cost ?? "major")}
                                     aria-pressed={
                                       activeCategory === "attack" &&
-                                      attackWeaponId === id
+                                      attackWeaponId === id &&
+                                      attackActionCost === cost
                                     }
                                     disabled={!enabled}
                                     title={
@@ -769,11 +794,13 @@ export function CommandMenu({
                                         ? unavailable("attack")
                                         : undefined
                                     }
-                                    onClick={() => onCategory("attack", id)}
+                                    onClick={() =>
+                                      onCategory("attack", id, cost)
+                                    }
                                   >
                                     <span>
                                       <span>
-                                        <ActionIcon cost="major" />
+                                        <ActionIcon cost={cost ?? "major"} />
                                         Atacar con {model.label}
                                       </span>
                                       <small>

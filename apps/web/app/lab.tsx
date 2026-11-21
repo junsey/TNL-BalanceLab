@@ -220,6 +220,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
     newSession("vigilia-01", maps[0].id),
   );
   const [selection, setSelection] = useState("vigia");
+  const [attackActionCost, setAttackActionCost] = useState<
+    "minor" | undefined
+  >();
   const [attackWeaponId, setAttackWeaponId] = useState<string | undefined>();
   const [pickupSlot, setPickupSlot] = useState<"weapon" | "reserve" | null>(
     null,
@@ -770,7 +773,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
       ? getLegalActions(displayed, active).filter(
           (action) =>
             action.kind === command &&
-            (action.kind !== "attack" || action.weaponId === attackWeaponId) &&
+            (action.kind !== "attack" ||
+              (action.weaponId === attackWeaponId &&
+                action.actionCost === attackActionCost)) &&
             (action.kind !== "throwWeapon" || action.slot === attackWeaponId),
         )
       : [];
@@ -1310,7 +1315,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                   ).includes(active)),
               category: command,
               attackWeaponId,
-              onCategory: (value, weaponId) => {
+              attackActionCost,
+              onCategory: (value, weaponId, cost) => {
+                setAttackActionCost(cost);
                 setCommand(value);
                 setAttackWeaponId(weaponId);
               },

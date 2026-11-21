@@ -24,7 +24,7 @@ export function simulationVersions(
     engineVersion:
       engineVersion ??
       (setup.rules.combatVersion
-        ? "0.8.0-core03-combat"
+        ? "0.9.0-secondary-dagger"
         : setup.rules.calculationVersion
           ? "0.7.0-core03-sheet"
           : "HISTORICO"),
