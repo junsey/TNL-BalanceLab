@@ -77,6 +77,12 @@ export const creationCatalogSchema = z.strictObject({
           ...metadata,
         }),
       ),
+      additionalSkills: z
+        .strictObject({
+          count: z.number().int().min(1).max(20),
+          formula: z.string().regex(/^\d+d\d+(?:\+\d+)?$/),
+        })
+        .nullable(),
       rulesText: z.string(),
       possessionsText: z.string(),
       ...metadata,

@@ -20,6 +20,7 @@
     "benchmark": "node scripts/benchmark.ts",
     "audit:rng": "node scripts/audit-rng.ts",
     "audit:integration": "node scripts/audit-integration.ts",
+    "audit:creation": "node scripts/audit-creation.ts",
     "balance:minor-fauna": "node scripts/balance-minor-fauna.ts",
     "migrate": "node --env-file-if-exists=apps/web/.env.local scripts/migrate.ts",
     "test": "node --test packages/engine/tests/*.test.ts apps/web/tests/*.test.ts",

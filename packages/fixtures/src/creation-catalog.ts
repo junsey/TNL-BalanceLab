@@ -1,7 +1,7 @@
-// Declarative transcription of the cited source tables; validated by creation-catalog.ts.
+// Declarative transcription of cited source tables.
 export const creationCatalogData = {
   schemaVersion: 1,
-  catalogVersion: "creation-catalog-2026-11-21-v1",
+  catalogVersion: "creation-catalog-2026-11-21-v2",
   rulesVersion: "core02-2026-11-16",
   areas: [
     {
@@ -1376,6 +1376,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Artisan",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 4,
+        formula: "3d6",
+      },
     },
     {
       id: "merchant",
@@ -1436,6 +1440,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Merchant",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 3,
+        formula: "3d6",
+      },
     },
     {
       id: "artist",
@@ -1496,6 +1504,7 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Artist",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: null,
     },
     {
       id: "scholar",
@@ -1556,6 +1565,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Scholar",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "current_tek",
@@ -1616,6 +1629,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Current Tek",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "maintenance_worker",
@@ -1676,6 +1693,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Maintenance Worker",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 3,
+        formula: "3d6",
+      },
     },
     {
       id: "medic",
@@ -1736,6 +1757,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Medic",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "monstruwacan",
@@ -1805,6 +1830,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Monstruwacan",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "censor",
@@ -1874,6 +1903,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Censor",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "masquer",
@@ -1943,6 +1976,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Masquer",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "foreteller",
@@ -2021,6 +2058,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Foreteller",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "chaperone",
@@ -2090,6 +2131,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Chaperone",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "2d6",
+      },
     },
     {
       id: "eugenicist",
@@ -2159,6 +2204,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Eugenicist",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "2d6",
+      },
     },
     {
       id: "power_proctor",
@@ -2219,6 +2268,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Power Proctor",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "stress_master",
@@ -2279,6 +2332,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Stress Master",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "logomachist",
@@ -2348,6 +2405,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Logomachist",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "watchman",
@@ -2426,6 +2487,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Watchman",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6+3",
+      },
     },
     {
       id: "reclaimer",
@@ -2495,6 +2560,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Reclaimer",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "oneiromancer",
@@ -2564,6 +2633,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Oneiromancer",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "forayer",
@@ -2633,6 +2706,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Forayer",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6+4",
+      },
     },
     {
       id: "rogue",
@@ -2711,6 +2788,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Rogue",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 3,
+        formula: "3d6",
+      },
     },
     {
       id: "matchmaker",
@@ -2780,6 +2861,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Matchmaker",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
     {
       id: "hospitaller",
@@ -2849,6 +2934,10 @@ export const creationCatalogData = {
       sourceSection: "Arquetipos / Hospitaller",
       status: "CORE_DEFINIDO",
       schemaVersion: 1,
+      additionalSkills: {
+        count: 2,
+        formula: "3d6",
+      },
     },
   ],
   skills: [
