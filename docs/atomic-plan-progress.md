@@ -17,5 +17,6 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | 3.1 Catálogo de creación | Publicada | be54ca2; CI correcto | docs/creation-catalog-3.1.md; 110 pruebas, tipos, lint, formato, build y web |
 | 3.2 Generación determinista | Publicada | aa58523; CI correcto | docs/creation-engine-3.2.md; 113 pruebas, 10000 semillas y repeticiones, tipos, lint, build y web |
 | 3.3 Pantalla de creación | Publicada | 49680ea; CI correcto | docs/creation-ui-3.3.md; seis recorridos e2e y 113 pruebas |
-| 3.4 Equipo y persistencia | Publicada en este commit | base 49680ea | docs/creation-persistence-3.4.md; 115 tests, archivos, sesión, DB y e2e |
-| Ampliaciones posteriores | En cola, después de 3.4 | — | docs/queued-combat-additions.md |
+| 3.4 Equipo y persistencia | Publicada | 0e0c890; CI correcto | docs/creation-persistence-3.4.md; 115 tests, archivos, sesión, DB y e2e |
+| 4.1 Contrato de capacidades | Publicada en este commit | base 0e0c890 | docs/combat-additions-4.1.md; 116 pruebas |
+| Resto de ampliaciones | Pendientes | — | docs/queued-combat-additions.md |

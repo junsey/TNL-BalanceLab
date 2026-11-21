@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { capabilities } from "../../schemas/src/capabilities.ts";
 import {
   armor,
   character,
@@ -101,6 +102,7 @@ export const fighterState = z
       .max(2)
       .optional(),
     actorType: z.enum(["human", "creature"]).optional(),
+    capabilities: capabilities.optional(),
     creatureRecovery: z
       .string()
       .regex(/^\d+d\d+(?:\+\d+)?$/)
@@ -138,6 +140,17 @@ export const fighterState = z
     shield: equippedShield.nullable(),
   })
   .superRefine((fighter, ctx) => {
+    if (
+      fighter.capabilities?.gifts.some((g) => g.id === "night_hearing") &&
+      ["oido_nocturno", "nightHearing", "night_hearing"].some((id) =>
+        Object.hasOwn(fighter.sheet?.training ?? {}, id),
+      )
+    )
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "Audición Nocturna duplicada como Don y habilidad; el mapeo requiere una decisión explícita, sin borrar entrenamiento",
+      });
     if (fighter.reserveWeapon && fighter.stowedDagger)
       ctx.addIssue({
         code: "custom",

@@ -1,4 +1,5 @@
 import { z } from "zod";
+export * from "./capabilities.ts";
 
 const id = z.string().min(1);
 const count = z.number().int().nonnegative();
