@@ -256,9 +256,17 @@ function complete(run: Run, active: Active): Run {
   };
 }
 
-export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
+export function Coliseum({
+  existing,
+  initialExisting = false,
+}: {
+  existing: ColiseumEntry | null;
+  initialExisting?: boolean;
+}) {
   const [settings, setSettings] = useState(defaultColiseumSettings);
-  const [presets, setPresets] = useState<string[]>(["pale_raider"]);
+  const [presets, setPresets] = useState<string[]>([
+    initialExisting ? "existing" : "pale_raider",
+  ]);
   const [loadouts, setLoadouts] = useState<(LabLoadout | null)[]>([null]);
   const [injections, setInjections] = useState(false);
   const [limit, setLimit] = useState("");
@@ -290,6 +298,8 @@ export function Coliseum({ existing }: { existing: ColiseumEntry | null }) {
   const [autoContinue, setAutoContinue] = useState(false);
   const [playbackPaused, setPlaybackPaused] = useState(false);
   useEffect(() => {
+    // Entering with an explicitly prepared character opens setup; saved careers remain loadable.
+    if (initialExisting) return;
     try {
       const text = localStorage.getItem(storageKey + "-active");
       if (text) {

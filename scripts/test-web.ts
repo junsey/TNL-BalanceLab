@@ -8,6 +8,14 @@ import { PGlite } from "@electric-sql/pglite";
 import { PGLiteSocketServer } from "@electric-sql/pglite-socket";
 import postgres from "postgres";
 import { tacticalDemo } from "../packages/fixtures/src/tactical-demo.ts";
+import { creationCatalogData } from "../packages/fixtures/src/creation-catalog.ts";
+import { weapons, armors } from "../packages/fixtures/src/index.ts";
+import {
+  generateCharacter,
+  makeCreationRecord,
+  creationBenchProfile,
+  defaultCreatedLoadout,
+} from "../packages/engine/src/index.ts";
 import {
   demoCharacterDocument,
   demoCreatureDocument,
@@ -139,9 +147,37 @@ try {
     });
   }
   assert.equal((await write(first, {}, "http://127.0.0.1:1")).status, 403);
+  const createdCharacter = makeCreationRecord(
+    generateCharacter(
+      {
+        mode: "manual",
+        seed: "web-createdCharacter-character",
+        name: "Creada persistente",
+        sex: "female",
+        cityId: "high_aerie",
+        socialOriginId: "high_aerie_mujer_comun",
+        archetypeId: "artist",
+        choices: {
+          specializations: {
+            "archetype:Artesanía (expresión artística principal)": "Música",
+            "archetype:Artesanía (expresión artística secundaria)": "Pintura",
+          },
+          freePoints: { dominio_de_dagas: 10, coordinacion: 10 },
+        },
+      },
+      creationCatalogData,
+    ),
+  );
+  assert.equal(createdCharacter.creation.status, "complete");
+  createdCharacter.benchProfile = creationBenchProfile;
+  createdCharacter.loadout = defaultCreatedLoadout(createdCharacter, {
+    weapons,
+    armors,
+  });
   for (const [kind, document] of [
     ["character", demoCharacterDocument],
     ["creature", demoCreatureDocument],
+    ["creation", createdCharacter],
   ] as const) {
     const saved = await write(first, { kind, expected: 0, data: document });
     assert.equal(saved.status, 201, await saved.clone().text());
@@ -153,6 +189,18 @@ try {
     const revisions = (await loaded.json()) as { data: unknown }[];
     assert.deepEqual(revisions[0]!.data, document);
   }
+  const corruptedCreation = structuredClone(createdCharacter);
+  corruptedCreation.creation.attributes.strength = 1;
+  assert.equal(
+    (
+      await write(first, {
+        kind: "creation",
+        expected: 0,
+        data: corruptedCreation,
+      })
+    ).status,
+    400,
+  );
   const created = await write(first, {
     kind: "scenario",
     expected: 0,

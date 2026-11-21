@@ -11,7 +11,7 @@ import {
   type CreationAttribute,
 } from "./creation-catalog.ts";
 
-export const creationVersion = "core02-creation-v1";
+export const creationVersion = "core02-creation-v2";
 const choicesSchema = z.strictObject({
   specializations: z
     .record(z.string(), z.string().trim().min(1).max(120))
@@ -145,7 +145,8 @@ export function generateCharacter(
     possessions: [],
     talents: [],
   };
-  let rng = seedRng(JSON.stringify([creationVersion, input.seed]));
+  // Freeze the audited seed namespace: v2 only canonicalizes free-point ordering.
+  let rng = seedRng(JSON.stringify(["core02-creation-v1", input.seed]));
   const roll = (key: string, formula: string, fixedMaximum = false) => {
     const { count, sides, modifier } = parseDice(formula),
       before = rng.draws,
@@ -469,7 +470,9 @@ export function generateCharacter(
       add(s, s.label, extra!.formula, "additional", undefined, veteran);
     }
   }
-  const points = Object.entries(input.choices.freePoints),
+  const points = Object.entries(input.choices.freePoints).sort(([a], [b]) =>
+      a.localeCompare(b, "en"),
+    ),
     sum = points.reduce((sum, [, n]) => sum + n, 0);
   if (!points.length)
     request(

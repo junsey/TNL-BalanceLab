@@ -26,6 +26,9 @@ import {
   sameReportVersions,
   versionWarnings,
   type ReportVersions,
+  makeColiseumWave,
+  defaultColiseumSettings,
+  type ColiseumEntry,
 } from "../../../packages/engine/src/index.ts";
 import {
   maps,
@@ -51,6 +54,7 @@ import { presetDiagnostics } from "../lib/preset-diagnostics";
 import { ConfigurationDetails } from "./configuration-details";
 import { Coliseum } from "./coliseum";
 import { CharacterCreator } from "./character-creator";
+import { coliseumCatalog } from "../../../packages/fixtures/src/coliseum.ts";
 
 type Event = ReturnType<typeof resolveAction>["event"] & { reason?: string };
 type Session = {
@@ -207,6 +211,7 @@ function nextAuto(session: Session, profile: TacticalProfile) {
 }
 
 export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
+  const [createdEntry, setCreatedEntry] = useState<ColiseumEntry | null>(null);
   const [seed, setSeed] = useState("vigilia-01");
   const [fixedSeed, setFixedSeed] = useState(false);
   const [map, setMap] = useState<string>(maps[0].id);
@@ -882,9 +887,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
                 setScenario(null);
               }}
             >
-              {scenario && (
-                <option value="custom">Escenario de biblioteca</option>
-              )}
+              {scenario && <option value="custom">Escenario cargado</option>}
               {maps.map((item) => (
                 <option key={item.id} value={item.id}>
                   {item.label}
@@ -918,10 +921,43 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
         </section>
       )}
       {mode === "creation" ? (
-        <CharacterCreator />
+        <CharacterCreator
+          shared={shared}
+          onUse={(entry, target) => {
+            setCreatedEntry(entry);
+            if (target === "coliseum") {
+              switchMode("coliseum");
+              return;
+            }
+            const encounterSeed = seed;
+            const wave = makeColiseumWave(
+              1,
+              [entry],
+              { ...defaultColiseumSettings, seed: encounterSeed },
+              coliseumCatalog,
+            );
+            const { state } = startTacticalEncounter(wave.setup);
+            setSession({
+              initial: state,
+              state,
+              events: [],
+              versions: simulationVersions(state.setup, state.engineVersion),
+            });
+            setSelection(state.setup.player);
+            setReplay(null);
+            setCommand(null);
+            setPlaybackPaused(false);
+            setInitiativeOpen(true);
+            setFixedSeed(true);
+            setScenario(wave.setup);
+            switchMode("auto");
+          }}
+        />
       ) : mode === "coliseum" ? (
         <Coliseum
+          initialExisting={!!createdEntry}
           existing={(() => {
+            if (createdEntry) return createdEntry;
             const fighter = session.state.actors.find(
               (a) => a.fighter.id === session.state.setup.player,
             )?.fighter;

@@ -16,10 +16,6 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | 2.4 Combate compartido | Publicada | 8019acf; CI correcto | docs/shared-combat-2.4.md; comparativas, responsive, defensa y replay |
 | 3.1 Catálogo de creación | Publicada | be54ca2; CI correcto | docs/creation-catalog-3.1.md; 110 pruebas, tipos, lint, formato, build y web |
 | 3.2 Generación determinista | Publicada | aa58523; CI correcto | docs/creation-engine-3.2.md; 113 pruebas, 10000 semillas y repeticiones, tipos, lint, build y web |
-| 3.3 Pantalla de creación | Publicada en este commit | base aa58523 | docs/creation-ui-3.3.md; seis recorridos e2e y 113 pruebas |
-| 3.4 Equipo y persistencia | Pendiente | — | docs/atomic-plan-v02.md |
+| 3.3 Pantalla de creación | Publicada | 49680ea; CI correcto | docs/creation-ui-3.3.md; seis recorridos e2e y 113 pruebas |
+| 3.4 Equipo y persistencia | Publicada en este commit | base 49680ea | docs/creation-persistence-3.4.md; 115 tests, archivos, sesión, DB y e2e |
 | Ampliaciones posteriores | En cola, después de 3.4 | — | docs/queued-combat-additions.md |
-
-
-
-

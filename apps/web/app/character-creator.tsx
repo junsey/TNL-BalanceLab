@@ -1,5 +1,9 @@
 "use client";
 import { useState } from "react";
+import { CreatedCharacterStorage } from "./created-character-storage";
+import type { CreationRecord } from "../../../packages/engine/src/creation-record.ts";
+import type { ColiseumEntry } from "../../../packages/engine/src/coliseum.ts";
+import { stateHash } from "../../../packages/engine/src/state.ts";
 import { creationCatalogData } from "../../../packages/fixtures/src/creation-catalog.ts";
 import {
   generateCharacter,
@@ -35,7 +39,16 @@ const attributeNames = {
   knowledge: "Conocimiento",
   presence: "Presencia",
 };
-export function CharacterCreator() {
+export function CharacterCreator({
+  shared,
+  onUse,
+}: {
+  shared: boolean;
+  onUse: (entry: ColiseumEntry, mode: "lab" | "coliseum") => void;
+}) {
+  const [importedRecord, setImportedRecord] = useState<CreationRecord | null>(
+    null,
+  );
   const [input, setInput] = useState<CreationInput>(defaults);
   const [result, setResult] = useState<CreationResult>(() =>
     generateCharacter(defaults, catalog),
@@ -98,6 +111,7 @@ export function CharacterCreator() {
       }
       const generated = generateCharacter(updated, catalog);
       setInput(updated);
+      setImportedRecord(null);
       setResult(generated);
       setDirty(false);
       setError("");
@@ -141,6 +155,7 @@ export function CharacterCreator() {
       const next = JSON.parse(text);
       const generated = generateCharacter(next, catalog);
       setInput(generated.input);
+      setImportedRecord(null);
       setResult(generated);
       setRequests(generated.requests);
       setDirty(false);
@@ -621,6 +636,30 @@ export function CharacterCreator() {
           Confirmar creación
         </button>
       </section>
+      <CreatedCharacterStorage
+        key={stateHash(result) + ":" + stateHash(importedRecord)}
+        creation={result}
+        initialRecord={importedRecord}
+        disabled={dirty}
+        shared={shared}
+        onUse={onUse}
+        onImport={(record) => {
+          setImportedRecord(record);
+          setInput(record.creation.input);
+          setResult(record.creation);
+          setRequests(record.creation.requests);
+          const entries = Object.entries(
+            record.creation.input.choices.freePoints,
+          );
+          if (entries.length)
+            setPoints(entries.map(([id, amount]) => ({ id, amount })));
+          setDirty(false);
+          setError("");
+          setNotice(
+            "Personaje importado como copia; no se sobrescribió ninguna ficha.",
+          );
+        }}
+      />
       <details>
         <summary>Historial de tiradas · {result.timeline.length}</summary>
         <ol>

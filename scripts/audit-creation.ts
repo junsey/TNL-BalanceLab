@@ -3,6 +3,7 @@ import { writeFileSync } from "node:fs";
 import { creationCatalogData } from "../packages/fixtures/src/creation-catalog.ts";
 import {
   generateCharacter,
+  creationVersion,
   type CreationInput,
 } from "../packages/engine/src/creation.ts";
 import { canonicalJson, stateHash } from "../packages/engine/src/state.ts";
@@ -63,10 +64,14 @@ for (let i = 0; i < 10000; i++) {
   if (i === 9999) lastHash = hash;
 }
 writeFileSync(
-  "reports/creation-audit-v1.json",
+  "reports/creation-audit-v2.json",
   JSON.stringify(
     {
       samples: 10000,
+      creationVersion,
+      rngVersion: "mulberry32-utf8-v1",
+      seedNamespace: "core02-creation-v1",
+      rulesVersion: creationCatalogData.rulesVersion,
       errors: 0,
       byteExactRepeats: 10000,
       catalogVersion: creationCatalogData.catalogVersion,

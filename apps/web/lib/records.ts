@@ -2,6 +2,9 @@ import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 import { z } from "zod";
 import { configurationSource } from "./provenance";
+import { validateCreationRecord } from "../../../packages/engine/src/creation-record.ts";
+import { creationCatalogData } from "../../../packages/fixtures/src/creation-catalog.ts";
+import { weapons, armors } from "../../../packages/fixtures/src/index.ts";
 import {
   armor,
   weapon,
@@ -37,6 +40,7 @@ export const kindSchema = z.enum([
   "shield",
   "creature",
   "character",
+  "creation",
   "module",
   "ai",
   "scenario",
@@ -129,6 +133,11 @@ export function validateRecord(kind: Kind, input: unknown): Json {
       return creatureDocument.parse(input);
     case "character":
       return characterDocument.parse(input);
+    case "creation":
+      return validateCreationRecord(input, creationCatalogData, {
+        weapons,
+        armors,
+      });
     case "module": {
       const module = ruleModule.parse(input);
       if (module.tables) consequenceTables.parse(module.tables);
