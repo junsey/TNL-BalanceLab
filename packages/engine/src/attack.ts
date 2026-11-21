@@ -443,6 +443,7 @@ export function canAttack(
   fighter: Fighter,
   rules?: AttackRules,
   thrown = false,
+  prepaid = false,
 ) {
   const model = attackWeapon(fighter);
   return (
@@ -451,7 +452,24 @@ export function canAttack(
     fighter.health > 0 &&
     fighter.recovery === "none" &&
     fighter.weapon.remaining !== 0 &&
-    fighter.vigor >= attackVigorCost(model)
+    (prepaid || fighter.vigor >= attackVigorCost(model))
+  );
+}
+
+export function usesDaggerPair(fighter: Fighter) {
+  const hands = handLoadout(fighter);
+  return (
+    !!fighter.capabilities?.talents.some((t) => t.id === "two_daggers") &&
+    (!fighter.armor ||
+      (fighter.armor.model.weightClass !== undefined &&
+        fighter.armor.model.weightClass !== "heavy")) &&
+    hands.right !== hands.left &&
+    ["weapon", "reserve"].includes(hands.right ?? "") &&
+    ["weapon", "reserve"].includes(hands.left ?? "") &&
+    equippedAttacks(fighter).filter(
+      (e) =>
+        e.item.remaining !== 0 && ["daga", "dagger"].includes(e.item.model.id),
+    ).length === 2
   );
 }
 
@@ -632,6 +650,7 @@ export function declareAttack(
     surcharge: number;
   },
   thrown = false,
+  prepaid = false,
 ) {
   const preview = previewAttack(
     attacker,
@@ -644,7 +663,7 @@ export function declareAttack(
     attacker.id === defender.id ||
     defender.health <= 0 ||
     !preview ||
-    (!sweep && !canAttack(attacker, rules, thrown))
+    (!sweep && !canAttack(attacker, rules, thrown, prepaid))
   )
     throw new RangeError("Ataque ilegal");
   const model = sweep?.model ?? preview!.model;
@@ -653,7 +672,9 @@ export function declareAttack(
     ? sweep.first
       ? attackVigorCost(model) + sweep.surcharge
       : 0
-    : preview!.cost;
+    : prepaid
+      ? 0
+      : preview!.cost;
   const energy = attacker.energy;
   const updated = { ...attacker, vigor: attacker.vigor - cost };
   if (

@@ -2,17 +2,37 @@ import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
 import { chromium, expect } from "@playwright/test";
 import { tacticalDemo } from "../packages/fixtures/src/tactical-demo.ts";
+import { weapons, armors } from "../packages/fixtures/src/index.ts";
 import {
   startTacticalEncounter,
   getLegalActions,
   simulationVersions,
+  applyLabLoadout,
+  currentLoadout,
 } from "../packages/engine/src/index.ts";
 let initial;
+const paired = process.argv.includes("--pairs");
 for (let i = 0; i < 200; i++) {
   const setup = tacticalDemo("secondary-ui:" + i);
   setup.disabled.opportunities = true;
   for (const p of setup.participants) p.zone = setup.participants[0]!.zone;
   setup.participants[0]!.fighter.hands = { right: "weapon", left: "reserve" };
+  if (paired) {
+    const hero = setup.participants[0]!;
+    hero.fighter = applyLabLoadout(
+      hero.fighter,
+      {
+        ...currentLoadout(hero.fighter),
+        primary: "daga",
+        reserve: "daga",
+        right: "weapon",
+        left: "reserve",
+        armor: null,
+        twoDaggers: true,
+      },
+      { weapons, armors },
+    );
+  }
   const s = startTacticalEncounter(setup).state;
   if (
     getLegalActions(s, setup.player).some(
@@ -49,12 +69,20 @@ try {
     .click();
   await page.getByRole("button", { name: "Pausar IA", exact: true }).click();
   await page.getByRole("button", { name: "Ataque", exact: true }).click();
-  const secondary = page.getByRole("button", { name: /Menor Atacar con Daga/ });
+  const secondary = page
+    .getByRole("button", {
+      name: paired ? /Menor Atacar con dos dagas/ : /Menor Atacar con Daga/,
+    })
+    .first();
   await expect(secondary).toBeEnabled();
   await secondary.click();
   await expect(secondary).toHaveAttribute("aria-pressed", "true");
   mkdirSync("reports/secondary-dagger-ui", { recursive: true });
-  await page.screenshot({ path: "reports/secondary-dagger-ui/command.png" });
+  await page.screenshot({
+    path: paired
+      ? "reports/secondary-dagger-ui/paired-command.png"
+      : "reports/secondary-dagger-ui/command.png",
+  });
   console.log(
     "Daga secundaria visible, legal y seleccionable con icono Menor.",
   );

@@ -76,6 +76,7 @@ export const weapon = z.strictObject({
   status: z.enum(["confirmed", "experimental"]),
 });
 export const armor = z.strictObject({
+  weightClass: z.enum(["light", "medium", "heavy"]).optional(),
   ...equipment,
   protection: count,
   resistanceBonus: count.optional(),

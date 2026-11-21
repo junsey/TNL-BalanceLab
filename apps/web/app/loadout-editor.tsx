@@ -5,6 +5,7 @@ import {
   applyLabLoadout,
   attackSkill,
   bodyResistance,
+  usesDaggerPair,
   type LabLoadout,
   type Fighter,
 } from "../../../packages/engine/src/index.ts";
@@ -57,6 +58,15 @@ export function LoadoutEditor({
         cambia Atributos ni entrenamientos.
       </p>
       <label>
+        <input
+          type="checkbox"
+          checked={c.twoDaggers ?? false}
+          onChange={(e) => update({ twoDaggers: e.target.checked })}
+        />{" "}
+        Ensayar Talento Dos Dagas · 1 Vigor por pareja; requiere dos dagas
+        equipadas y sin armadura pesada
+      </label>
+      <label>
         Arma principal
         <select
           aria-label={label("Arma principal")}
@@ -67,7 +77,10 @@ export function LoadoutEditor({
               primary: model.id,
               right: "weapon",
               left: model.twoHanded ? "weapon" : null,
-              reserve: c.reserve === model.id ? null : c.reserve,
+              reserve:
+                c.reserve === model.id && !["daga", "dagger"].includes(model.id)
+                  ? null
+                  : c.reserve,
             });
           }}
         >
@@ -96,7 +109,11 @@ export function LoadoutEditor({
         >
           <option value="">Sin reserva</option>
           {models
-            .filter((w) => w.id !== c.primary && !w.energyPerAttack)
+            .filter(
+              (w) =>
+                (w.id !== c.primary || ["daga", "dagger"].includes(w.id)) &&
+                !w.energyPerAttack,
+            )
             .map((w) => (
               <option key={w.id} value={w.id}>
                 {w.label}
@@ -215,6 +232,12 @@ export function LoadoutEditor({
       {issue && <p role="alert">{issue}</p>}
       {preview && (
         <>
+          {c.twoDaggers && !usesDaggerPair(preview) && (
+            <p>
+              Talento inactivo: necesita dos dagas utilizables, una en cada
+              mano, y armadura clasificada como ligera o media (o ninguna).
+            </p>
+          )}
           <p>
             Resistencia: {bodyResistance(preview).naturalResistance} natural +{" "}
             {bodyResistance(preview).armorBonus} armadura.

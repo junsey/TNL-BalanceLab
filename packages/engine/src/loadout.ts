@@ -7,6 +7,7 @@ export const loadoutVersion = "coliseum-loadout-v1";
 export const loadoutSchema = z.strictObject({
   version: z.literal(loadoutVersion),
   source: z.literal("configuracion_de_laboratorio"),
+  twoDaggers: z.boolean().optional(),
   primary: z.string().min(1),
   reserve: z.string().min(1).nullable(),
   armor: z.string().min(1).nullable(),
@@ -27,6 +28,9 @@ export function currentLoadout(f: Fighter): LabLoadout {
   return loadoutSchema.parse({
     version: loadoutVersion,
     source: "configuracion_de_laboratorio",
+    ...(f.capabilities?.talents.some((t) => t.id === "two_daggers") && {
+      twoDaggers: true,
+    }),
     primary: f.weapon.model.id,
     reserve: (f.reserveWeapon ?? f.stowedDagger)?.model.id ?? null,
     armor: f.armor?.model.id ?? null,
@@ -59,7 +63,7 @@ export function applyLabLoadout(
   };
   const primary = findWeapon(config.primary);
   const reserve = config.reserve ? findWeapon(config.reserve) : null;
-  if (reserve?.id === primary.id)
+  if (reserve?.id === primary.id && !["daga", "dagger"].includes(primary.id))
     throw new Error("Elegí dos modelos distintos para principal y reserva");
   if (reserve?.energyPerAttack)
     throw new Error(
@@ -89,6 +93,33 @@ export function applyLabLoadout(
       model.durability,
   });
   const f = structuredClone(original);
+  if (config.twoDaggers !== undefined) {
+    const existing = f.capabilities ?? {
+      schemaVersion: 1 as const,
+      talents: [],
+      gifts: [],
+    };
+    const talents = existing.talents.filter(
+      (t) =>
+        t.id !== "two_daggers" ||
+        t.provenance.source !== "fixture" ||
+        t.provenance.sourceId !== "loadout-two-daggers",
+    );
+    if (config.twoDaggers && !talents.some((t) => t.id === "two_daggers"))
+      talents.push({
+        id: "two_daggers",
+        level: 1,
+        provenance: {
+          source: "fixture",
+          sourceId: "loadout-two-daggers",
+          sourceDoc:
+            "Adenda Dos Dagas y decisión directa del usuario: 1 Vigor por pareja",
+          sourceSection: "Configuración explícita de ensayo",
+          status: "BANCO_DE_PRUEBAS",
+        },
+      });
+    f.capabilities = { ...existing, talents };
+  }
   delete f.stowedDagger;
   delete f.reserveWeapon;
   delete f.groundWeapons;

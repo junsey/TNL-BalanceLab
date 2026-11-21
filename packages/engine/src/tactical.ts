@@ -9,6 +9,7 @@ import {
   reserveWeapon,
   attackWeapon,
   canAttack,
+  usesDaggerPair,
   isAttackTrained,
   attackVigorCost,
   rechargeEnergy,
@@ -132,10 +133,20 @@ const opportunityState = z.strictObject({
   continuation: continuation.nullable(),
 });
 const stateSchema = z.strictObject({
+  pairedAttack: z
+    .strictObject({
+      actor: id,
+      target: id,
+      weaponId: id.optional(),
+      actionCost: z.literal("minor").optional(),
+    })
+    .nullable()
+    .optional(),
   setup: setupSchema,
   engineVersion: z.enum([
-    "0.8.0-core03-combat",
     "0.9.0-secondary-dagger",
+    "0.8.0-core03-combat",
+    "0.10.0-dagger-pairs",
     "0.7.0-core03-sheet",
     "0.6.0-resistance-experimental",
     "0.1.0-tactical",
@@ -388,7 +399,7 @@ export function startHistoricalTacticalEncounter(input: unknown) {
   const state: TacticalState = {
     setup,
     engineVersion: setup.rules.combatVersion
-      ? "0.9.0-secondary-dagger"
+      ? "0.10.0-dagger-pairs"
       : setup.rules.calculationVersion
         ? "0.7.0-core03-sheet"
         : setup.rules.resistance
@@ -570,6 +581,16 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
       (pending && pending.defender !== queued.action.actor));
   if (
     !idsMatch(state.groups.flat()) ||
+    (state.pairedAttack &&
+      (!state.pending ||
+        state.pending.sweep ||
+        state.pending.attacker !== state.pairedAttack.actor ||
+        state.pending.defender !== state.pairedAttack.target ||
+        !state.actors.some(
+          (a) =>
+            a.fighter.id === state.pairedAttack?.actor &&
+            usesDaggerPair(a.fighter),
+        ))) ||
     !idsMatch(state.actors.map((actor) => actor.fighter.id)) ||
     invalidActor ||
     invalidUsed ||
@@ -1386,8 +1407,28 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
     attacker: typeof actor,
     defender: typeof actor,
     weaponId?: string,
+    prepaid = false,
   ) => {
     const original = attacker.fighter;
+    const pair =
+      !prepaid &&
+      decision.kind === "attack" &&
+      decision.actor === original.id &&
+      usesDaggerPair(original);
+    if (pair) {
+      state.pairedAttack = {
+        actor: original.id,
+        target: defender.fighter.id,
+        ...(!weaponId ? { weaponId: reserveWeapon(original)!.model.id } : {}),
+        ...(decision.actionCost ? { actionCost: decision.actionCost } : {}),
+      };
+      details.push({
+        kind: "DAGGER_PAIR",
+        actor: original.id,
+        target: defender.fighter.id,
+        cost: 1,
+      });
+    }
     const dagger = weaponId
       ? equippedAttacks(original).find((entry) => entry.weaponId === weaponId)
           ?.item
@@ -1405,6 +1446,9 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       defender.fighter,
       state.rng,
       state.setup.rules,
+      undefined,
+      false,
+      prepaid,
     );
     const creatureAction = original.actorType === "creature" && weaponId;
     if (creatureAction) {
@@ -2042,6 +2086,43 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
     }
   }
   state.outcome ??= outcomeFor(state);
+  if (!state.pending && state.pairedAttack) {
+    const queued = state.pairedAttack;
+    state.pairedAttack = null;
+    const striker = state.actors.find((a) => a.fighter.id === queued.actor)!;
+    const target = state.actors.find((a) => a.fighter.id === queued.target)!;
+    const item = equippedAttacks(striker.fighter).find(
+      (e) => e.weaponId === queued.weaponId,
+    )?.item;
+    if (
+      !state.outcome &&
+      alive(target.fighter) &&
+      target.zone === striker.zone &&
+      item &&
+      canAttack(
+        {
+          ...striker.fighter,
+          weapon: item,
+          hands: undefined,
+          energy: undefined,
+        },
+        state.setup.rules,
+        false,
+        true,
+      )
+    ) {
+      executeAttack(striker, target, queued.weaponId, true);
+      const nextImpact = state.pending as z.infer<typeof pendingImpact> | null;
+      if (nextImpact && queued.actionCost)
+        nextImpact.actionCost = queued.actionCost;
+    } else
+      details.push({
+        kind: "ACTION_INTERRUPTED",
+        actor: queued.actor,
+        reason: "paired_attack_unavailable",
+      });
+  }
+  state.outcome ??= outcomeFor(state);
   if (!state.opportunities?.continuation) advance(state, details);
   state.sequence++;
   return { state, decision, details };
@@ -2073,6 +2154,9 @@ export function resolveAction(previous: TacticalState, input: unknown) {
         ),
         rng: state.rng,
         pending: state.pending,
+        ...(state.pairedAttack !== undefined && {
+          pairedAttack: state.pairedAttack,
+        }),
         ...(state.opportunities && { opportunities: state.opportunities }),
         phase: state.phase,
         round: state.round,
@@ -2088,6 +2172,7 @@ const replayEvent = z.object({
   beforeHash: z.string().regex(/^[a-f0-9]{64}$/),
   afterHash: z.string().regex(/^[a-f0-9]{64}$/),
   changes: z.strictObject({
+    pairedAttack: stateSchema.shape.pairedAttack,
     actors: z.array(combatant),
     rng: rngState,
     pending: pendingImpact.nullable(),

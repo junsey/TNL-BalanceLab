@@ -14,6 +14,7 @@ import {
   getLegalActions,
   isPlayerTeam,
   equippedAttacks,
+  usesDaggerPair,
   handLoadout,
   reserveWeapon,
   weaponControlCost,
@@ -759,65 +760,85 @@ export function CommandMenu({
                               );
                               const resistance =
                                 state.setup.rules.resistance?.[fighter.id];
-                              return weapons.map(({ model, id, cost }) => {
-                                const weaponSkill =
-                                  resistance?.weaponSkills?.[model.id];
-                                const skill = state.setup.rules
-                                  .calculationVersion
-                                  ? attackSkill(fighter, model).capacity
-                                  : weaponSkill
-                                    ? weaponSkill.attribute +
-                                      weaponSkill.mastery
-                                    : resistance
-                                      ? resistance.associatedAttribute +
-                                        resistance.mastery
-                                      : fighter.mastery;
-                                const enabled = matching.some(
-                                  (action) =>
-                                    action.kind === "attack" &&
-                                    action.weaponId === id &&
-                                    action.actionCost === cost,
-                                );
-                                return (
-                                  <button
-                                    type="button"
-                                    className="command-attack-option"
-                                    key={model.id + ":" + (cost ?? "major")}
-                                    aria-pressed={
-                                      activeCategory === "attack" &&
-                                      attackWeaponId === id &&
-                                      attackActionCost === cost
-                                    }
-                                    disabled={!enabled}
-                                    title={
-                                      !enabled
-                                        ? unavailable("attack")
-                                        : undefined
-                                    }
-                                    onClick={() =>
-                                      onCategory("attack", id, cost)
-                                    }
-                                  >
-                                    <span>
+                              return weapons
+                                .filter(
+                                  (w) =>
+                                    !usesDaggerPair(fighter) ||
+                                    (w.cost === "minor"
+                                      ? handLoadout(fighter).left === "weapon"
+                                        ? !w.id
+                                        : !!w.id
+                                      : handLoadout(fighter).right === "weapon"
+                                        ? !w.id
+                                        : !!w.id),
+                                )
+                                .map(({ model, id, cost }) => {
+                                  const weaponSkill =
+                                    resistance?.weaponSkills?.[model.id];
+                                  const skill = state.setup.rules
+                                    .calculationVersion
+                                    ? attackSkill(fighter, model).capacity
+                                    : weaponSkill
+                                      ? weaponSkill.attribute +
+                                        weaponSkill.mastery
+                                      : resistance
+                                        ? resistance.associatedAttribute +
+                                          resistance.mastery
+                                        : fighter.mastery;
+                                  const enabled = matching.some(
+                                    (action) =>
+                                      action.kind === "attack" &&
+                                      action.weaponId === id &&
+                                      action.actionCost === cost,
+                                  );
+                                  return (
+                                    <button
+                                      type="button"
+                                      className="command-attack-option"
+                                      key={
+                                        model.id +
+                                        ":" +
+                                        (id ?? "primary") +
+                                        ":" +
+                                        (cost ?? "major")
+                                      }
+                                      aria-pressed={
+                                        activeCategory === "attack" &&
+                                        attackWeaponId === id &&
+                                        attackActionCost === cost
+                                      }
+                                      disabled={!enabled}
+                                      title={
+                                        !enabled
+                                          ? unavailable("attack")
+                                          : undefined
+                                      }
+                                      onClick={() =>
+                                        onCategory("attack", id, cost)
+                                      }
+                                    >
                                       <span>
-                                        <ActionIcon cost={cost ?? "major"} />
-                                        Atacar con {model.label}
+                                        <span>
+                                          <ActionIcon cost={cost ?? "major"} />
+                                          {usesDaggerPair(fighter)
+                                            ? "Atacar con dos dagas"
+                                            : "Atacar con " + model.label}
+                                        </span>
+                                        <small>
+                                          {attackVigorCost(model)} Vigor
+                                        </small>
                                       </span>
-                                      <small>
-                                        {attackVigorCost(model)} Vigor
+                                      <small className="command-attack-stats">
+                                        <span>Habilidad {skill}%</span>
+                                        <span aria-label="Daño base, adicional a mitad y adicional a cuarto">
+                                          {model.damage.toUpperCase()} | +
+                                          {model.halfExtra.toUpperCase()} | +
+                                          {model.quarterExtra.toUpperCase()}
+                                        </span>
                                       </small>
-                                    </span>
-                                    <small className="command-attack-stats">
-                                      <span>Habilidad {skill}%</span>
-                                      <span aria-label="Daño base, adicional a mitad y adicional a cuarto">
-                                        {model.damage.toUpperCase()} | +
-                                        {model.halfExtra.toUpperCase()} | +
-                                        {model.quarterExtra.toUpperCase()}
-                                      </span>
-                                    </small>
-                                  </button>
-                                );
-                              });
+                                    </button>
+                                  );
+                                });
                             }
                             if (
                               item.id === "weaponControl" &&

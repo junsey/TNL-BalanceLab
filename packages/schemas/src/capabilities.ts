@@ -84,7 +84,8 @@ export const capabilityCatalog = [
     levels: [1],
     requires: "equipped_dagger_each_hand",
     excludes: "heavy_armor",
-    execution: "pending_cost_and_interruption",
+    vigorPerPair: 1,
+    execution: "implemented",
   },
   {
     id: "night_hearing",

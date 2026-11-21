@@ -115,6 +115,8 @@ export const armors = (
     label,
     protection,
     resistanceBonus: protection,
+    weightClass:
+      id === "avanzada" ? "heavy" : id === "media" ? "medium" : "light",
     durability,
     directReduction,
     wear: null,
