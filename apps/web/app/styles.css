@@ -2140,6 +2140,74 @@ h3 {
 }
 
 /* Both combat screens share the same bounded scene and party slots. */
+.character-creator {
+  max-width: 1100px;
+  margin: 20px auto;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.character-creator fieldset,
+.creator-result {
+  min-width: 0;
+  border: 1px solid #344c5a;
+  border-radius: 6px;
+  padding: 16px;
+}
+.creator-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 14px;
+}
+.creator-fields label,
+.creator-point-row label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.character-creator input,
+.character-creator select {
+  width: 100%;
+  min-width: 0;
+}
+.creator-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.creator-point-row {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(70px, 1fr) auto;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: end;
+}
+.creator-table {
+  overflow: auto;
+}
+.creator-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.creator-table th,
+.creator-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #344c5a;
+}
+.creator-coverage {
+  border-left: 3px solid #7cded4;
+  padding: 10px;
+  background: #122633;
+}
+.character-creator li,
+.character-creator p {
+  overflow-wrap: anywhere;
+}
+.character-creator progress {
+  width: 100%;
+  accent-color: #7cded4;
+}
 .combat-layout .enemy-panel {
   max-height: 72dvh;
   overflow: auto;

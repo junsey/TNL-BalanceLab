@@ -50,6 +50,7 @@ import {
 import { presetDiagnostics } from "../lib/preset-diagnostics";
 import { ConfigurationDetails } from "./configuration-details";
 import { Coliseum } from "./coliseum";
+import { CharacterCreator } from "./character-creator";
 
 type Event = ReturnType<typeof resolveAction>["event"] & { reason?: string };
 type Session = {
@@ -61,7 +62,7 @@ type Session = {
   mode?: "manual" | "auto";
   controls?: { at: number; actor: string; mode: "manual" | "ai" }[];
 };
-type Mode = "manual" | "auto" | "batch" | "library" | "coliseum";
+type Mode = "manual" | "auto" | "batch" | "library" | "coliseum" | "creation";
 type Action = Event["action"];
 const isCurrentSession = (session: Session) =>
   !!session.versions &&
@@ -816,26 +817,34 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
           <h1>Balance Lab</h1>
         </div>
         <div className="modes" aria-label="Modo de simulación">
-          {(["auto", "manual", "coliseum", "batch", "library"] as const).map(
-            (item) => (
-              <button
-                type="button"
-                key={item}
-                aria-pressed={mode === item}
-                onClick={() => switchMode(item)}
-              >
+          {(
+            [
+              "auto",
+              "manual",
+              "coliseum",
+              "creation",
+              "batch",
+              "library",
+            ] as const
+          ).map((item) => (
+            <button
+              type="button"
+              key={item}
+              aria-pressed={mode === item}
+              onClick={() => switchMode(item)}
+            >
+              {
                 {
-                  {
-                    manual: "Control total",
-                    auto: "Automático",
-                    batch: "Lotes",
-                    library: "Biblioteca",
-                    coliseum: "Coliseo",
-                  }[item]
-                }
-              </button>
-            ),
-          )}
+                  manual: "Control total",
+                  auto: "Automático",
+                  batch: "Lotes",
+                  library: "Biblioteca",
+                  coliseum: "Coliseo",
+                  creation: "Crear personaje",
+                }[item]
+              }
+            </button>
+          ))}
         </div>
         {shared && (
           <button
@@ -851,7 +860,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
           </button>
         )}
       </header>
-      {mode !== "library" && mode !== "coliseum" && (
+      {mode !== "library" && mode !== "coliseum" && mode !== "creation" && (
         <section className="tools" aria-label="Configuración del encuentro">
           <label>
             Semilla{" "}
@@ -908,7 +917,9 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
           </span>
         </section>
       )}
-      {mode === "coliseum" ? (
+      {mode === "creation" ? (
+        <CharacterCreator />
+      ) : mode === "coliseum" ? (
         <Coliseum
           existing={(() => {
             const fighter = session.state.actors.find(

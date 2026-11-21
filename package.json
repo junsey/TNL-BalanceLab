@@ -17,6 +17,7 @@
     "typecheck": "tsc --noEmit && tsc -p apps/web/tsconfig.json --incremental false",
     "test:web": "node scripts/test-web.ts",
     "test:ui": "node scripts/test-combat-ui.ts",
+    "test:creation-ui": "node scripts/test-creation-ui.ts",
     "benchmark": "node scripts/benchmark.ts",
     "audit:rng": "node scripts/audit-rng.ts",
     "audit:integration": "node scripts/audit-integration.ts",

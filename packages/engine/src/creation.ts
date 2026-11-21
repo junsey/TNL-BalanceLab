@@ -116,6 +116,14 @@ export function generateCharacter(
 ): CreationResult {
   const c = parseCreationCatalog(catalogInput),
     input = creationInputSchema.parse(raw);
+  for (const key of [
+    "sex",
+    "areaId",
+    "cityId",
+    "socialOriginId",
+    "archetypeId",
+  ] as const)
+    if (input[key] === undefined) delete input[key];
   const result: CreationResult = {
     schemaVersion: 1,
     creationVersion,

@@ -98,6 +98,20 @@ test("Creación: 10000 semillas legales y reproducción byte a byte con decision
   assert.ok(blind > 0 && seers > 0);
 });
 test("Creación: mundial conserva ramas pendientes; High Aerie no inventa sexo", () => {
+  assert.equal(
+    canonicalJson(
+      generateCharacter(
+        { mode: "world", seed: "optional", cityId: undefined },
+        creationCatalogData,
+      ),
+    ),
+    canonicalJson(
+      generateCharacter(
+        { mode: "world", seed: "optional" },
+        creationCatalogData,
+      ),
+    ),
+  );
   let pending = 0;
   for (let i = 0; i < 100; i++) {
     const r = generateCharacter(
