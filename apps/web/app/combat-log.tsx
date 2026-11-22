@@ -78,20 +78,41 @@ export function Detail({
   switch (detail.kind) {
     case "AI_DECISION":
       return (
-        <p>
-          <strong>
-            IA · {typeof detail.actor === "string" ? name(detail.actor) : ""}
-          </strong>
-          {" · "}
-          {detail.source === "directive"
-            ? "Directiva " + print(detail.directiveId)
-            : "Comportamiento base"}
-          {" · "}
-          {print(detail.reason)}
-          {Array.isArray(detail.draws) && detail.draws.length > 0
-            ? " · " + detail.draws.length + " desempate(s) por sorteo"
-            : ""}
-        </p>
+        <div className="ai-decision-detail">
+          <p>
+            <strong>
+              IA · {typeof detail.actor === "string" ? name(detail.actor) : ""}
+            </strong>
+            {" · "}
+            {detail.source === "directive"
+              ? "Directiva " +
+                print(detail.directiveId) +
+                " · " +
+                (detail.mode === "mandatory" ? "Obligatoria" : "Preferencia") +
+                " · Prioridad " +
+                print(detail.priority)
+              : "Comportamiento base"}
+            {" · "}
+            {print(detail.reason)}
+            {Array.isArray(detail.draws) && detail.draws.length > 0
+              ? " · " + detail.draws.length + " desempate(s) por sorteo"
+              : ""}
+          </p>
+          <details>
+            <summary>Ver sorteo y candidatos</summary>
+            <pre>
+              {JSON.stringify(
+                {
+                  candidates: detail.candidates,
+                  draws: detail.draws,
+                  selectedAction: detail.selectedAction,
+                },
+                null,
+                2,
+              )}
+            </pre>
+          </details>
+        </div>
       );
     case "IMPACT":
     case "ATTACK_FAILED": {

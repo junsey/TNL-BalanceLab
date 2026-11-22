@@ -53,6 +53,17 @@ export const aiDecisionSchema = z
       });
   });
 export type AIDecisionRecord = z.infer<typeof aiDecisionSchema>;
+
+/** Recover the transported decision when reexecuting a recorded action. */
+export function aiDecisionFromDetails(
+  details: readonly { kind: string; [key: string]: unknown }[],
+): AIDecisionRecord | undefined {
+  const row = details.find((d) => d.kind === "AI_DECISION");
+  if (!row) return undefined;
+  const { kind, ...record } = row;
+  void kind;
+  return aiDecisionSchema.parse(record);
+}
 const order = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /** Draw only to resolve genuine ties. Sorted candidates avoid textual-order bias. */

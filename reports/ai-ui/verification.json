@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "checks": [
+    "sesión IA importada",
+    "directiva, tipo y prioridad visibles al inspeccionar",
+    "sin errores de página",
+    "plantilla editable de directivas en biblioteca"
+  ]
+}

@@ -725,6 +725,42 @@ export function Library(props: Props) {
             )}
             {kind === "ai" && (
               <>
+                <button
+                  onClick={() => {
+                    setActive(null);
+                    setCandidate(null);
+                    setHistory([]);
+                    setOrigin(null);
+                    setText(
+                      stringify({
+                        ...standardProfile,
+                        directives: {
+                          schemaVersion: 1,
+                          observedActors: [],
+                          items: [
+                            {
+                              id: "attack-visible",
+                              mode: "preference",
+                              priority: 10,
+                              when: {
+                                all: [
+                                  {
+                                    kind: "visibleEnemies",
+                                    compare: "gte",
+                                    value: 1,
+                                  },
+                                ],
+                              },
+                              choose: { kind: "attack", target: "nearest" },
+                            },
+                          ],
+                        },
+                      }),
+                    );
+                  }}
+                >
+                  Plantilla con directivas de ensayo
+                </button>
                 <button onClick={useData}>Usar perfil general de IA</button>
                 <label>
                   Combatiente

@@ -1,0 +1,140 @@
+{
+  "version": "ai-integration-v1",
+  "versions": {
+    "schemaVersion": 2,
+    "engineVersion": "0.12.0-ai-directives",
+    "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+    "catalogVersion": "core-fixtures-v2",
+    "rngVersion": "mulberry32-utf8-v1",
+    "metricsVersion": "combat-metrics-v2",
+    "model": "tactical",
+    "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+  },
+  "legacy": {
+    "samples": 500,
+    "milliseconds": 2243.2479,
+    "meanRounds": 7.994,
+    "meanHealthLost": 32.754,
+    "meanVigorSpent": 21.732,
+    "steps": 27192,
+    "actions": {
+      "move": 1000,
+      "attack": 7478,
+      "defend": 3480,
+      "end": 11359,
+      "breathe": 3686,
+      "run": 189
+    },
+    "actionKinds": 6,
+    "endFraction": 0.41773315681082673,
+    "consecutiveSameActorActionFraction": 0.09995586937334511,
+    "outcomes": {
+      "censored_round_limit": 489,
+      "won_encounter": 11
+    }
+  },
+  "modern": {
+    "samples": 500,
+    "milliseconds": 3249.4901,
+    "meanRounds": 7.992,
+    "meanHealthLost": 31.71,
+    "meanVigorSpent": 21.704,
+    "steps": 27414,
+    "actions": {
+      "move": 1000,
+      "attack": 7412,
+      "defend": 3487,
+      "end": 11641,
+      "breathe": 3685,
+      "run": 189
+    },
+    "actionKinds": 6,
+    "endFraction": 0.42463704676442693,
+    "consecutiveSameActorActionFraction": 0.10731742905084993,
+    "outcomes": {
+      "censored_round_limit": 489,
+      "won_encounter": 11
+    }
+  },
+  "elapsedRatio": 1.4485648688225676,
+  "consumers": [
+    {
+      "context": "batch/manual/replay",
+      "seed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"ai-consumers-v1:0\\\",0]\",0]",
+      "hash": "73febf6b23b373d861b77e77331d18ff6c269c9aeaf46e84f69233a24ac9a710",
+      "steps": 61
+    },
+    {
+      "context": "coliseum",
+      "seed": "[\"coliseum-lab-v1\",\"ai-coliseum:0\",1]",
+      "hash": "4823b878d7ba803ffa6bb754698c82f2c649c195e1277cadf40ab55a6399758f",
+      "steps": 16
+    },
+    {
+      "context": "batch/manual/replay",
+      "seed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"ai-consumers-v1:1\\\",0]\",0]",
+      "hash": "45433ebacb37239bd9ee090d0db3a31d8ca03981bd101cd73ab4088a38bf54ed",
+      "steps": 59
+    },
+    {
+      "context": "coliseum",
+      "seed": "[\"coliseum-lab-v1\",\"ai-coliseum:1\",1]",
+      "hash": "382ef09882c0f54a1c089c7e287190a3129c3e7224408e81cd5b9e0e42e019e1",
+      "steps": 13
+    },
+    {
+      "context": "batch/manual/replay",
+      "seed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"ai-consumers-v1:2\\\",0]\",0]",
+      "hash": "abd1cd75e2522a21dcdc159e20247f9f13a68b0d44263b3455b26fb38636aad1",
+      "steps": 61
+    },
+    {
+      "context": "coliseum",
+      "seed": "[\"coliseum-lab-v1\",\"ai-coliseum:2\",1]",
+      "hash": "1f0c8bfc82603d2ef183094424fc6434327fd8e475cc6b9bf314ba2c4c6557f9",
+      "steps": 32
+    },
+    {
+      "context": "batch/manual/replay",
+      "seed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"ai-consumers-v1:3\\\",0]\",0]",
+      "hash": "fb16d3eef0639b3b4ecf76f3e8fa1a8307042ece782129d36be00a5aee167312",
+      "steps": 59
+    },
+    {
+      "context": "coliseum",
+      "seed": "[\"coliseum-lab-v1\",\"ai-coliseum:3\",1]",
+      "hash": "70013a1bbf45eec4e1753da607ae9e558607445d33fc1b4acabe9376fa22f30c",
+      "steps": 5
+    },
+    {
+      "context": "batch/manual/replay",
+      "seed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"ai-consumers-v1:4\\\",0]\",0]",
+      "hash": "af16f2c16132dd1a8dab27c329d6cf5e1bcebcb8c0275030686264314dedd5be",
+      "steps": 65
+    },
+    {
+      "context": "coliseum",
+      "seed": "[\"coliseum-lab-v1\",\"ai-coliseum:4\",1]",
+      "hash": "703c1fda835c3991f9c1bceaf36a0827125a6a3cf9fe965e7cc6607510486811",
+      "steps": 16
+    },
+    {
+      "context": "batch/manual/replay",
+      "seed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"ai-consumers-v1:5\\\",0]\",0]",
+      "hash": "dc7fef07941eb9380eea4c4febdba0bdc2304a0a643bdd5fe066b94c6d831a34",
+      "steps": 64
+    },
+    {
+      "context": "coliseum",
+      "seed": "[\"coliseum-lab-v1\",\"ai-coliseum:5\",1]",
+      "hash": "15fa890f0156d30fa47175a554072ba4fd8d33249196a438a57f4a847b6b1aa7",
+      "steps": 30
+    }
+  ],
+  "notes": [
+    "500 semillas por política, mismas fichas y límite de ocho rondas.",
+    "Comparación entre política clásica preservada y fallback nuevo sin directivas; cambios esperables por desempate/heurística.",
+    "Censura por rondas registrada, sin presentarla como victoria/derrota.",
+    "Tiempo medido localmente con calentamiento; no es un SLA universal."
+  ]
+}

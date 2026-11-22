@@ -28,6 +28,7 @@ jobs:
       - run: npm run format:check
       - run: npm run typecheck
       - run: npm test
+      - run: npm run audit:ai
       - run: npm run audit:integration
       - run: npm run build
       - run: npm run test:web
@@ -43,6 +44,7 @@ jobs:
           npm run test:secondary-ui
           npm run test:paired-ui
           npm run test:counter-ui
+          npm run test:ai-ui
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -52,4 +54,7 @@ jobs:
             reports/creation-ui/
             reports/secondary-dagger-ui/
             reports/counter-ui/
+            reports/ai-ui/
+            reports/ai-ties-v1.json
+            reports/ai-integration-v1.json
           retention-days: 14

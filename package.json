@@ -31,7 +31,9 @@
     "lint": "eslint packages scripts apps/web/app apps/web/lib apps/web/tests",
     "playtest": "node scripts/playtest.ts",
     "format:check": "prettier --check \"packages/**/*.{json,ts}\" \"scripts/**/*.ts\" \"apps/web/{app,lib,tests}/**/*.{ts,tsx,css}\" \"apps/web/*.{json,ts}\" \"*.json\" \"*.mjs\" --ignore-path .gitignore",
-    "format": "prettier --write \"packages/**/*.{json,ts}\" \"scripts/**/*.ts\" \"apps/web/{app,lib,tests}/**/*.{ts,tsx,css}\" \"apps/web/*.{json,ts}\" \"*.json\" \"*.mjs\" --ignore-path .gitignore"
+    "format": "prettier --write \"packages/**/*.{json,ts}\" \"scripts/**/*.ts\" \"apps/web/{app,lib,tests}/**/*.{ts,tsx,css}\" \"apps/web/*.{json,ts}\" \"*.json\" \"*.mjs\" --ignore-path .gitignore",
+    "audit:ai": "node scripts/audit-ai.ts && node scripts/audit-ai-integration.ts",
+    "test:ai-ui": "node scripts/test-ai-ui.ts"
   },
   "dependencies": {
     "@noble/hashes": "^2.4.0",
