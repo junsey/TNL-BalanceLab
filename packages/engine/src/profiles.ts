@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { aiDirectives } from "./ai-directives.ts";
 const priorities = z.enum([
   "flee",
   "breathe",
@@ -14,6 +15,7 @@ const priorities = z.enum([
 const defense = z.enum(["none", "dodge", "parry", "block"]);
 const percent = z.number().int().min(0).max(100);
 export const tacticalProfile = z.strictObject({
+  directives: aiDirectives.optional(),
   priorities: z
     .array(priorities)
     .max(priorities.options.length)
