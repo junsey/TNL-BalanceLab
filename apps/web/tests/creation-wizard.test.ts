@@ -45,6 +45,13 @@ test("Wizard: borrador conserva paso, decisiones, errores editables y tiradas; r
     () => restoreWizardDraft(JSON.stringify({ ...draft, confirmed: true })),
     /Confirmación/,
   );
+  assert.throws(() =>
+    restoreWizardDraft(JSON.stringify({ ...draft, revisions: ["{corrupto"] })),
+  );
+  const invalidPoints = restoreWizardDraft(
+    JSON.stringify({ ...draft, points: [{ id: "fuerza_bruta", amount: 21 }] }),
+  );
+  assert.equal(invalidPoints.points[0]!.amount, 21);
   assert.equal(wizardDataComplete(7, true, creation, false, false), false);
   assert.equal(wizardDataComplete(1, false, creation, false, false), false);
   assert.equal(wizardDataComplete(1, true, creation, false, false), true);

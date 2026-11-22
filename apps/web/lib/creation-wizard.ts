@@ -46,6 +46,7 @@ export const wizardDraftSchema = z.strictObject({
   automaticSuggestions: z.boolean().default(false),
   seedAuto: z.boolean().default(false),
   trainingSection: z.number().int().min(0).max(2).default(0),
+  returnToReview: z.boolean().default(false),
 });
 
 export type TrainingPoints = { id: string; amount: number }[];
@@ -196,6 +197,14 @@ export function restoreWizardDraft(text: string) {
   if (new TextEncoder().encode(text).length > 2 * 1024 * 1024)
     throw new RangeError("El borrador supera 2 MB");
   const draft = wizardDraftSchema.parse(JSON.parse(text));
+  for (const revision of draft.revisions) {
+    const archived = wizardDraftSchema.parse(JSON.parse(revision));
+    if (archived.revisions.length)
+      throw new RangeError(
+        "La revisión contiene un historial anidado no admitido",
+      );
+    restoreWizardDraft(revision);
+  }
   const stored = z.object({ input: creationInputSchema }).parse(draft.creation);
   const creation = generateCharacter(stored.input, creationCatalogData);
   if (

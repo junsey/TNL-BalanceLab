@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "checks": [
+    "JSON anterior importado íntegro",
+    "editar y volver a revisión",
+    "nombre cambia sin reroll ni pérdida de habilidades",
+    "filtrar habilidades e historial",
+    "equipo persiste al navegar y recargar",
+    "JSON y borrador reabren la misma ficha",
+    "corrupción no sobrescribe",
+    "Resistencia oficial permanece null",
+    "390/1440 sin desborde"
+  ]
+}

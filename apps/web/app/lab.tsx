@@ -823,6 +823,7 @@ export function Lab({
     <main
       className={
         "shell " +
+        (mode === "creation" ? "creation-shell " : "") +
         (mode === "auto" || mode === "manual" || mode === "coliseum"
           ? "with-party"
           : "")

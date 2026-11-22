@@ -1,4 +1,10 @@
 import { expect, type Page } from "@playwright/test";
+export async function wizardToolbar(page: Page, name: string) {
+  const menu = page.locator(".wizard-toolbar-menu");
+  if (!(await menu.evaluate((e) => (e as HTMLDetailsElement).open)))
+    await menu.locator("summary").click();
+  await menu.getByRole("button", { name, exact: true }).click();
+}
 export async function completeTrainingChoices(page: Page) {
   const choices = page.getByRole("tab", {
     name: "6B · Elecciones",

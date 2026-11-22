@@ -127,7 +127,7 @@ export function CreationStart({
       </label>
       <CreationCards
         legend="Modo de creación"
-        rows={modes}
+        rows={[modes[1]!, modes[0]!, modes[2]!]}
         value={input.mode}
         onChange={(id) => onMode(id as CreationInput["mode"])}
       />

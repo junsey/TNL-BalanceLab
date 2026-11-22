@@ -21,6 +21,33 @@
   width: 100%;
   min-width: 0;
 }
+.creation-shell {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: 16px;
+}
+.creation-shell .mast {
+  flex: 0 0 auto;
+}
+.creation-shell .character-creator.creation-wizard {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 auto;
+}
+.creation-shell .wizard-layout {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.creation-shell .wizard-footer {
+  position: static;
+  margin-top: 12px;
+  padding-top: 12px;
+}
 
 .creation-wizard :focus-visible {
   outline: 3px solid var(--wizard-focus);
@@ -61,10 +88,38 @@
 .wizard-tools {
   justify-content: flex-end;
 }
+.wizard-toolbar-menu {
+  position: relative;
+}
+.wizard-toolbar-menu > summary {
+  padding: 10px 14px;
+  border: 1px solid var(--wizard-border);
+  border-radius: var(--wizard-control-radius);
+  background: var(--wizard-surface);
+}
+.wizard-toolbar-menu > div {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 12;
+  min-width: 230px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: var(--wizard-surface);
+  border: 1px solid var(--wizard-border);
+  border-radius: var(--wizard-radius);
+  box-shadow: 0 12px 32px #0008;
+}
+.wizard-toolbar-menu button {
+  width: 100%;
+  text-align: left;
+}
 .wizard-tools [role="status"] {
   flex-basis: 100%;
   text-align: right;
   color: var(--wizard-muted);
+  font-size: 14px;
 }
 .creation-wizard > progress {
   width: 100%;
@@ -372,6 +427,132 @@
 .creation-wizard :is(input, button, select, summary) {
   scroll-margin-block: 96px;
 }
+.creation-wizard summary {
+  min-height: 44px;
+  padding-block: 8px;
+  cursor: pointer;
+}
+.wizard-review > section {
+  padding: 20px;
+  border: 1px solid var(--wizard-border);
+  border-radius: var(--wizard-radius);
+  margin: 16px 0;
+  background: var(--wizard-surface);
+  min-width: 0;
+}
+.wizard-review-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.wizard-review-section-header h3 {
+  margin-right: auto;
+  font-size: 19px;
+}
+.wizard-review-section-header > span {
+  font-size: 14px;
+}
+.wizard-review :is(p, ul, details) {
+  margin-top: 12px;
+}
+.wizard-review-attributes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.wizard-review-attributes h4 {
+  font-size: 14px;
+}
+.wizard-review-attributes strong {
+  display: block;
+  font-size: 28px;
+}
+.wizard-review-attributes small {
+  display: block;
+}
+.wizard-review-reserves {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.wizard-review-reserves dd {
+  margin: 8px 0;
+  font-size: 24px;
+}
+.wizard-review-reserves small {
+  display: block;
+}
+.wizard-review-skills {
+  table-layout: fixed;
+  width: 100%;
+  margin-top: 16px;
+}
+.wizard-review-skills :is(th, td) {
+  font-size: 14px;
+  padding: 10px 4px;
+  overflow-wrap: anywhere;
+}
+.wizard-review-skills th:first-child {
+  width: 32%;
+}
+.wizard-review-skills th:nth-child(2) {
+  width: 22%;
+}
+.wizard-review-skills th:nth-child(3) {
+  width: 20%;
+}
+.wizard-review-skills details {
+  font-weight: 400;
+}
+.wizard-review-skills details p {
+  font-size: 13px;
+}
+.wizard-cell-label {
+  display: none;
+}
+.wizard-dice-audit li {
+  margin-block: 12px;
+}
+.wizard-dice-audit small {
+  display: block;
+  color: var(--wizard-muted);
+}
+.wizard-file-actions,
+.wizard-combat-preparation {
+  margin-block: 16px;
+  border-top: 1px solid var(--wizard-border);
+  padding-top: 8px;
+}
+.wizard-file-actions > button {
+  margin: 8px 8px 0 0;
+}
+.creator-storage > fieldset {
+  margin-top: 16px;
+}
+.wizard-finish-card :is(p, small) {
+  display: block;
+  margin-top: 8px;
+}
+@media (min-width: 1100px) {
+  .creation-shell .wizard-layout {
+    overflow: hidden;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .creation-shell .wizard-active {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 8px;
+    scrollbar-gutter: stable;
+  }
+  .creation-shell :is(.wizard-stepper, .wizard-summary) {
+    max-height: 100%;
+    overflow-y: auto;
+    position: static;
+  }
+}
 .wizard-error {
   padding: 12px;
   border-left: 4px solid var(--wizard-danger);
@@ -421,6 +602,36 @@
   }
 }
 @media (max-width: 767px) {
+  .creation-shell .mast {
+    gap: 8px;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+  }
+  .creation-shell .mast h1 {
+    font-size: 24px;
+  }
+  .creation-shell .brand-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .creation-shell .mast .modes {
+    padding: 4px;
+    gap: 4px;
+  }
+  .creation-shell .mast .modes button {
+    min-height: 40px;
+    padding: 8px;
+    font-size: 13px;
+  }
+  .creation-shell .wizard-header h2 {
+    display: none;
+  }
+  .creation-shell .wizard-header .series {
+    margin: 0;
+  }
+  .creation-shell .wizard-tools button {
+    padding: 8px;
+  }
   .creation-wizard {
     padding: 16px;
   }
@@ -433,6 +644,7 @@
   }
   .wizard-tools [role="status"] {
     text-align: left;
+    flex-basis: auto;
   }
   .wizard-tools button {
     font-size: 14px;
@@ -444,6 +656,7 @@
   }
   .wizard-layout > * {
     width: 100%;
+    flex-shrink: 0;
   }
   .wizard-stepper {
     overflow-x: auto;
@@ -474,6 +687,49 @@
   .wizard-skill-options,
   .wizard-granted-skills {
     grid-template-columns: 1fr;
+  }
+  .wizard-review > section {
+    padding: 16px;
+  }
+  .wizard-review-attributes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .wizard-review-reserves {
+    grid-template-columns: 1fr;
+  }
+  .wizard-review-skills,
+  .wizard-review-skills tbody {
+    display: block;
+  }
+  .wizard-review-skills thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .wizard-review-skills tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px;
+    border: 1px solid var(--wizard-border);
+    border-radius: var(--wizard-control-radius);
+    margin-bottom: 12px;
+  }
+  .wizard-review-skills tbody th:first-child {
+    display: block;
+    grid-column: 1 / -1;
+    width: auto;
+  }
+  .wizard-review-skills td {
+    display: block;
+    border: 0;
+  }
+  .wizard-cell-label {
+    display: block;
+    color: var(--wizard-muted);
+    font-size: 13px;
+    margin-bottom: 4px;
   }
   .wizard-summary dl {
     grid-template-columns: 1fr auto;

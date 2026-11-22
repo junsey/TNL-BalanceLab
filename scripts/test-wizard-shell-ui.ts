@@ -1,3 +1,4 @@
+import { wizardToolbar } from "./lib/creation-ui.ts";
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { chromium, expect } from "@playwright/test";
@@ -50,13 +51,9 @@ try {
     await expect(
       p.getByRole("heading", { name: "¿Cuál fue su origen social?" }),
     ).toBeVisible();
-    await p
-      .getByRole("button", { name: "Guardar borrador", exact: true })
-      .click();
+    await wizardToolbar(p, "Guardar borrador");
     await p.reload();
-    await p
-      .getByRole("button", { name: "Recuperar borrador", exact: true })
-      .click();
+    await wizardToolbar(p, "Recuperar borrador");
     await expect(
       p.getByRole("heading", { name: "¿Cuál fue su origen social?" }),
     ).toBeVisible();

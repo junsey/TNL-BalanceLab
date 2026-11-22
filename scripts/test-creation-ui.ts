@@ -1,4 +1,4 @@
-import { completeTrainingChoices } from "./lib/creation-ui.ts";
+import { completeTrainingChoices, wizardToolbar } from "./lib/creation-ui.ts";
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { importCreatedCharacter } from "../packages/engine/src/creation-record.ts";
@@ -125,13 +125,9 @@ try {
       await expect(page.locator('.wizard-active [role="alert"]')).toHaveCount(
         0,
       );
-      await page
-        .getByRole("button", { name: "Guardar borrador", exact: true })
-        .click();
+      await wizardToolbar(page, "Guardar borrador");
       await page.reload();
-      await page
-        .getByRole("button", { name: "Recuperar borrador", exact: true })
-        .click();
+      await wizardToolbar(page, "Recuperar borrador");
       await next(page);
       await expect(
         page.getByText(
@@ -162,6 +158,9 @@ try {
         });
       if (mode === "assisted" && city === "augyre_siege") {
         await page.setViewportSize({ width: 1440, height: 1000 });
+        await page
+          .getByText("Preparar perfil experimental de combate", { exact: true })
+          .click();
         await page.getByLabel(/Elegir perfil de ensayo v1:/).check();
         await page
           .getByText("Equipo de ensayo · PJ 1", { exact: true })
@@ -189,6 +188,9 @@ try {
             name: "Confirmar equipo de ensayo",
             exact: true,
           })
+          .click();
+        await page
+          .getByText("Exportar y otras acciones", { exact: true })
           .click();
         const pendingDownload = page.waitForEvent("download");
         await page
@@ -226,9 +228,7 @@ try {
         await page
           .getByRole("button", { name: "Crear personaje", exact: true })
           .click();
-        await page
-          .getByRole("button", { name: "Archivos y biblioteca", exact: true })
-          .click();
+        await wizardToolbar(page, "Archivos y biblioteca");
         await page
           .getByRole("button", {
             name: "Recuperar personaje de sesión",
@@ -289,6 +289,9 @@ try {
         });
         await page.setViewportSize({ width: 1440, height: 1000 });
         await page
+          .getByText("Preparar perfil experimental de combate", { exact: true })
+          .click();
+        await page
           .getByRole("button", { name: "Usar en Laboratorio", exact: true })
           .click();
         await page
@@ -310,14 +313,15 @@ try {
         await page
           .getByRole("button", { name: "Crear personaje", exact: true })
           .click();
-        await page
-          .getByRole("button", { name: "Archivos y biblioteca", exact: true })
-          .click();
+        await wizardToolbar(page, "Archivos y biblioteca");
         await page
           .getByRole("button", {
             name: "Recuperar personaje de sesión",
             exact: true,
           })
+          .click();
+        await page
+          .getByText("Preparar perfil experimental de combate", { exact: true })
           .click();
         await page
           .getByRole("button", { name: "Usar en Coliseo", exact: true })

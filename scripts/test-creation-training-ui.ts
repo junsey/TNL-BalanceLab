@@ -1,3 +1,4 @@
+import { wizardToolbar } from "./lib/creation-ui.ts";
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { chromium, expect, type Page } from "@playwright/test";
@@ -27,9 +28,7 @@ async function load(p: Page, text: string) {
   await p.goto(
     (process.env.TNL_UI_URL ?? "http://127.0.0.1:3000") + "?mode=creation",
   );
-  await p
-    .getByRole("button", { name: "Archivos y biblioteca", exact: true })
-    .click();
+  await wizardToolbar(p, "Archivos y biblioteca");
   await p.getByLabel("Archivo JSON nativo", { exact: true }).setInputFiles({
     name: "ensayo.json",
     mimeType: "application/json",
@@ -140,13 +139,9 @@ try {
   await expect(q.locator('.wizard-active [role="alert"]')).toContainText(
     "20 puntos",
   );
-  await q
-    .getByRole("button", { name: "Guardar borrador", exact: true })
-    .click();
+  await wizardToolbar(q, "Guardar borrador");
   await q.reload();
-  await q
-    .getByRole("button", { name: "Recuperar borrador", exact: true })
-    .click();
+  await wizardToolbar(q, "Recuperar borrador");
   await expect(
     q
       .locator(".wizard-point-row")

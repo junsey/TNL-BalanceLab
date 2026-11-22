@@ -33,5 +33,6 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | WIZ-01 Auditoría del creador | Publicada | e11b421 | docs/wizard-01-audit.md; referencias y compatibilidad |
 | WIZ-02 Shell y navegación | Publicada | e00ab13 | docs/wizard-02-shell.md; recorridos y compatibilidad |
 | WIZ-03 Procedencia y ramas | Publicada | 87e6716 | docs/wizard-03-routes.md; 148 pruebas, 600 propuestas y Chrome |
-| WIZ-04 Atributos y entrenamiento | Publicada en este commit | base 87e6716 | docs/wizard-04-training.md; controles y regresiones |
-| WIZ-05–WIZ-06 | En curso | — | Especificación v1 del usuario, 21/11 |
+| WIZ-04 Atributos y entrenamiento | Publicada | 855802c | docs/wizard-04-training.md; controles y regresiones |
+| WIZ-05 Revisión y archivos | Publicada en este commit | base 855802c | docs/wizard-05-review.md; JSON y equipo persistente |
+| WIZ-06 QA y accesibilidad | En curso | — | Especificación v1 del usuario, 21/11 |

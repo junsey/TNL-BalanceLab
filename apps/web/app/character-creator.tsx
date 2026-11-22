@@ -18,9 +18,16 @@ import {
   editableCreationRequests,
   allocationProblems,
 } from "../lib/creation-wizard";
-import { validateCreationRecord } from "../../../packages/engine/src/creation-record.ts";
+import {
+  validateCreationRecord,
+  makeCreationRecord,
+} from "../../../packages/engine/src/creation-record.ts";
 import { weapons, armors } from "../../../packages/fixtures/src/index.ts";
-import { CreatedCharacterStorage } from "./created-character-storage";
+import { CreationReview, CreationAudit } from "./creation-review";
+import {
+  CreatedCharacterStorage,
+  downloadCharacterFile,
+} from "./created-character-storage";
 import type { CreationRecord } from "../../../packages/engine/src/creation-record.ts";
 import type { ColiseumEntry } from "../../../packages/engine/src/coliseum.ts";
 import { stateHash } from "../../../packages/engine/src/state.ts";
@@ -31,10 +38,7 @@ import {
   type CreationResult,
   type CreationRequest,
 } from "../../../packages/engine/src/creation.ts";
-import {
-  parseCreationCatalog,
-  creationAttribute,
-} from "../../../packages/engine/src/creation-catalog.ts";
+import { parseCreationCatalog } from "../../../packages/engine/src/creation-catalog.ts";
 
 const catalog = parseCreationCatalog(creationCatalogData);
 const defaults: CreationInput = {
@@ -49,14 +53,6 @@ const defaults: CreationInput = {
     additionalSkills: [],
     freePoints: {},
   },
-};
-const attributeNames = {
-  strength: "Fuerza",
-  dexterity: "Destreza",
-  perception: "Percepción",
-  will: "Voluntad",
-  knowledge: "Conocimiento",
-  presence: "Presencia",
 };
 export function CharacterCreator({
   shared,
@@ -86,6 +82,7 @@ export function CharacterCreator({
     [archives, setArchives] = useState<string[]>([]),
     [saved, setSaved] = useState(false),
     [filesOpen, setFilesOpen] = useState(false);
+  const [returnToReview, setReturnToReview] = useState(false);
   const [trainingSection, setTrainingSection] = useState(0);
   const [automaticSuggestions, setAutomaticSuggestions] = useState(false),
     [seedAuto, setSeedAuto] = useState(true);
@@ -114,6 +111,7 @@ export function CharacterCreator({
       automaticSuggestions,
       seedAuto,
       trainingSection,
+      returnToReview,
     });
   const serialized = snapshot();
   useEffect(() => {
@@ -163,10 +161,27 @@ export function CharacterCreator({
   }
   function restore(text: string) {
     const d = restoreWizardDraft(text);
+    const imported = d.importedText
+      ? validateCreationRecord(
+          JSON.parse(d.importedText),
+          creationCatalogData,
+          { weapons, armors },
+        )
+      : null;
+    for (const revision of d.revisions) {
+      const archived = JSON.parse(revision);
+      if (archived.importedText)
+        validateCreationRecord(
+          JSON.parse(archived.importedText),
+          creationCatalogData,
+          { weapons, armors },
+        );
+    }
     setInput(d.input);
     setAutomaticSuggestions(d.automaticSuggestions);
     setSeedAuto(d.seedAuto);
     setTrainingSection(d.trainingSection);
+    setReturnToReview(d.returnToReview);
     setResult(d.creation);
     setRequests(d.requests);
     setPoints(d.points);
@@ -174,15 +189,7 @@ export function CharacterCreator({
     setConfirmed(d.confirmed);
     setDirty(d.dirty);
     setArchives(d.revisions);
-    setImportedRecord(
-      d.importedText
-        ? validateCreationRecord(
-            JSON.parse(d.importedText),
-            creationCatalogData,
-            { weapons, armors },
-          )
-        : null,
-    );
+    setImportedRecord(imported);
     go(d.step);
     setNotice("Borrador recuperado con sus decisiones y tiradas.");
   }
@@ -269,7 +276,6 @@ export function CharacterCreator({
       setSeedAuto(false);
       setConfirmed(false);
       setInput(generated.input);
-      setImportedRecord(null);
       setResult(generated);
       setDirty(false);
       setError("");
@@ -328,6 +334,7 @@ export function CharacterCreator({
       if (!legacy) throw Error("No hay un borrador en esta sesión.");
       const next = generateCharacter(JSON.parse(legacy), catalog);
       setInput(next.input);
+      setSeedAuto(false);
       setResult(next);
       setRequests(next.requests);
       setStarted(true);
@@ -417,7 +424,10 @@ export function CharacterCreator({
     if (!next) return;
     if (step === 0) {
       setStarted(true);
-      go(1);
+      if (returnToReview && next.status === "complete") {
+        setReturnToReview(false);
+        go(6);
+      } else go(1);
       return;
     }
     const valid =
@@ -435,62 +445,57 @@ export function CharacterCreator({
       setError(next.pending.join(". ") || "Completá la decisión de este paso.");
       return;
     }
-    go(step + 1);
+    if (returnToReview && next.status === "complete") {
+      setReturnToReview(false);
+      go(6);
+    } else go(step + 1);
   }
-  const auditContent = (
-    <>
-      {" "}
-      <details>
-        <summary>Historial de tiradas · {result.timeline.length}</summary>
-        <ol>
-          {result.timeline.map((r, i) => (
-            <li key={i}>
-              {r.key} · {r.formula.toUpperCase()}: {r.faces.join(" + ")}
-              {r.formula.includes("+")
-                ? " + " + r.formula.split("+")[1]
-                : ""} = <strong>{r.total}</strong>
-              {r.fixedMaximum
-                ? " · primer dado sustituido por su máximo"
-                : ""}{" "}
-              · RNG {r.drawsBefore} → {r.drawsAfter}
-            </li>
-          ))}
-        </ol>
-      </details>
-      <details>
-        <summary>Fuentes y cobertura</summary>
-        <p>
-          {catalog.catalogVersion} · {catalog.rulesVersion} ·{" "}
-          {result.rngVersion}
-        </p>
-        <p>{catalog.coverage.note}</p>
-        {archetype && (
-          <p>
-            <a href={archetype.sourceDoc} target="_blank" rel="noreferrer">
-              {archetype.sourceSection}
-            </a>
-          </p>
-        )}
-        <ul>
-          {catalog.notes.map((n) => (
-            <li key={n}>{n}</li>
-          ))}
-        </ul>
-      </details>
-    </>
-  );
   const storage = (
     <>
       {" "}
       <CreatedCharacterStorage
-        key={stateHash(result) + ":" + stateHash(importedRecord)}
-        creation={result}
-        initialRecord={importedRecord}
+        record={{
+          ...(importedRecord ?? makeCreationRecord(result)),
+          name: result.input.name || "Sin nombre",
+          creation: result,
+          loadout:
+            result.status === "complete"
+              ? (importedRecord?.loadout ?? null)
+              : null,
+        }}
+        onChange={setImportedRecord}
+        view={filesOpen ? "files" : "finish"}
+        onImportDraft={(text) => {
+          restore(text);
+          setFilesOpen(false);
+        }}
+        onExportDraft={() =>
+          downloadCharacterFile(
+            snapshot(),
+            "borrador-tnl.json",
+            "application/json",
+          )
+        }
+        onCreateAnother={() => {
+          setFilesOpen(false);
+          setProposal({
+            input: { ...defaults, seed: crypto.randomUUID(), name: "" },
+            message:
+              "Crear otro personaje inicia un borrador nuevo. La ficha actual se conserva como revisión y ninguna copia de biblioteca se sobrescribe.",
+            after: 0,
+            restart: true,
+          });
+        }}
         disabled={dirty}
         shared={shared}
         onUse={onUse}
         onImport={(record) => {
+          if (started) setArchives([...archives, snapshot([])].slice(-10));
           setImportedRecord(record);
+          setSeedAuto(false);
+          setAutomaticSuggestions(false);
+          setReturnToReview(false);
+          setTrainingSection(0);
           setStarted(true);
           setConfirmed(record.creation.status === "complete");
           setFilesOpen(false);
@@ -536,30 +541,41 @@ export function CharacterCreator({
                 ? "Cambios por guardar"
                 : "Nuevo personaje"}
           </span>
-          <button onClick={saveDraft}>Guardar borrador</button>
-          <button onClick={loadDraft}>Recuperar borrador</button>
-          <button
-            onClick={() =>
-              step === 7
-                ? document.querySelector(".creator-storage")?.scrollIntoView()
-                : setFilesOpen(true)
-            }
+          <details
+            className="wizard-toolbar-menu"
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest("button"))
+                e.currentTarget.open = false;
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                e.currentTarget.open = false;
+                e.currentTarget.querySelector("summary")?.focus();
+              }
+            }}
           >
-            Archivos y biblioteca
-          </button>
-          <button
-            onClick={() =>
-              setProposal({
-                input: { ...defaults, seed: crypto.randomUUID(), name: "" },
-                message:
-                  "Reiniciar crea un borrador nuevo y vuelve a tirar toda la rama. El personaje anterior se conserva como revisión; no se sobrescribe ninguna ficha de biblioteca.",
-                after: 0,
-                restart: true,
-              })
-            }
-          >
-            Reiniciar
-          </button>
+            <summary>Archivo y borrador</summary>
+            <div>
+              <button onClick={saveDraft}>Guardar borrador</button>
+              <button onClick={loadDraft}>Recuperar borrador</button>
+              <button onClick={() => setFilesOpen(true)}>
+                Archivos y biblioteca
+              </button>
+              <button
+                onClick={() =>
+                  setProposal({
+                    input: { ...defaults, seed: crypto.randomUUID(), name: "" },
+                    message:
+                      "Reiniciar crea un borrador nuevo y vuelve a tirar toda la rama. El personaje anterior se conserva como revisión; no se sobrescribe ninguna ficha de biblioteca.",
+                    after: 0,
+                    restart: true,
+                  })
+                }
+              >
+                Reiniciar
+              </button>
+            </div>
+          </details>
         </div>
       </header>
       <progress
@@ -794,110 +810,17 @@ export function CharacterCreator({
           )}
           {step === 6 && (
             <>
-              {" "}
-              <section
-                className="creator-result"
-                aria-label="Ficha de creación"
-              >
-                <h3>{result.input.name || "Sin nombre"}</h3>
-                <p role="status">
-                  {result.status === "complete" && !dirty
-                    ? "Creación validada · Resistencia pendiente para combate"
-                    : result.status === "pending_route"
-                      ? "Rama pendiente de tablas"
-                      : result.pending.join(" · ") ||
-                        "Revisá los cambios pendientes"}
-                </p>
-                <p>
-                  {
-                    catalog.cities.find((c) => c.id === result.route.cityId)
-                      ?.label
-                  }{" "}
-                  ·{" "}
-                  {
-                    catalog.socialOrigins.find(
-                      (o) => o.id === result.route.socialOriginId,
-                    )?.label
-                  }{" "}
-                  · {archetype?.label}
-                </p>
-                {result.pending.length > 0 && (
-                  <ul>
-                    {result.pending.map((p) => (
-                      <li key={p}>{p}</li>
-                    ))}
-                  </ul>
-                )}
-                {result.reserves && (
-                  <>
-                    <div className="creator-fields">
-                      {creationAttribute.options.map((a) => (
-                        <p key={a}>
-                          {attributeNames[a]}:{" "}
-                          <strong>{result.attributes[a]} %</strong>
-                        </p>
-                      ))}
-                    </div>
-                    <p>
-                      Salud: 25 + ⌊Fuerza / 2⌋ = {result.reserves.healthMax} ·
-                      Salud Mental: 25 + ⌊Voluntad / 2⌋ ={" "}
-                      {result.reserves.mentalHealthMax} · Vigor: 4 + ⌊(Fuerza +
-                      Voluntad) / 20⌋ = {result.reserves.vigorMax}
-                    </p>
-                    <p>
-                      Resistencia natural: pendiente de regla de generación. No
-                      se asignó un valor de ensayo.
-                    </p>
-                    <div className="creator-table">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Habilidad</th>
-                            <th>Atributo</th>
-                            <th>Entrenamiento</th>
-                            <th>Normal / ½ / ¼</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {result.skills.map((s) => (
-                            <tr key={s.id}>
-                              <td>{s.label}</td>
-                              <td>
-                                {attributeNames[s.attribute]}{" "}
-                                {result.attributes[s.attribute]}
-                              </td>
-                              <td>+{s.training}</td>
-                              <td>
-                                {s.normal} / {s.half} / {s.quarter}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    <p>
-                      Rasgos: {result.traits.join(", ") || "Ninguno concedido"}.
-                      Talentos: sin concesiones iniciales documentadas.
-                    </p>
-                    <h4>Posesiones preciadas</h4>
-                    <ul>
-                      {result.possessions.map((p, i) => (
-                        <li key={i}>
-                          {p.text}
-                          {p.rolls.map((r, j) => (
-                            <span key={j}>
-                              {" "}
-                              · {r.expression.toUpperCase()} = {r.total} ×{" "}
-                              {r.multiplier} = {r.total * r.multiplier}
-                            </span>
-                          ))}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
-              </section>
-              {auditContent}
+              <CreationReview
+                result={result}
+                catalog={catalog}
+                dirty={dirty}
+                onEdit={(next) => {
+                  setReturnToReview(true);
+                  go(next);
+                }}
+                onValidate={() => apply(input, true)}
+              />
+              <CreationAudit result={result} catalog={catalog} />
             </>
           )}
           {step === 7 && (
@@ -907,13 +830,7 @@ export function CharacterCreator({
                   Este borrador todavía necesita confirmarse en Revisar.
                 </p>
               )}
-              {confirmed && (
-                <p>
-                  La ficha conserva Resistencia pendiente. El perfil de combate
-                  de ensayo es opcional y separado.
-                </p>
-              )}
-              {storage}
+              {!filesOpen && storage}
             </>
           )}
         </div>
@@ -960,11 +877,19 @@ export function CharacterCreator({
               onClick={() => {
                 const last = archives.at(-1)!;
                 const previous = archives.slice(0, -1);
-                restore(last);
-                setArchives(previous);
-                setNotice(
-                  "Cambio deshecho; se recuperaron las tiradas anteriores.",
-                );
+                try {
+                  restore(last);
+                  setArchives(previous);
+                  setNotice(
+                    "Cambio deshecho; se recuperaron las tiradas anteriores.",
+                  );
+                } catch (e) {
+                  setError(
+                    e instanceof Error
+                      ? e.message
+                      : "No se pudo recuperar la revisión.",
+                  );
+                }
               }}
             >
               Deshacer último cambio
@@ -978,7 +903,11 @@ export function CharacterCreator({
         </button>
         <span>{completeCount} de 8 etapas completas</span>
         {step < 7 && (
-          <button className="accent" onClick={advance}>
+          <button
+            className="accent"
+            disabled={step === 6 && (dirty || result.status !== "complete")}
+            onClick={advance}
+          >
             {step === 0
               ? "Empezar"
               : step === 6
@@ -1027,7 +956,7 @@ export function CharacterCreator({
                   "Nuevo borrador. Podés deshacer para recuperar la revisión anterior.",
                 );
               }
-              setImportedRecord(null);
+              if (proposal.restart) setImportedRecord(null);
               setConfirmed(false);
               setProposal(null);
             }}
