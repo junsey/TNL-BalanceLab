@@ -201,7 +201,7 @@ function nextAuto(session: Session, profile: TacticalProfile) {
   if (!isCurrentSession(session)) return session;
   const choice = chooseEnemyAction(session.state, profile);
   if (!choice) return session;
-  const step = resolveAction(session.state, choice.action);
+  const step = resolveAction(session.state, choice.action, choice.ai);
   return {
     ...session,
     mode: "auto" as const,

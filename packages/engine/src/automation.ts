@@ -15,11 +15,23 @@ import {
 } from "./tactical.ts";
 import { stateHash } from "./state.ts";
 import { collectCombatMetrics, emptyCombatMetrics } from "./metrics.ts";
-import { attackVigorCost, previewAttack } from "./attack.ts";
+import {
+  attackVigorCost,
+  previewAttack,
+  equippedAttacks,
+  usesDaggerPair,
+} from "./attack.ts";
+import { parseDice } from "./dice.ts";
+import { evaluateAIDirectives } from "./ai-interpreter.ts";
+import { selectAIDecision, type AIDecisionRecord } from "./ai-decision.ts";
 import { simulationVersions } from "./versions.ts";
 
 type LegalAction = ReturnType<typeof getLegalActions>[number];
-export type TacticalDecision = { action: LegalAction; reason: string };
+export type TacticalDecision = {
+  action: LegalAction;
+  reason: string;
+  ai?: AIDecisionRecord;
+};
 type DecisionContext = {
   state: TacticalState;
   id: string;
@@ -37,7 +49,137 @@ export function chooseTacticalAction(
   const actions = getLegalActions(state, id);
   const actor = state.actors.find((a) => a.fighter.id === id);
   if (!actor || !actions.length) return null;
-  return chooseBaseAction({ state, id, profile, actions, actor });
+  const context = { state, id, profile, actions, actor };
+  const base = chooseBaseAction(context);
+  if (!profile.directives) return base;
+  if (!state.aiRng)
+    throw new RangeError(
+      "El encuentro histórico no tiene flujo de IA; iniciá uno con la versión actual",
+    );
+  const evaluation = evaluateAIDirectives(
+    state,
+    id,
+    profile.directives,
+    actions,
+  );
+  // Urgent reaction windows take precedence over long-term directives.
+  const urgent =
+    base?.action.kind === "defend" || base?.action.kind === "opportunity";
+  return selectAIDecision({
+    actor: id,
+    profileHash: stateHash({
+      ...profile,
+      directives: {
+        ...profile.directives,
+        items: [...profile.directives.items].sort((a, b) =>
+          a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+        ),
+        observedActors: [...profile.directives.observedActors].sort(),
+      },
+    }),
+    rng: state.aiRng,
+    candidates: urgent ? [] : evaluation.candidates,
+    evaluations: evaluation.evaluations,
+    baseActions: base ? baseCandidates(context, base) : [],
+    baseReason: base?.reason ?? "no-legal-action",
+  });
+}
+
+/** New-format base ties use an explicit, non-authoritative utility heuristic. */
+function baseCandidates(
+  c: DecisionContext,
+  base: TacticalDecision,
+): LegalAction[] {
+  const { state, actor, profile, actions, id } = c;
+  if (
+    base.action.kind !== "attack" &&
+    base.action.kind !== "move" &&
+    base.action.kind !== "run" &&
+    base.action.kind !== "sneak"
+  )
+    return [base.action];
+  const visible = state.actors.filter(
+    (a) =>
+      a.fighter.health > 0 &&
+      isPlayerTeam(state.setup, id) !==
+        isPlayerTeam(state.setup, a.fighter.id) &&
+      canSee(state, actor.zone, a.zone),
+  );
+  const known = visible.filter((a) =>
+    profile.directives!.observedActors.includes(a.fighter.id),
+  );
+  const health = profile.objective === "lowestHealth" && known.length > 0;
+  const targets = health ? known : visible;
+  if (!targets.length) return [base.action];
+  const metric = (a: typeof actor) =>
+    health ? a.fighter.health : tacticalDistance(state, actor.zone, a.zone);
+  if (base.action.kind === "attack") {
+    const legal = actions.filter(
+      (a): a is Extract<LegalAction, { kind: "attack" }> => a.kind === "attack",
+    );
+    const reachable = targets.filter((t) =>
+      legal.some((a) => a.target === t.fighter.id),
+    );
+    if (!reachable.length) return [base.action];
+    const bestTarget = Math.min(...reachable.map(metric));
+    const ids = new Set(
+      reachable
+        .filter((t) => metric(t) === bestTarget)
+        .map((t) => t.fighter.id),
+    );
+    const pool = legal.filter((a) => ids.has(a.target));
+    const expected = (expression: string) => {
+      const d = parseDice(expression);
+      return (d.count * (d.sides + 1)) / 2 + d.modifier;
+    };
+    const utility = (a: (typeof legal)[number]) => {
+      const target = state.actors.find((t) => t.fighter.id === a.target)!;
+      const selected = equippedAttacks(actor.fighter).find(
+        (w) => w.weaponId === a.weaponId,
+      );
+      if (!selected) return -Infinity;
+      const pair = usesDaggerPair(actor.fighter),
+        models = pair
+          ? equippedAttacks(actor.fighter).map((w) => w.item.model)
+          : [selected.item.model];
+      let damage = 0;
+      for (const model of models) {
+        const p = previewAttack(
+          actor.fighter,
+          target.fighter,
+          state.setup.rules,
+          model,
+        );
+        if (p)
+          damage +=
+            (Math.max(0, expected(model.damage) - p.armor.reduction) *
+              p.probability) /
+            100;
+      }
+      const cost = pair ? 1 : attackVigorCost(selected.item.model),
+        scarcity =
+          1 - actor.fighter.vigor / Math.max(1, actor.fighter.vigorMax);
+      return damage - cost * (0.25 + scarcity * 1.5);
+    };
+    const scored = pool.map((a) => ({ action: a, score: utility(a) }));
+    const best = Math.max(...scored.map((x) => x.score));
+    return Number.isFinite(best)
+      ? scored
+          .filter((x) => Math.abs(x.score - best) < 1e-10)
+          .map((x) => x.action)
+      : [base.action];
+  }
+  const nearest = Math.min(...targets.map(metric));
+  const goals = targets.filter((t) => metric(t) === nearest);
+  const score = (zone: string) =>
+    Math.min(...goals.map((t) => tacticalDistance(state, zone, t.zone)));
+  const pool = actions.filter(
+    (a) => a.kind === base.action.kind && "zone" in a,
+  );
+  const best = Math.min(
+    ...pool.map((a) => ("zone" in a ? score(a.zone) : Infinity)),
+  );
+  return pool.filter((a) => "zone" in a && score(a.zone) === best);
 }
 function chooseBaseAction(context: DecisionContext): TacticalDecision | null {
   const { state, id, profile, actions, actor } = context;
@@ -70,9 +212,14 @@ function chooseBaseAction(context: DecisionContext): TacticalDecision | null {
   );
   const distance = (zone: string, target: string) =>
     tacticalDistance(state, zone, target);
+  const healthKnown =
+    !profile.directives ||
+    opponents.every((a) =>
+      profile.directives!.observedActors.includes(a.fighter.id),
+    );
   opponents.sort(
     (a, b) =>
-      (profile.objective === "lowestHealth"
+      (profile.objective === "lowestHealth" && healthKnown
         ? a.fighter.health - b.fighter.health
         : 0) || distance(actor.zone, a.zone) - distance(actor.zone, b.zone),
   );
@@ -260,7 +407,7 @@ export function runAutomaticEncounter(
     }
     if (!decision) throw new Error("El encuentro no ofrece acciones legales");
     if (options.recordEvents) {
-      const step = resolveAction(state, decision.action);
+      const step = resolveAction(state, decision.action, decision.ai);
       collectCombatMetrics(
         metrics,
         state,
@@ -271,7 +418,7 @@ export function runAutomaticEncounter(
       state = step.state;
       events.push({ ...step.event, reason: decision.reason });
     } else {
-      const step = stepTacticalAction(state, decision.action);
+      const step = stepTacticalAction(state, decision.action, decision.ai);
       collectCombatMetrics(
         metrics,
         state,

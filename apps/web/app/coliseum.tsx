@@ -385,7 +385,7 @@ export function Coliseum({
           : "")
     );
   };
-  function act(action: Action) {
+  function act(action: Action, aiInput?: unknown) {
     try {
       if (
         !run?.active ||
@@ -403,7 +403,7 @@ export function Coliseum({
         throw new Error(
           "HISTORICO: esta carrera admite lectura y replay. Prepará una carrera nueva para simular.",
         );
-      const step = resolveAction(run.active.state, action);
+      const step = resolveAction(run.active.state, action, aiInput);
       const next = {
         ...run.active,
         before: run.active.state.actors,
@@ -515,7 +515,7 @@ export function Coliseum({
       .find((a) => a.decision && (automatic || !team.has(a.id)));
     if (!decision?.decision) return;
     const t = setTimeout(
-      () => act(decision.decision!.action),
+      () => act(decision.decision!.action, decision.decision!.ai),
       automatic ? (speed === 0 ? 0 : 20) : 350,
     );
     return () => clearTimeout(t);

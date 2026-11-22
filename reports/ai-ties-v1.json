@@ -1,0 +1,128 @@
+{
+  "version": "ai-ties-v1",
+  "policy": "6 contrastes Pearson, alfa familiar 0.01, Bonferroni; pares consecutivos no solapados; semillas fijadas antes de ejecutar",
+  "results": [
+    {
+      "size": 2,
+      "samples": 120000,
+      "uniform": {
+        "observed": [
+          59821,
+          60179
+        ],
+        "expected": 60000,
+        "statistic": 1.0680333333333334,
+        "degrees": 1,
+        "critical": 9.88461204547897,
+        "p": 0.3013900920803343,
+        "pass": true
+      },
+      "successivePairs": {
+        "observed": [
+          14966,
+          14904,
+          14985,
+          15145
+        ],
+        "expected": 15000,
+        "statistic": 2.1081333333333334,
+        "degrees": 3,
+        "critical": 15.183114185333931,
+        "p": 0.5502690879172465,
+        "pass": true
+      },
+      "finalRng": {
+        "word": 1835945634,
+        "draws": 120000
+      }
+    },
+    {
+      "size": 3,
+      "samples": 120000,
+      "uniform": {
+        "observed": [
+          39836,
+          39773,
+          40391
+        ],
+        "expected": 40000,
+        "statistic": 5.78265,
+        "degrees": 2,
+        "critical": 12.793859310432296,
+        "p": 0.05550262289372723,
+        "pass": true
+      },
+      "successivePairs": {
+        "observed": [
+          6585,
+          6477,
+          6749,
+          6725,
+          6543,
+          6835,
+          6715,
+          6650,
+          6721
+        ],
+        "expected": 6666.666666666667,
+        "statistic": 15.302999999999999,
+        "degrees": 8,
+        "critical": 24.82136771544493,
+        "p": 0.05351476936227487,
+        "pass": true
+      },
+      "finalRng": {
+        "word": 1852723253,
+        "draws": 120000
+      }
+    },
+    {
+      "size": 4,
+      "samples": 120000,
+      "uniform": {
+        "observed": [
+          29959,
+          29969,
+          30063,
+          30009
+        ],
+        "expected": 30000,
+        "statistic": 0.22306666666666666,
+        "degrees": 3,
+        "critical": 15.183114185333931,
+        "p": 0.9737823558824927,
+        "pass": true
+      },
+      "successivePairs": {
+        "observed": [
+          3762,
+          3807,
+          3716,
+          3665,
+          3861,
+          3735,
+          3661,
+          3656,
+          3643,
+          3706,
+          3796,
+          3883,
+          3743,
+          3808,
+          3862,
+          3696
+        ],
+        "expected": 3750,
+        "statistic": 24.837333333333333,
+        "degrees": 15,
+        "critical": 36.17715306624872,
+        "p": 0.05217112307908399,
+        "pass": true
+      },
+      "finalRng": {
+        "word": 1735279920,
+        "draws": 120000
+      }
+    }
+  ]
+}

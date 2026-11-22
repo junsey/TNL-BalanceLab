@@ -26,7 +26,14 @@ import {
 } from "./attack.ts";
 import { recoverVigor, rollInitiative } from "./combat-math.ts";
 import { classify, parseDice, rollPercentile, rollDice } from "./dice.ts";
-import { rngVersion, rollDie, combatRng, isolatedRngStreams } from "./rng.ts";
+import {
+  rngVersion,
+  rollDie,
+  combatRng,
+  isolatedRngStreams,
+  seedRng,
+} from "./rng.ts";
+import { validateAITransition } from "./ai-decision.ts";
 import { canonicalJson, rngState, stateHash } from "./state.ts";
 import { compareResistanceAttack } from "./resistance.ts";
 import { attackSkill, bodyResistance, combatSkill } from "./skills.ts";
@@ -133,6 +140,7 @@ const opportunityState = z.strictObject({
   continuation: continuation.nullable(),
 });
 const stateSchema = z.strictObject({
+  aiRng: rngState.optional(),
   counter: z
     .strictObject({
       actor: id,
@@ -153,10 +161,11 @@ const stateSchema = z.strictObject({
     .optional(),
   setup: setupSchema,
   engineVersion: z.enum([
+    "0.11.0-counter-talents",
     "0.10.0-dagger-pairs",
     "0.9.0-secondary-dagger",
     "0.8.0-core03-combat",
-    "0.11.0-counter-talents",
+    "0.12.0-ai-directives",
     "0.7.0-core03-sheet",
     "0.6.0-resistance-experimental",
     "0.1.0-tactical",
@@ -407,9 +416,12 @@ export function startHistoricalTacticalEncounter(input: unknown) {
     combatRng(setup.seed, setup.rngStreams),
   );
   const state: TacticalState = {
+    ...(setup.rules.combatVersion && {
+      aiRng: seedRng(JSON.stringify(["ai-decisions-v1", setup.seed])),
+    }),
     setup,
     engineVersion: setup.rules.combatVersion
-      ? "0.11.0-counter-talents"
+      ? "0.12.0-ai-directives"
       : setup.rules.calculationVersion
         ? "0.7.0-core03-sheet"
         : setup.rules.resistance
@@ -437,6 +449,8 @@ export function startHistoricalTacticalEncounter(input: unknown) {
 
 export function restoreTacticalEncounter(input: unknown): TacticalState {
   const state = stateSchema.parse(input);
+  if (state.engineVersion === "0.12.0-ai-directives" && !state.aiRng)
+    throw new RangeError("Falta el flujo de azar de IA del encuentro actual");
   validateSetup(state.setup);
   const ids = state.setup.participants.map((actor) => actor.fighter.id).sort();
   const idsMatch = (other: string[]) =>
@@ -1445,8 +1459,16 @@ function finishTrigger(
   }
 }
 
-export function stepTacticalAction(previous: TacticalState, input: unknown) {
+export function stepTacticalAction(
+  previous: TacticalState,
+  input: unknown,
+  aiInput?: unknown,
+) {
   const decision = action.parse(input);
+  const ai =
+    aiInput === undefined
+      ? undefined
+      : validateAITransition(previous.aiRng, decision, aiInput);
   if (
     !getLegalActions(previous, decision.actor).some(
       (candidate) => canonicalJson(candidate) === canonicalJson(decision),
@@ -1456,6 +1478,7 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
   }
   const state: World = {
     ...previous,
+    ...(ai && { aiRng: ai.after }),
     actors: structuredClone(previous.actors),
     ...(previous.opportunities && {
       opportunities: structuredClone(previous.opportunities),
@@ -1465,6 +1488,7 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
     (actor) => actor.fighter.id === decision.actor,
   )!;
   const details: Detail[] = [];
+  if (ai) details.push({ kind: "AI_DECISION", ...ai });
   const executeAttack = (
     attacker: typeof actor,
     defender: typeof actor,
@@ -2257,8 +2281,16 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
   return { state, decision, details };
 }
 
-export function resolveAction(previous: TacticalState, input: unknown) {
-  const { state, decision, details } = stepTacticalAction(previous, input);
+export function resolveAction(
+  previous: TacticalState,
+  input: unknown,
+  aiInput?: unknown,
+) {
+  const { state, decision, details } = stepTacticalAction(
+    previous,
+    input,
+    aiInput,
+  );
   const status =
     state.outcome === "failed_engine" ||
     state.outcome === "censored_round_limit"
@@ -2282,6 +2314,7 @@ export function resolveAction(previous: TacticalState, input: unknown) {
             canonicalJson(actor) !== canonicalJson(previous.actors[index]!),
         ),
         rng: state.rng,
+        ...(state.aiRng && { aiRng: state.aiRng }),
         pending: state.pending,
         ...(state.counter !== undefined && { counter: state.counter }),
         ...(state.pairedAttack !== undefined && {
@@ -2302,6 +2335,7 @@ const replayEvent = z.object({
   beforeHash: z.string().regex(/^[a-f0-9]{64}$/),
   afterHash: z.string().regex(/^[a-f0-9]{64}$/),
   changes: z.strictObject({
+    aiRng: rngState.optional(),
     counter: stateSchema.shape.counter,
     pairedAttack: stateSchema.shape.pairedAttack,
     actors: z.array(combatant),
