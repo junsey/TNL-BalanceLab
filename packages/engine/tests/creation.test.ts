@@ -45,6 +45,7 @@ function complete(raw: CreationInput) {
 test("Creación: 10000 semillas legales y reproducción byte a byte con decisiones explícitas", () => {
   const cities = ["augyre_siege", "ficino_city_982", "high_aerie"];
   const seen = new Set<string>();
+  const acceptance = new Set<string>();
   let blind = 0,
     seers = 0;
   for (let i = 0; i < 10000; i++) {
@@ -89,6 +90,59 @@ test("Creación: 10000 semillas legales y reproducción byte a byte con decision
           Number(r.formula.split("d")[1]!.split("+")[0]),
         );
     }
+    const originId = first.route.socialOriginId!;
+    const archetypeId = first.route.archetypeId!;
+    const roll = (key: string) => first.timeline.find((r) => r.key === key)!;
+    if (first.route.cityId === "ficino_city_982") {
+      assert.equal(
+        first.traits.includes("ceguera_congenita"),
+        roll("ficino_blindness").total <= 5,
+      );
+      assert.equal(
+        roll("training:social:sapiencia:lectura_tactil").formula,
+        "2d10+20",
+      );
+      acceptance.add("Ficino");
+    }
+    if (originId.endsWith("seer_en_servicio")) {
+      const grants = first.timeline.filter((r) =>
+        r.key.startsWith("training:social:"),
+      );
+      assert.equal(grants.length, 2);
+      assert.ok(grants.every((r) => r.formula === "2d20+10"));
+      assert.equal(first.input.choices.originFaculties.length, 2);
+      acceptance.add("Seer en servicio");
+    }
+    if (originId.endsWith("_veterano")) {
+      assert.ok(
+        first.timeline
+          .filter((r) => r.key.startsWith("training:archetype:"))
+          .every((r) => r.fixedMaximum),
+      );
+      acceptance.add(originId);
+    }
+    if (archetypeId === "monstruwacan" && !originId.includes("seer_")) {
+      assert.equal(
+        first.traits.includes("seer"),
+        (first.timeline.find((r) => r.key === "monstruwacan_seer")?.total ??
+          101) <= 50 ||
+          (first.timeline.find((r) => r.key === "high_aerie_seer")?.total ??
+            101) <= 10,
+      );
+      acceptance.add("Monstruwacan " + first.traits.includes("seer"));
+    }
+    if (archetypeId === "foreteller") {
+      assert.ok(first.traits.includes("seer"));
+      assert.equal(first.input.choices.archetypeFaculties.length, 1);
+      acceptance.add("Foreteller");
+    }
+    if (archetypeId === "censor") {
+      assert.equal(
+        first.traits.includes("investigator_judge"),
+        roll("censor_hierarchy").total <= 20,
+      );
+      acceptance.add("Censor " + first.traits.includes("investigator_judge"));
+    }
     seen.add(first.route.archetypeId!);
     blind += Number(first.traits.includes("ceguera_congenita"));
     seers += Number(first.traits.includes("seer"));
@@ -96,6 +150,18 @@ test("Creación: 10000 semillas legales y reproducción byte a byte con decision
   assert.equal(seen.size, 22);
   assert.ok(!seen.has("rogue"));
   assert.ok(blind > 0 && seers > 0);
+  for (const name of [
+    "Ficino",
+    "Seer en servicio",
+    "augyre_siege_seer_veterano",
+    "augyre_siege_veterano",
+    "Monstruwacan true",
+    "Monstruwacan false",
+    "Foreteller",
+    "Censor true",
+    "Censor false",
+  ])
+    assert.ok(acceptance.has(name), "Caso de aceptación ausente: " + name);
 });
 test("Creación: mundial conserva ramas pendientes; High Aerie no inventa sexo", () => {
   assert.equal(

@@ -153,18 +153,24 @@ export function CreationReview({
         <dl className="wizard-review-reserves">
           <div>
             <dt>Salud máxima · Provisional</dt>
-            <dd>{result.reserves?.healthMax ?? "—"}</dd>
-            <small>25 + ⌊Fuerza / 2⌋</small>
+            <dd>
+              {result.reserves?.healthMax ?? "—"}
+              <small>25 + ⌊Fuerza / 2⌋</small>
+            </dd>
           </div>
           <div>
             <dt>Salud mental máxima · Provisional</dt>
-            <dd>{result.reserves?.mentalHealthMax ?? "—"}</dd>
-            <small>25 + ⌊Voluntad / 2⌋</small>
+            <dd>
+              {result.reserves?.mentalHealthMax ?? "—"}
+              <small>25 + ⌊Voluntad / 2⌋</small>
+            </dd>
           </div>
           <div>
             <dt>Vigor</dt>
-            <dd>{result.reserves?.vigorMax ?? "—"}</dd>
-            <small>4 + ⌊(Fuerza + Voluntad) / 20⌋</small>
+            <dd>
+              {result.reserves?.vigorMax ?? "—"}
+              <small>4 + ⌊(Fuerza + Voluntad) / 20⌋</small>
+            </dd>
           </div>
         </dl>
         <p>

@@ -57,9 +57,11 @@ const defaults: CreationInput = {
 export function CharacterCreator({
   shared,
   onUse,
+  onUnsavedChange,
 }: {
   shared: boolean;
   onUse: (entry: ColiseumEntry, mode: "lab" | "coliseum") => void;
+  onUnsavedChange?: (unsaved: boolean) => void;
 }) {
   const [importedRecord, setImportedRecord] = useState<CreationRecord | null>(
     null,
@@ -114,8 +116,28 @@ export function CharacterCreator({
       returnToReview,
     });
   const serialized = snapshot();
+  const hasDraft = started || dirty || archives.length > 0 || !!importedRecord;
   useEffect(() => {
-    if (!started) return;
+    try {
+      const text = sessionStorage.getItem(wizardDraftKey);
+      if (text) {
+        restore(text, true);
+      }
+    } catch (e) {
+      setError(
+        e instanceof SyntaxError
+          ? "El borrador anterior contiene JSON inválido; podés importar otra copia o empezar uno nuevo."
+          : e instanceof Error
+            ? e.message
+            : "No se pudo recuperar el borrador anterior.",
+      );
+    }
+  }, []);
+  useEffect(() => {
+    onUnsavedChange?.(hasDraft && !saved);
+  }, [hasDraft, saved, onUnsavedChange]);
+  useEffect(() => {
+    if (!hasDraft) return;
     try {
       if (new TextEncoder().encode(serialized).length > 2 * 1024 * 1024)
         throw Error("El borrador supera 2 MB");
@@ -127,7 +149,7 @@ export function CharacterCreator({
         "No se pudo guardar el borrador: almacenamiento lleno o bloqueado. Exportá un archivo antes de salir.",
       );
     }
-  }, [serialized, started]);
+  }, [serialized, hasDraft]);
   useEffect(() => {
     titleRef.current?.focus();
     document.title = wizardSteps[step] + " · Crear personaje · BalanceLab";
@@ -142,24 +164,31 @@ export function CharacterCreator({
   }, []);
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (started && !saved) {
+      if (hasDraft && !saved) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, [started, saved]);
-  function go(next: number) {
+  }, [hasDraft, saved]);
+  function go(next: number, replace = false) {
     setStep(next);
     setError("");
-    history.pushState(
-      { ...history.state, tnlWizardStep: next },
-      "",
-      "#crear-paso-" + (next + 1),
-    );
+    if (replace)
+      history.replaceState(
+        { ...history.state, tnlWizardStep: next },
+        "",
+        "#crear-paso-" + (next + 1),
+      );
+    else
+      history.pushState(
+        { ...history.state, tnlWizardStep: next },
+        "",
+        "#crear-paso-" + (next + 1),
+      );
   }
-  function restore(text: string) {
+  function restore(text: string, replace = false) {
     const d = restoreWizardDraft(text);
     const imported = d.importedText
       ? validateCreationRecord(
@@ -190,7 +219,7 @@ export function CharacterCreator({
     setDirty(d.dirty);
     setArchives(d.revisions);
     setImportedRecord(imported);
-    go(d.step);
+    go(d.step, replace);
     setNotice("Borrador recuperado con sus decisiones y tiradas.");
   }
   const editableRequests = useMemo(

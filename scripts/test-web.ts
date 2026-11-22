@@ -190,6 +190,20 @@ try {
     assert.deepEqual(revisions[0]!.data, document);
   }
   const corruptedCreation = structuredClone(createdCharacter);
+  const sameName = await write(first, {
+    kind: "creation",
+    expected: 0,
+    data: createdCharacter,
+  });
+  assert.equal(sameName.status, 201);
+  const copy = (await sameName.json()) as { id: string };
+  const sameNameAgain = await write(first, {
+    kind: "creation",
+    expected: 0,
+    data: createdCharacter,
+  });
+  assert.equal(sameNameAgain.status, 201);
+  assert.notEqual(((await sameNameAgain.json()) as { id: string }).id, copy.id);
   corruptedCreation.creation.attributes.strength = 1;
   assert.equal(
     (

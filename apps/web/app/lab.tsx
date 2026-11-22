@@ -225,6 +225,8 @@ export function Lab({
   const [fixedSeed, setFixedSeed] = useState(false);
   const [map, setMap] = useState<string>(maps[0].id);
   const [mode, setMode] = useState<Mode>(initialMode);
+  const [creationUnsaved, setCreationUnsaved] = useState(false),
+    [leavingCreation, setLeavingCreation] = useState<Mode | null>(null);
   const [session, setSession] = useState(() =>
     newSession("vigilia-01", maps[0].id),
   );
@@ -436,8 +438,14 @@ export function Lab({
     }
     setNotice(presetDiagnostics(session.initial.setup).join(" "));
   }
-  function switchMode(next: Mode) {
+  function switchMode(next: Mode, discard = false) {
     if (next === mode) return;
+    if (mode === "creation" && creationUnsaved && !discard) {
+      setLeavingCreation(next);
+      return;
+    }
+    setLeavingCreation(null);
+    setCreationUnsaved(false);
     setMode(next);
     setCommand(null);
     setAuto(next === "auto");
@@ -837,7 +845,7 @@ export function Lab({
           <p className="series">THE NIGHT LAND RPG</p>
           <h1>Balance Lab</h1>
         </div>
-        <div className="modes" aria-label="Modo de simulación">
+        <div className="modes" role="group" aria-label="Modo de simulación">
           {(
             [
               "auto",
@@ -938,11 +946,12 @@ export function Lab({
       )}
       {mode === "creation" ? (
         <CharacterCreator
+          onUnsavedChange={setCreationUnsaved}
           shared={shared}
           onUse={(entry, target) => {
             setCreatedEntry(entry);
             if (target === "coliseum") {
-              switchMode("coliseum");
+              switchMode("coliseum", true);
               return;
             }
             const encounterSeed = seed;
@@ -966,7 +975,7 @@ export function Lab({
             setInitiativeOpen(true);
             setFixedSeed(true);
             setScenario(wave.setup);
-            switchMode("auto");
+            switchMode("auto", true);
           }}
         />
       ) : mode === "coliseum" ? (
@@ -1554,6 +1563,23 @@ export function Lab({
             ) : null}
           </section>
         </>
+      )}
+      {leavingCreation && (
+        <CombatDialog
+          title="Borrador sin guardar"
+          onClose={() => setLeavingCreation(null)}
+        >
+          <p>
+            No se pudo guardar el borrador en este navegador. Volvé al personaje
+            para descargarlo. Si ya conservaste una copia, podés salir.
+          </p>
+          <button onClick={() => setLeavingCreation(null)}>
+            Volver al personaje
+          </button>
+          <button onClick={() => switchMode(leavingCreation, true)}>
+            Salir sin guardar
+          </button>
+        </CombatDialog>
       )}
     </main>
   );

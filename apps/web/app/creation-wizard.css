@@ -2,7 +2,7 @@
   --wizard-bg: #081923;
   --wizard-surface: #102630;
   --wizard-elevated: #17343d;
-  --wizard-border: #40636d;
+  --wizard-border: #638a96;
   --wizard-text: #e9f4f5;
   --wizard-muted: #b8cdd1;
   --wizard-accent: #7cded4;
@@ -30,6 +30,7 @@
 }
 .creation-shell .mast {
   flex: 0 0 auto;
+  background: #081923;
 }
 .creation-shell .character-creator.creation-wizard {
   display: grid;
@@ -67,6 +68,7 @@
   min-height: 44px;
   font: inherit;
   border-radius: var(--wizard-control-radius);
+  border-color: var(--wizard-border);
 }
 .creation-wizard label,
 .creation-wizard small {

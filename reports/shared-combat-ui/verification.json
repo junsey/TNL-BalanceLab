@@ -2,9 +2,9 @@
   "passed": true,
   "versions": {
     "schemaVersion": 2,
-    "engineVersion": "0.12.0-ai-directives",
-    "rulesVersion": "core03-sheet-v1/core03-combat-v1",
-    "catalogVersion": "coliseum-catalog-2026-11-20-v4",
+    "engineVersion": "0.13.0-grade-effects",
+    "rulesVersion": "core03-sheet-v1/core03-combat-v1/approved-grade-effects-v1",
+    "catalogVersion": "coliseum-catalog-2026-11-22-v5",
     "rngVersion": "mulberry32-utf8-v1",
     "metricsVersion": "combat-metrics-v2",
     "model": "tactical",
