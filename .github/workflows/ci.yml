@@ -43,6 +43,7 @@ jobs:
           npm run test:creation-ui
           npm run test:wizard-shell-ui
           npm run test:creation-route-ui
+          npm run test:creation-training-ui
           npm run test:secondary-ui
           npm run test:paired-ui
           npm run test:counter-ui

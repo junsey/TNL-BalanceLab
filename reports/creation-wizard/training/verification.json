@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "checks": [
+    "Seer en Servicio: dos Facultades distintas",
+    "selecciones visibles al filtrar",
+    "límite de elección sin multiselect",
+    "especializada de arquetipo mejorable",
+    "tope 50 y errores por fila",
+    "borrador inválido recuperable",
+    "propuesta legal editable",
+    "390 px sin desborde"
+  ]
+}

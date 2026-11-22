@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import "./creation-wizard.css";
+import { CreationAttributes, CreationTraining } from "./creation-training";
 import {
   CreationStart,
   CreationLocation,
@@ -14,6 +15,8 @@ import {
   restoreWizardDraft,
   wizardDataComplete,
   proposeCreationChoices,
+  editableCreationRequests,
+  allocationProblems,
 } from "../lib/creation-wizard";
 import { validateCreationRecord } from "../../../packages/engine/src/creation-record.ts";
 import { weapons, armors } from "../../../packages/fixtures/src/index.ts";
@@ -30,7 +33,6 @@ import {
 } from "../../../packages/engine/src/creation.ts";
 import {
   parseCreationCatalog,
-  attributeGeneration,
   creationAttribute,
 } from "../../../packages/engine/src/creation-catalog.ts";
 
@@ -84,6 +86,7 @@ export function CharacterCreator({
     [archives, setArchives] = useState<string[]>([]),
     [saved, setSaved] = useState(false),
     [filesOpen, setFilesOpen] = useState(false);
+  const [trainingSection, setTrainingSection] = useState(0);
   const [automaticSuggestions, setAutomaticSuggestions] = useState(false),
     [seedAuto, setSeedAuto] = useState(true);
   const [proposal, setProposal] = useState<{
@@ -91,6 +94,7 @@ export function CharacterCreator({
     message: string;
     after?: number;
     restart?: boolean;
+    revision?: string;
   } | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const snapshot = (revisions = archives) =>
@@ -109,6 +113,7 @@ export function CharacterCreator({
       revisions,
       automaticSuggestions,
       seedAuto,
+      trainingSection,
     });
   const serialized = snapshot();
   useEffect(() => {
@@ -161,6 +166,7 @@ export function CharacterCreator({
     setInput(d.input);
     setAutomaticSuggestions(d.automaticSuggestions);
     setSeedAuto(d.seedAuto);
+    setTrainingSection(d.trainingSection);
     setResult(d.creation);
     setRequests(d.requests);
     setPoints(d.points);
@@ -180,12 +186,16 @@ export function CharacterCreator({
     go(d.step);
     setNotice("Borrador recuperado con sus decisiones y tiradas.");
   }
-  const label = (id: string) =>
-    catalog.skills.find((s) => s.id === id)?.label ??
-    result.skills.find((s) => s.id === id)?.label ??
-    id;
-  const origin = catalog.socialOrigins.find(
-    (o) => o.id === (input.socialOriginId ?? result.route.socialOriginId),
+  const editableRequests = useMemo(
+    () => [
+      ...new Map(
+        [...requests, ...editableCreationRequests(result)].map((q) => [
+          q.key,
+          q,
+        ]),
+      ).values(),
+    ],
+    [requests, result],
   );
   const archetype = catalog.archetypes.find(
     (a) => a.id === result.route.archetypeId,
@@ -222,7 +232,17 @@ export function CharacterCreator({
   function apply(next = input, usePoints = true, propose = false) {
     try {
       const updated = structuredClone(next);
-      if (usePoints && requests.some((q) => q.key === "freePoints")) {
+      if (usePoints && editableRequests.some((q) => q.key === "freePoints")) {
+        const problems = allocationProblems(
+          result,
+          points,
+          editableRequests.find((q) => q.key === "freePoints")!.options,
+        );
+        if (!problems.valid)
+          throw new RangeError(
+            "Distribuí exactamente 20 puntos sin exceder el tope por habilidad. " +
+              problems.issues.join(". "),
+          );
         if (new Set(points.map((p) => p.id)).size !== points.length)
           throw new Error(
             "Elegí habilidades distintas para los puntos libres.",
@@ -247,6 +267,7 @@ export function CharacterCreator({
           );
       }
       setSeedAuto(false);
+      setConfirmed(false);
       setInput(generated.input);
       setImportedRecord(null);
       setResult(generated);
@@ -318,6 +339,18 @@ export function CharacterCreator({
     }
   }
   function advance() {
+    if (
+      step === 5 &&
+      (result.requests.some((q) => q.key !== "freePoints") ||
+        JSON.stringify({ ...input.choices, freePoints: {} }) !==
+          JSON.stringify({ ...result.input.choices, freePoints: {} }))
+    ) {
+      setTrainingSection(1);
+      setError(
+        "Confirmá las elecciones de habilidades y especializaciones antes de distribuir los 20 puntos.",
+      );
+      return;
+    }
     if (step === 6) {
       if (result.status !== "complete" || dirty) {
         setError("Revisá las decisiones de Entrenamientos antes de confirmar.");
@@ -341,6 +374,38 @@ export function CharacterCreator({
         message:
           "Cambiar la semilla vuelve a tirar la rama completa. Conservaremos la revisión anterior.",
         after: step === 0 ? 1 : step + 1,
+      });
+      return;
+    }
+    if (
+      step === 4 &&
+      JSON.stringify(input.attributes ?? {}) !==
+        JSON.stringify(result.input.attributes ?? {})
+    ) {
+      const next = { ...input, choices: { ...input.choices, freePoints: {} } };
+      try {
+        generateCharacter(next, catalog);
+      } catch (e) {
+        setError(
+          e instanceof Error
+            ? e.message
+            : "Revisá los atributos de esta categoría.",
+        );
+        return;
+      }
+      const previous = {
+        ...JSON.parse(snapshot([])),
+        input: result.input,
+        dirty: false,
+        confirmed: false,
+        seedAuto: false,
+      };
+      setProposal({
+        input: next,
+        message:
+          "Aplicar atributos manuales puede recalcular entrenamientos y posesiones por el orden del generador. Se conservan las elecciones; los 20 puntos quedan como borrador para revisar. Guardamos una revisión anterior para Deshacer.",
+        after: 5,
+        revision: JSON.stringify(previous),
       });
       return;
     }
@@ -642,210 +707,90 @@ export function CharacterCreator({
             />
           )}
           {step === 4 && (
-            <>
-              <div className="wizard-attributes">
-                {creationAttribute.options.map((a) => (
-                  <article key={a}>
-                    <h3>{attributeNames[a]}</h3>
-                    <strong>{result.attributes[a] ?? "—"}</strong>
-                  </article>
-                ))}
-              </div>{" "}
-              {input.mode === "manual" && origin && (
-                <fieldset>
-                  <legend>Atributos manuales o por dados</legend>
-                  <p>
-                    Vacío: tirar según categoría. Un valor introducido queda
-                    registrado como edición manual.
-                  </p>
-                  <div className="creator-fields">
-                    {creationAttribute.options.map((attribute) => {
-                      const category =
-                          origin.attributeCategories[attribute] ?? "normal",
-                        f = attributeGeneration[category];
-                      return (
-                        <label key={attribute}>
-                          {attributeNames[attribute]} · (1D{f.sides}
-                          {f.add ? "+" + f.add : ""}) × {f.multiplier}
-                          <input
-                            type="number"
-                            step={5}
-                            min={(1 + f.add) * 5}
-                            max={(f.sides + f.add) * 5}
-                            value={input.attributes?.[attribute] ?? ""}
-                            onChange={(e) => {
-                              const attrs = { ...input.attributes };
-                              if (e.target.value === "")
-                                delete attrs[attribute];
-                              else attrs[attribute] = Number(e.target.value);
-                              change({ ...input, attributes: attrs });
-                            }}
-                          />
-                        </label>
-                      );
-                    })}
-                  </div>
-                </fieldset>
-              )}
-              <details>
-                <summary>Ver desglose de atributos</summary>
-                <ol>
-                  {result.timeline
-                    .filter((r) => r.key.startsWith("attribute"))
-                    .map((r) => (
-                      <li key={r.key}>
-                        {r.key} · {r.formula} · {r.faces.join(" + ")} ={" "}
-                        {r.total}
-                      </li>
-                    ))}
-                </ol>
-              </details>
-            </>
+            <CreationAttributes
+              catalog={catalog}
+              input={input}
+              result={result}
+              onAttribute={(key, value) => {
+                const attributes = { ...input.attributes };
+                if (value === undefined) delete attributes[key];
+                else attributes[key] = value;
+                change({ ...input, attributes });
+              }}
+              onReroll={() =>
+                setProposal({
+                  input: {
+                    ...input,
+                    seed: crypto.randomUUID(),
+                    attributes: {},
+                    choices: structuredClone(defaults.choices),
+                  },
+                  message:
+                    "Volver a tirar cambia la semilla y recalcula también entrenamientos, concesiones condicionales y posesiones. Conservaremos esta ficha como revisión; las elecciones deberán revisarse de nuevo.",
+                })
+              }
+            />
           )}
           {step === 5 && (
-            <>
-              {automaticSuggestions && (
-                <p className="wizard-warning">
-                  Propuestas automáticas editables: revisá especializaciones,
-                  habilidades y puntos antes de confirmar. No son concesiones
-                  nuevas del CORE.
-                </p>
-              )}{" "}
-              {!!requests.length && (
-                <fieldset>
-                  <legend>Decisiones del personaje</legend>
-                  <div className="creator-fields">
-                    {requests
-                      .filter((q) => q.key !== "freePoints")
-                      .map((q) =>
-                        q.key.startsWith("archetype:") ? (
-                          <label key={q.key}>
-                            {q.label}
-                            <input
-                              value={
-                                input.choices?.specializations?.[q.key] ?? ""
-                              }
-                              maxLength={120}
-                              onChange={(e) => choice(q.key, e.target.value)}
-                            />
-                          </label>
-                        ) : (
-                          <label key={q.key}>
-                            {q.label} · {q.count}
-                            <select
-                              aria-label={q.label}
-                              multiple
-                              size={Math.min(7, q.options.length)}
-                              value={
-                                (input.choices?.[
-                                  q.key as
-                                    | "originFaculties"
-                                    | "archetypeFaculties"
-                                    | "additionalSkills"
-                                ] ?? []) as string[]
-                              }
-                              onChange={(e) =>
-                                choice(
-                                  q.key,
-                                  [...e.target.selectedOptions].map(
-                                    (o) => o.value,
-                                  ),
-                                )
-                              }
-                            >
-                              {q.options.map((id) => (
-                                <option key={id} value={id}>
-                                  {label(id)}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        ),
-                      )}
-                  </div>
-                  {requests.some((q) => q.key === "freePoints") && (
-                    <fieldset>
-                      <legend>
-                        20 puntos libres · al menos dos habilidades
-                      </legend>
-                      {points.map((p, i) => (
-                        <div className="creator-point-row" key={i}>
-                          <label>
-                            Habilidad {i + 1}
-                            <select
-                              aria-label={"Habilidad " + (i + 1)}
-                              value={p.id}
-                              onChange={(e) => {
-                                setPoints(
-                                  points.map((p, j) =>
-                                    i === j ? { ...p, id: e.target.value } : p,
-                                  ),
-                                );
-                                setDirty(true);
-                                setConfirmed(false);
-                              }}
-                            >
-                              {requests
-                                .find((q) => q.key === "freePoints")
-                                ?.options.map((id) => (
-                                  <option key={id} value={id}>
-                                    {label(id)}
-                                  </option>
-                                ))}
-                            </select>
-                          </label>
-                          <label>
-                            Puntos {i + 1}
-                            <input
-                              type="number"
-                              min={0}
-                              max={20}
-                              value={p.amount}
-                              onChange={(e) => {
-                                setPoints(
-                                  points.map((p, j) =>
-                                    i === j
-                                      ? { ...p, amount: Number(e.target.value) }
-                                      : p,
-                                  ),
-                                );
-                                setDirty(true);
-                                setConfirmed(false);
-                              }}
-                            />
-                          </label>
-                          {points.length > 2 && (
-                            <button
-                              onClick={() => {
-                                setPoints(points.filter((_, j) => i !== j));
-                                setDirty(true);
-                                setConfirmed(false);
-                              }}
-                            >
-                              Quitar
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        onClick={() => {
-                          setPoints([...points, { id: "aguante", amount: 0 }]);
-                          setDirty(true);
-                          setConfirmed(false);
-                        }}
-                      >
-                        Otra habilidad
-                      </button>
-                      <p>
-                        {points.reduce((sum, p) => sum + p.amount, 0)} / 20
-                        puntos
-                      </p>
-                    </fieldset>
-                  )}
-                </fieldset>
-              )}
-              <button onClick={() => apply()}>Aplicar elecciones</button>
-            </>
+            <CreationTraining
+              catalog={catalog}
+              input={input}
+              result={result}
+              requests={editableRequests}
+              points={points}
+              section={trainingSection}
+              onSection={setTrainingSection}
+              onChoice={choice}
+              onPoints={(next) => {
+                setPoints(next);
+                setDirty(true);
+                setConfirmed(false);
+              }}
+              onApplyChoices={() => {
+                const generated = apply(
+                  { ...input, choices: { ...input.choices, freePoints: {} } },
+                  false,
+                );
+                if (
+                  generated &&
+                  !generated.requests.some((q) => q.key !== "freePoints")
+                )
+                  setTrainingSection(2);
+              }}
+              onApplyPoints={() => {
+                const generated = apply();
+                if (generated?.status === "complete")
+                  setNotice(
+                    "Reparto validado: 20 puntos sin exceder Entrenamiento 50.",
+                  );
+              }}
+              onAutoPoints={() => {
+                try {
+                  const suggestion = proposeCreationChoices({
+                    ...input,
+                    choices: { ...input.choices, freePoints: {} },
+                  });
+                  setPoints(
+                    Object.entries(
+                      suggestion.result.input.choices.freePoints,
+                    ).map(([id, amount]) => ({ id, amount })),
+                  );
+                  setAutomaticSuggestions(true);
+                  setDirty(true);
+                  setConfirmed(false);
+                  setNotice(
+                    "Reparto propuesto, legal y editable. Validalo antes de continuar.",
+                  );
+                } catch (e) {
+                  setError(
+                    e instanceof Error
+                      ? e.message
+                      : "No se pudo proponer un reparto.",
+                  );
+                }
+              }}
+              automaticSuggestions={automaticSuggestions}
+            />
           )}
           {step === 6 && (
             <>
@@ -1062,8 +1007,11 @@ export function CharacterCreator({
           <button
             className="accent"
             onClick={() => {
-              setArchives([...archives, snapshot([])].slice(-10));
+              setArchives(
+                [...archives, proposal.revision ?? snapshot([])].slice(-10),
+              );
               setRequests([]);
+              setTrainingSection(0);
               setAutomaticSuggestions(false);
               const generated = apply(
                 proposal.input,

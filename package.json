@@ -36,7 +36,8 @@
     "test:ai-ui": "node scripts/test-ai-ui.ts",
     "test:status-ui": "node scripts/test-status-ui.ts",
     "test:wizard-shell-ui": "node scripts/test-wizard-shell-ui.ts",
-    "test:creation-route-ui": "node scripts/test-creation-route-ui.ts"
+    "test:creation-route-ui": "node scripts/test-creation-route-ui.ts",
+    "test:creation-training-ui": "node scripts/test-creation-training-ui.ts"
   },
   "dependencies": {
     "@noble/hashes": "^2.4.0",

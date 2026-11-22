@@ -37,7 +37,7 @@ export const wizardDraftSchema = z.strictObject({
     .array(
       z.strictObject({
         id: z.string(),
-        amount: z.number().int().min(0).max(20),
+        amount: z.number(),
       }),
     )
     .max(57),
@@ -45,7 +45,79 @@ export const wizardDraftSchema = z.strictObject({
   revisions: z.array(z.string()).max(10),
   automaticSuggestions: z.boolean().default(false),
   seedAuto: z.boolean().default(false),
+  trainingSection: z.number().int().min(0).max(2).default(0),
 });
+
+export type TrainingPoints = { id: string; amount: number }[];
+export function baseCreationTraining(result: CreationResult, id: string) {
+  const skill = result.skills.find((s) => s.id === id);
+  return (
+    (skill?.training ?? 0) -
+    (skill?.origins.includes("free_points")
+      ? (result.input.choices.freePoints[id] ?? 0)
+      : 0)
+  );
+}
+export function allocationProblems(
+  result: CreationResult,
+  points: TrainingPoints,
+  allowed: readonly string[],
+) {
+  const rows = points.map((p) =>
+    !allowed.includes(p.id)
+      ? "Habilidad no permitida para puntos libres"
+      : !Number.isInteger(p.amount) || p.amount < 0
+        ? "Ingresá puntos enteros, como mínimo cero"
+        : p.amount > 20
+          ? "El presupuesto total es de 20 puntos"
+          : baseCreationTraining(result, p.id) + p.amount > 50
+            ? "El Entrenamiento final supera 50"
+            : "",
+  );
+  const sum = points.reduce((n, p) => n + p.amount, 0),
+    issues: string[] = [];
+  if (sum !== 20)
+    issues.push(
+      sum > 20
+        ? "Excedés el presupuesto por " + (sum - 20) + " puntos"
+        : "Quedan " + (20 - sum) + " puntos disponibles",
+    );
+  const selected = points.filter((p) => p.amount > 0);
+  if (new Set(selected.map((p) => p.id)).size < 2)
+    issues.push("Repartí entre dos o más habilidades distintas");
+  if (new Set(points.map((p) => p.id)).size !== points.length)
+    issues.push("Hay habilidades repetidas");
+  if (rows.some(Boolean)) issues.push("Revisá los errores de cada habilidad");
+  return { rows, issues, sum, valid: issues.length === 0 };
+}
+/** Query editable options through the same generator, including imported complete records. */
+export function editableCreationRequests(result: CreationResult) {
+  const requests = new Map(result.requests.map((q) => [q.key, q]));
+  for (const key of [
+    "freePoints",
+    "additionalSkills",
+    "originFaculties",
+    "archetypeFaculties",
+    "specializations",
+  ] as const) {
+    const input = structuredClone(result.input);
+    input.choices.freePoints = {};
+    if (key === "specializations") input.choices.specializations = {};
+    else if (key !== "freePoints") input.choices[key] = [];
+    try {
+      const queried = generateCharacter(input, creationCatalogData);
+      for (const q of queried.requests)
+        if (
+          q.key === key ||
+          (key === "specializations" && q.key.startsWith("archetype:"))
+        )
+          requests.set(q.key, q);
+    } catch {
+      /* Unresolved routes remain unresolved; no guessed options. */
+    }
+  }
+  return [...requests.values()];
+}
 
 /** UI proposals, not new grants: the existing generator validates every choice. */
 export function proposeCreationChoices(

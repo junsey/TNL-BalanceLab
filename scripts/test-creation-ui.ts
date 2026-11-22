@@ -1,3 +1,4 @@
+import { completeTrainingChoices } from "./lib/creation-ui.ts";
 import assert from "node:assert/strict";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { importCreatedCharacter } from "../packages/engine/src/creation-record.ts";
@@ -90,49 +91,19 @@ try {
         await field.fill(String(max));
       }
       await next(page);
+      await confirmChange(page);
+      await completeTrainingChoices(page);
+      await page
+        .getByRole("button", {
+          name: "Proponer reparto automático",
+          exact: true,
+        })
+        .click();
       const apply = page.getByRole("button", {
-        name: "Aplicar elecciones",
+        name: "Validar reparto",
         exact: true,
       });
-      for (let iteration = 0; iteration < 8; iteration++) {
-        const specs = await page.getByLabel(/^Elegí especialización:/).all();
-        for (let i = 0; i < specs.length; i++)
-          if (!(await specs[i]!.inputValue()))
-            await specs[i]!.fill("Disciplina de ensayo " + i);
-        const chosen = new Set<string>();
-        for (const select of await page
-          .locator(".character-creator select[multiple]")
-          .all()) {
-          const label = await select.locator("..").textContent(),
-            count = Number(label!.match(/·\s*(\d+)/)![1]);
-          const options = await select
-            .locator("option")
-            .evaluateAll((nodes) =>
-              nodes.map((n) => (n as HTMLOptionElement).value),
-            );
-          const selected = await select.evaluate((n) =>
-            [...(n as HTMLSelectElement).selectedOptions].map((o) => o.value),
-          );
-          const values =
-            selected.length === count
-              ? selected
-              : options.filter((id) => !chosen.has(id)).slice(0, count);
-          values.forEach((id) => chosen.add(id));
-          await select.selectOption(values);
-        }
-        await apply.click();
-        await expect(page.locator('.wizard-active [role="alert"]')).toHaveCount(
-          0,
-        );
-        if (
-          await page.evaluate(
-            () =>
-              JSON.parse(sessionStorage.getItem("tnl-creation-wizard-v1")!)
-                .creation.status === "complete",
-          )
-        )
-          break;
-      }
+      await apply.click();
       assert.equal(
         await page.evaluate(
           () =>
@@ -141,12 +112,15 @@ try {
         ),
         "complete",
       );
+      const initialPoints = await page
+        .getByLabel("Puntos 1", { exact: true })
+        .inputValue();
       await page.getByLabel("Puntos 1", { exact: true }).fill("20");
       await apply.click();
       await expect(page.locator('.wizard-active [role="alert"]')).toContainText(
         "20 puntos",
       );
-      await page.getByLabel("Puntos 1", { exact: true }).fill("10");
+      await page.getByLabel("Puntos 1", { exact: true }).fill(initialPoints);
       await apply.click();
       await expect(page.locator('.wizard-active [role="alert"]')).toHaveCount(
         0,

@@ -234,6 +234,144 @@
 .wizard-table-rolls {
   margin: 16px 0;
 }
+.wizard-attributes :is(small, p, label) {
+  display: block;
+  margin-top: 8px;
+}
+.wizard-attributes label {
+  font-size: 13px;
+}
+.wizard-attributes input {
+  margin-top: 8px;
+}
+.wizard-field-error {
+  color: var(--wizard-danger);
+  font-size: 14px;
+}
+.wizard-help {
+  color: var(--wizard-muted);
+  font-size: 14px;
+  margin: 12px 0 !important;
+}
+.wizard-training-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0;
+}
+.wizard-training-tabs button {
+  flex: 1 1 94px;
+  font-size: 14px;
+  min-width: 0;
+}
+.wizard-training-tabs [aria-selected="true"] {
+  border-color: var(--wizard-accent);
+  color: var(--wizard-accent);
+  background: var(--wizard-elevated);
+}
+.wizard-granted-skills {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.wizard-granted-skills article {
+  border: 1px solid var(--wizard-border);
+  background: var(--wizard-surface);
+  border-radius: var(--wizard-radius);
+  padding: 16px;
+  min-width: 0;
+}
+.wizard-granted-skills :is(p, small, details) {
+  margin-top: 8px;
+  font-size: 14px;
+  display: block;
+}
+.wizard-skill-choice {
+  margin: 20px 0;
+}
+.wizard-skill-choice > label {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.wizard-skill-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+.wizard-skill-options label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid var(--wizard-border);
+  background: var(--wizard-surface);
+  border-radius: var(--wizard-control-radius);
+  overflow-wrap: anywhere;
+}
+.wizard-skill-options input[type="checkbox"] {
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  flex: 0 0 24px;
+}
+.wizard-skill-options small {
+  display: block;
+  color: var(--wizard-muted);
+}
+.wizard-choice-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.wizard-budget {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 16px;
+  background: var(--wizard-elevated);
+  border: 1px solid var(--wizard-accent);
+  border-radius: var(--wizard-radius);
+  margin: 16px 0;
+}
+.wizard-point-row {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--wizard-border);
+  margin-bottom: 12px;
+}
+.wizard-point-row small {
+  display: block;
+  color: var(--wizard-muted);
+  margin: 8px 0;
+}
+.wizard-point-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: end;
+  margin-top: 8px;
+}
+.wizard-point-controls label {
+  display: grid;
+  width: 80px;
+}
+.wizard-point-controls button {
+  min-width: 44px;
+}
+.wizard-add-skills {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.creation-wizard :is(input, button, select, summary) {
+  scroll-margin-block: 96px;
+}
 .wizard-error {
   padding: 12px;
   border-left: 4px solid var(--wizard-danger);
@@ -331,6 +469,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .wizard-option-grid {
+    grid-template-columns: 1fr;
+  }
+  .wizard-skill-options,
+  .wizard-granted-skills {
     grid-template-columns: 1fr;
   }
   .wizard-summary dl {

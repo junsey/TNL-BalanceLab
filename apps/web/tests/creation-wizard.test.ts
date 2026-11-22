@@ -7,6 +7,9 @@ import {
   restoreWizardDraft,
   wizardDataComplete,
   proposeCreationChoices,
+  editableCreationRequests,
+  allocationProblems,
+  baseCreationTraining,
 } from "../lib/creation-wizard.ts";
 test("Wizard: borrador conserva paso, decisiones, errores editables y tiradas; rechaza corrupción", () => {
   const creation = generateCharacter(
@@ -46,6 +49,53 @@ test("Wizard: borrador conserva paso, decisiones, errores editables y tiradas; r
   assert.equal(wizardDataComplete(1, false, creation, false, false), false);
   assert.equal(wizardDataComplete(1, true, creation, false, false), true);
   assert.equal(wizardDataComplete(1, true, creation, true, false), false);
+});
+test("Wizard: edición de ficha completa recupera opciones oficiales y no duplica puntos", () => {
+  const { result } = proposeCreationChoices({
+    mode: "assisted",
+    cityId: "augyre_siege",
+    seed: "allocator-test",
+  });
+  const requests = editableCreationRequests(result),
+    allowed = requests.find((q) => q.key === "freePoints")!.options;
+  const points = Object.entries(result.input.choices.freePoints).map(
+    ([id, amount]) => ({ id, amount }),
+  );
+  assert.ok(allocationProblems(result, points, allowed).valid);
+  for (const p of points)
+    assert.equal(
+      baseCreationTraining(result, p.id) + p.amount,
+      result.skills.find((s) => s.id === p.id)!.training,
+    );
+  assert.ok(
+    !allocationProblems(result, [{ id: allowed[0]!, amount: 20 }], allowed)
+      .valid,
+  );
+  assert.ok(
+    !allocationProblems(
+      result,
+      [
+        { id: allowed[0]!, amount: 10 },
+        { id: allowed[0]!, amount: 10 },
+      ],
+      allowed,
+    ).valid,
+  );
+  assert.ok(
+    !allocationProblems(
+      result,
+      [
+        { id: "sapiencia:inventada", amount: 10 },
+        { id: allowed[0]!, amount: 10 },
+      ],
+      allowed,
+    ).valid,
+  );
+  const remaining = Object.entries(result.input.choices).filter(
+    ([key]) => key !== "freePoints",
+  );
+  assert.ok(remaining.length > 0);
+  assert.equal(result.naturalResistance, null);
 });
 test("Wizard: propuestas automáticas legales, editables y reproducibles en 600 rutas", () => {
   for (let i = 0; i < 200; i++)
