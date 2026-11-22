@@ -12,6 +12,15 @@ for (let i = 0; i < 100; i++) {
   const setup = tacticalDemo("prone-ui:" + i);
   setup.participants[0]!.fighter.conditions = [
     {
+      id: "bleeding",
+      label: "Hemorragia",
+      source: "fixture-bleeding-ui",
+      blocksActions: false,
+      blocksReactions: false,
+      roundHealthLoss: 0,
+      duration: { unit: "persistent" },
+    },
+    {
       id: "knocked_down",
       label: "Derribado",
       source: "fixture-prone-ui",
@@ -21,6 +30,7 @@ for (let i = 0; i < 100; i++) {
       duration: { unit: "persistent" },
     },
   ];
+  setup.participants[0]!.fighter.vigor = 4;
   const s = startTacticalEncounter(setup).state;
   if (getLegalActions(s, setup.player).some((a) => a.kind === "standUp")) {
     initial = s;
@@ -60,6 +70,15 @@ try {
   await expect(
     p.getByRole("button", { name: "Ataque", exact: true }),
   ).toBeVisible();
+  p.once("dialog", (dialog) => dialog.accept());
+  await p.getByRole("button", { name: /Tomar Aliento/ }).click();
+  await p.locator(".structured-log details").first().locator("summary").click();
+  await expect(
+    p
+      .getByText(/pierde 1 Salud por Hemorragia antes de su Acción Mayor/)
+      .first(),
+  ).toBeVisible();
+  await p.screenshot({ path: "reports/status-ui/bleeding-major.png" });
   assert.deepEqual(errors, []);
   console.log(
     "Derribado: Levantarse usa Menor y restablece el menú sin errores.",

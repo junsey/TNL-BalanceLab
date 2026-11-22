@@ -187,6 +187,7 @@ export function tacticalDemo(
     },
     rules: {
       gradeEffectsVersion: "approved-grade-effects-v1",
+      statusEffectsVersion: "approved-status-effects-v1",
       combatVersion: "core03-combat-v1",
       calculationVersion: "core03-sheet-v1",
       fumbleConsequences: false,

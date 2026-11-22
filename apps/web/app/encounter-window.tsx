@@ -126,6 +126,12 @@ export function EncounterWindow({
       ? detail.damage
       : null;
   const effective = damage?.effective;
+  const bleeding =
+    detail.bleeding &&
+    typeof detail.bleeding === "object" &&
+    !Array.isArray(detail.bleeding)
+      ? detail.bleeding
+      : null;
   const dice = Array.isArray(damage?.dice)
     ? damage.dice.flatMap((die) =>
         die &&
@@ -310,6 +316,12 @@ export function EncounterWindow({
                     : dice.reduce((sum, die) => sum + Number(die.total), 0)}
                 </strong>
                 <small>{dice.map((die) => die.faces).join(" + ")}</small>
+                {bleeding?.multiplier === 2 && (
+                  <small>
+                    Hemorragia: {String(bleeding.baseDamage)} × 2 antes de
+                    armadura
+                  </small>
+                )}
               </div>
             )}
           </section>

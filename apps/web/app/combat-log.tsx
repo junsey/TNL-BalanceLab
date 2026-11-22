@@ -187,6 +187,7 @@ export function Detail({
     }
     case "DEFENSE": {
       const damage = record(detail.damage);
+      const bleeding = record(detail.bleeding);
       const shield = record(detail.shieldCheck);
       const limit =
         typeof detail.target === "number" ? thresholds(detail.target) : null;
@@ -255,6 +256,15 @@ export function Detail({
                 </span>
               ) : null;
             })}
+          {bleeding?.triggered === true && (
+            <span>
+              Hemorragia
+              {bleeding.multiplier === 2
+                ? " repetida · daño del golpe ×2 antes de armadura"
+                : " aplicada"}
+              .
+            </span>
+          )}
           {Array.isArray(detail.consequences) &&
             detail.consequences.map((entry, index) => {
               const consequence = record(entry);
@@ -408,6 +418,13 @@ export function Detail({
         <p>
           {name(print(detail.actor))} perdió {print(detail.roll)} Salud por
           Agonía.
+        </p>
+      );
+    case "BLEEDING_MAJOR":
+      return (
+        <p>
+          {name(print(detail.actor))} pierde 1 Salud por Hemorragia antes de su
+          Acción Mayor.
         </p>
       );
     case "FIRST_AID":

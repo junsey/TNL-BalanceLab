@@ -23,16 +23,21 @@ export function simulationVersions(
     schemaVersion: 2,
     engineVersion:
       engineVersion ??
-      (setup.rules.combatVersion
-        ? "0.13.0-grade-effects"
-        : setup.rules.calculationVersion
-          ? "0.7.0-core03-sheet"
-          : "HISTORICO"),
+      (setup.rules.statusEffectsVersion
+        ? "0.14.0-bleeding"
+        : setup.rules.combatVersion
+          ? "0.13.0-grade-effects"
+          : setup.rules.calculationVersion
+            ? "0.7.0-core03-sheet"
+            : "HISTORICO"),
     rulesVersion: [
       setup.rules.calculationVersion ?? "legacy-vulnerability",
       setup.rules.combatVersion ?? "legacy-actions",
       ...(setup.rules.gradeEffectsVersion
         ? [setup.rules.gradeEffectsVersion]
+        : []),
+      ...(setup.rules.statusEffectsVersion
+        ? [setup.rules.statusEffectsVersion]
         : []),
     ].join("/"),
     catalogVersion: [

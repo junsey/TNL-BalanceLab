@@ -225,6 +225,7 @@ export const fighterState = z
 
 export const attackRules = z.strictObject({
   gradeEffectsVersion: z.literal(gradeEffectsVersion).optional(),
+  statusEffectsVersion: z.literal("approved-status-effects-v1").optional(),
   combatVersion: z.literal("core03-combat-v1").optional(),
   calculationVersion: z.literal(coreCalculationVersion).optional(),
   fumbleConsequences: z.boolean(),
@@ -902,12 +903,39 @@ export function resolveImpact(
   const reduction = effects.some((e) => e.kind === "ignore_armor_reduction")
     ? 0
     : armorReduction;
-  const damage = applyDamage(
-    impact.sweep ? Math.floor(roll.total / 2) : roll.total,
-    capacity,
-    reduction,
-  );
+  const baseDamage = impact.sweep ? Math.floor(roll.total / 2) : roll.total;
+  const bleedingTrigger =
+    !!rules.statusEffectsVersion &&
+    model.id === "daga" &&
+    ["quarter", "critical"].includes(finalGrade);
+  const repeatedBleeding =
+    bleedingTrigger &&
+    paid.conditions?.some((c) => c.id === "bleeding") &&
+    baseDamage > capacity;
+  const multiplier = repeatedBleeding ? 2 : 1;
+  const damage = applyDamage(baseDamage * multiplier, capacity, reduction);
   let updated = { ...paid, health: paid.health - damage.effective };
+  if (
+    bleedingTrigger &&
+    damage.effective > 0 &&
+    !updated.conditions?.some((c) => c.id === "bleeding")
+  ) {
+    if ((updated.conditions?.length ?? 0) >= 1000)
+      unresolved.push("condition-limit");
+    else
+      updated.conditions = [
+        ...(updated.conditions ?? []),
+        {
+          id: "bleeding",
+          label: "Hemorragia",
+          source: "grade-effect:" + model.id,
+          blocksActions: false,
+          blocksReactions: false,
+          roundHealthLoss: 0,
+          duration: { unit: "persistent" },
+        },
+      ];
+  }
   const applied: typeof effects = [];
   // A full interception prevents contact. Armor may absorb damage without cancelling contact.
   if (damage.residual > 0)
@@ -974,6 +1002,13 @@ export function resolveImpact(
     event: {
       ...defenseEvent,
       damage: { ...damage, reduction, dice: roll.dice },
+      ...(rules.statusEffectsVersion && {
+        bleeding: {
+          triggered: bleedingTrigger && damage.effective > 0,
+          multiplier,
+          baseDamage,
+        },
+      }),
       ...(rules.gradeEffectsVersion && {
         gradeEffects: applied,
         armorReduction,

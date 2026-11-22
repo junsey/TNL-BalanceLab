@@ -1,0 +1,9 @@
+# 4.6: Hemorragia y decisiones de cierre
+
+Decisiones directas del usuario, 22/11/2026: Hemorragia pierde 1 Salud antes de ejecutar la Mayor; el golpe que la repite duplica su daño antes de armadura; daño efectivo cero no aplica Hemorragia. Sigue siendo un único estado persistente. Minor, reacción, segundo golpe de una pareja y final de ronda no generan pérdidas adicionales. Si esa pérdida incapacita, la acción se interrumpe antes de su efecto y no tira dados.
+
+El módulo `approved-status-effects-v1`, motor `0.14.0-bleeding`, activa el efecto a cuarto/crítico de Daga, incluido el ataque provisional de Acechador basado en esa arma. Una defensa que evita contacto no aplica Hemorragia; una parada que intercepta todo tampoco activa la repetición. La duplicación no agrega dados ni consume azar extra; la defensa y reducción siguen siendo independientes para cada golpe. Las reglas anteriores sin este módulo conservan su comportamiento. El log muestra aplicación/repetición y pérdida por Mayor, y la ficha explica su persistencia y tratamiento. Primeros Auxilios y la inyección médica ordinaria no la eliminan.
+
+Pruebas específicas: grado normal/mitad frente a cuarto, dos impactos con mismos dados y distinta reducción, estado único, cero daño, Mayor/Menor, recuperación, incapacitación previa, pareja de dagas y replay. La prueba de navegador verifica levantarse sin perder Salud y Tomar Aliento con pérdida por Hemorragia.
+
+Las respuestas del mismo día desbloquean las próximas etapas: inyección especializada elimina todos los estados alterados y cura 2D10; Desmembramiento selecciona al azar la extremidad (brazo: pierde arma equipada; pierna: pierde movimiento); Empujar/Embestida usan destino elegido por el jugador, sin desplazamiento cuando no hay destino legal y sin oportunidades por movimiento forzado. Estas tres etapas se implementan y publican a continuación; no se declaran realizadas en este commit.

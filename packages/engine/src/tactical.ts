@@ -167,6 +167,7 @@ const stateSchema = z.strictObject({
     "0.9.0-secondary-dagger",
     "0.8.0-core03-combat",
     "0.13.0-grade-effects",
+    "0.14.0-bleeding",
     "0.7.0-core03-sheet",
     "0.6.0-resistance-experimental",
     "0.1.0-tactical",
@@ -421,13 +422,15 @@ export function startHistoricalTacticalEncounter(input: unknown) {
       aiRng: seedRng(JSON.stringify(["ai-decisions-v1", setup.seed])),
     }),
     setup,
-    engineVersion: setup.rules.combatVersion
-      ? "0.13.0-grade-effects"
-      : setup.rules.calculationVersion
-        ? "0.7.0-core03-sheet"
-        : setup.rules.resistance
-          ? "0.6.0-resistance-experimental"
-          : tacticalVersion,
+    engineVersion: setup.rules.statusEffectsVersion
+      ? "0.14.0-bleeding"
+      : setup.rules.combatVersion
+        ? "0.13.0-grade-effects"
+        : setup.rules.calculationVersion
+          ? "0.7.0-core03-sheet"
+          : setup.rules.resistance
+            ? "0.6.0-resistance-experimental"
+            : tacticalVersion,
     rngVersion,
     rng,
     round: 1,
@@ -452,7 +455,10 @@ export function startHistoricalTacticalEncounter(input: unknown) {
 
 export function restoreTacticalEncounter(input: unknown): TacticalState {
   const state = stateSchema.parse(input);
-  if (state.engineVersion === "0.13.0-grade-effects" && !state.aiRng)
+  if (
+    ["0.13.0-grade-effects", "0.14.0-bleeding"].includes(state.engineVersion) &&
+    !state.aiRng
+  )
     throw new RangeError("Falta el flujo de azar de IA del encuentro actual");
   validateSetup(state.setup);
   const ids = state.setup.participants.map((actor) => actor.fighter.id).sort();
@@ -1508,6 +1514,52 @@ export function stepTacticalAction(
   )!;
   const details: Detail[] = [];
   if (ai) details.push({ kind: "AI_DECISION", ...ai });
+  const spendsMajor =
+    (decision.kind === "attack" && decision.actionCost !== "minor") ||
+    [
+      "run",
+      "sneak",
+      "sweep",
+      "throwWeapon",
+      "prepareReactive",
+      "prepareAttack",
+      "stabilize",
+      "creatureRecover",
+      "recover",
+      "flee",
+    ].includes(decision.kind) ||
+    (decision.kind === "weaponControl" &&
+      weaponControlCost(actor.fighter, decision.operation)?.action === "major");
+  // Charge the declared Major once, before any action effect or queued reaction.
+  // Continuations and the second paired strike never declare another Major.
+  if (
+    state.setup.rules.statusEffectsVersion &&
+    actor.major &&
+    spendsMajor &&
+    actor.fighter.conditions?.some((c) => c.id === "bleeding")
+  ) {
+    actor.fighter.health--;
+    details.push({
+      kind: "BLEEDING_MAJOR",
+      actor: decision.actor,
+      amount: 1,
+      health: actor.fighter.health,
+    });
+    if (!alive(actor.fighter)) {
+      actor.major = false;
+      actor.ended = true;
+      actor.prepared = null;
+      details.push({
+        kind: "ACTION_INTERRUPTED",
+        actor: decision.actor,
+        reason: "bleeding_incapacitated",
+      });
+      state.outcome ??= outcomeFor(state);
+      advance(state, details);
+      state.sequence++;
+      return { state, decision, details };
+    }
+  }
   const executeAttack = (
     attacker: typeof actor,
     defender: typeof actor,

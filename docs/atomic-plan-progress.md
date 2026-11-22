@@ -29,7 +29,8 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | IA-05 Coordinación reactiva | Publicada | 4adcca5 | docs/ai-05-coordination.md; 141 pruebas |
 | IA-06 Integración y regresión | Publicada | 66a937a | docs/ai-06-integration.md; 1000 encuentros y navegador |
 | 4.5 Efectos cerrados | Publicada | 84f5192 | docs/combat-additions-4.5.md; 144 pruebas y navegador |
-| Estados y maniobras restantes | Pendientes de definiciones concretas | — | docs/queued-combat-additions.md; se continúa con wizard independiente |
+| 4.6 Hemorragia | Implementada en este commit | base 9aebc2c | docs/combat-additions-4.6.md |
+| Estados y maniobras restantes | Desbloqueados por respuestas del 22/11; en curso | — | Inyección, Desmembramiento y empuje |
 | WIZ-01 Auditoría del creador | Publicada | e11b421 | docs/wizard-01-audit.md; referencias y compatibilidad |
 | WIZ-02 Shell y navegación | Publicada | e00ab13 | docs/wizard-02-shell.md; recorridos y compatibilidad |
 | WIZ-03 Procedencia y ramas | Publicada | 87e6716 | docs/wizard-03-routes.md; 148 pruebas, 600 propuestas y Chrome |

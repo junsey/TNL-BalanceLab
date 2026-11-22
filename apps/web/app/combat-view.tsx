@@ -1702,6 +1702,8 @@ export function CharacterSheet({
                     encounter: "encuentro(s)",
                   }[condition.duration.unit]}
               {condition.blocksActions && " · Bloquea acciones"}
+              {condition.id === "bleeding" &&
+                " · Pierde 1 Salud antes de cada Acción Mayor; requiere tratamiento médico"}
               {condition.blocksReactions && " · Bloquea reacciones"}
               {condition.roundHealthLoss > 0 &&
                 " · Pierde " + condition.roundHealthLoss + " Salud por ronda"}
