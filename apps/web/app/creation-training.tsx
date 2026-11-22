@@ -13,6 +13,7 @@ import {
 import {
   allocationProblems,
   baseCreationTraining,
+  creationTrainingPointRows,
   type TrainingPoints,
 } from "../lib/creation-wizard";
 export const creationAttributeNames = {
@@ -278,7 +279,7 @@ export function CreationTraining(props: Props) {
       input,
       result,
       requests,
-      points,
+      points: assignedPoints,
       section,
       onSection,
       onPoints,
@@ -286,6 +287,11 @@ export function CreationTraining(props: Props) {
     [query, setQuery] = useState("");
   const choices = requests.filter((q) => q.key !== "freePoints"),
     allowed = requests.find((q) => q.key === "freePoints")?.options ?? [];
+  const points = creationTrainingPointRows(result, assignedPoints, allowed);
+  const fixedTraining = result.skills.filter(
+    (s) =>
+      s.origins.some((o) => o !== "free_points") && !allowed.includes(s.id),
+  );
   const budget = allocationProblems(result, points, allowed),
     tabs = choices.length ? [0, 1, 2] : [0, 2],
     active = tabs.includes(section) ? section : 0;
@@ -460,6 +466,11 @@ export function CreationTraining(props: Props) {
               máximo 50. No compra nuevas especializadas; solo pueden mejorar
               las especializadas concedidas por el arquetipo.
             </p>
+            <p>
+              Las habilidades elegidas en el paso anterior ya aparecen abajo con
+              su entrenamiento base. Agregales puntos sin volver a tirar sus
+              dados.
+            </p>
             {points.map((point, index) => {
               const base = baseCreationTraining(result, point.id),
                 max = Math.max(0, Math.min(20, 50 - base));
@@ -487,7 +498,7 @@ export function CreationTraining(props: Props) {
                       −
                     </button>
                     <label>
-                      Puntos {index + 1}
+                      Puntos para {names(point.id)}
                       <input
                         type="number"
                         min={0}
@@ -524,9 +535,19 @@ export function CreationTraining(props: Props) {
                       +
                     </button>
                     <button
-                      aria-label={"Quitar habilidad " + names(point.id)}
+                      aria-label={"Quitar puntos de " + names(point.id)}
                       onClick={() =>
-                        onPoints(points.filter((_, j) => j !== index))
+                        onPoints(
+                          result.skills.some(
+                            (s) =>
+                              s.id === point.id &&
+                              s.origins.some((o) => o !== "free_points"),
+                          )
+                            ? points.map((p, j) =>
+                                j === index ? { ...p, amount: 0 } : p,
+                              )
+                            : points.filter((_, j) => j !== index),
+                        )
                       }
                     >
                       Quitar
@@ -543,6 +564,23 @@ export function CreationTraining(props: Props) {
                 </div>
               );
             })}
+            {fixedTraining.length > 0 && (
+              <section aria-label="Entrenamientos sin puntos libres">
+                <h4>Entrenamientos que conservás sin puntos libres</h4>
+                <p>
+                  Estas especializadas se concedieron sólo por origen social y
+                  el reglamento no permite mejorarlas con este reparto.
+                </p>
+                <ul>
+                  {fixedTraining.map((s) => (
+                    <li key={s.id}>
+                      {s.label} · Entrenamiento{" "}
+                      {baseCreationTraining(result, s.id)}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <details>
               <summary>Añadir habilidad al reparto</summary>
               <label>

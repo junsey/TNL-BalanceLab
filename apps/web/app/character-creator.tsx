@@ -74,10 +74,7 @@ export function CharacterCreator({
   const [dirty, setDirty] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState("");
-  const [points, setPoints] = useState([
-    { id: "fuerza_bruta", amount: 10 },
-    { id: "coordinacion", amount: 10 },
-  ]);
+  const [points, setPoints] = useState<{ id: string; amount: number }[]>([]);
   const [step, setStep] = useState(0),
     [started, setStarted] = useState(false),
     [confirmed, setConfirmed] = useState(false),
@@ -535,8 +532,7 @@ export function CharacterCreator({
           const entries = Object.entries(
             record.creation.input.choices.freePoints,
           );
-          if (entries.length)
-            setPoints(entries.map(([id, amount]) => ({ id, amount })));
+          setPoints(entries.map(([id, amount]) => ({ id, amount })));
           setDirty(false);
           setError("");
           setNotice(
@@ -979,6 +975,7 @@ export function CharacterCreator({
               if (!generated) return;
               if (proposal.after !== undefined) go(proposal.after);
               if (proposal.restart) {
+                setPoints([]);
                 setStarted(false);
                 setSaved(false);
                 setNotice(

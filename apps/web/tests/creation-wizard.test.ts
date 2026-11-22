@@ -10,6 +10,7 @@ import {
   editableCreationRequests,
   allocationProblems,
   baseCreationTraining,
+  creationTrainingPointRows,
 } from "../lib/creation-wizard.ts";
 test("Wizard: borrador conserva paso, decisiones, errores editables y tiradas; rechaza corrupción", () => {
   const creation = generateCharacter(
@@ -97,6 +98,22 @@ test("Wizard: edición de ficha completa recupera opciones oficiales y no duplic
     allowed = requests.find((q) => q.key === "freePoints")!.options;
   const points = Object.entries(result.input.choices.freePoints).map(
     ([id, amount]) => ({ id, amount }),
+  );
+  const rows = creationTrainingPointRows(result, points, allowed);
+  for (const skill of result.skills.filter(
+    (s) => s.origins.some((o) => o !== "free_points") && allowed.includes(s.id),
+  )) {
+    const row = rows.find((p) => p.id === skill.id);
+    assert.ok(row, "Concesión ausente del reparto: " + skill.label);
+    assert.equal(row.amount, result.input.choices.freePoints[skill.id] ?? 0);
+  }
+  assert.equal(
+    rows.reduce((n, p) => n + p.amount, 0),
+    20,
+  );
+  assert.deepEqual(
+    result,
+    generateCharacter(result.input, creationCatalogData),
   );
   assert.ok(allocationProblems(result, points, allowed).valid);
   for (const p of points)

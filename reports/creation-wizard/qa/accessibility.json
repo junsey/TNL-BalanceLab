@@ -499,34 +499,11 @@
                 "li:nth-child(8) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
               ],
               "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
-                "button[aria-label=\"Restar punto a Coordinación\"]"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            }
-          ]
-        },
-        {
-          "id": "label-content-name-mismatch",
-          "nodes": [
-            {
-              "target": [
-                "button[aria-label=\"Restar punto a Coordinación\"]"
-              ],
-              "summary": "Fix any of the following:\n  Unable to determine if the visible text is part of the accessible name"
-            },
-            {
-              "target": [
-                "button[aria-label=\"Sumar punto a Coordinación\"]"
-              ],
-              "summary": "Fix any of the following:\n  Unable to determine if the visible text is part of the accessible name"
             }
           ]
         }
       ],
-      "passes": 30
+      "passes": 29
     },
     {
       "state": "Revisar",
@@ -1863,31 +1840,13 @@
             },
             {
               "target": [
-                "button[aria-label=\"Restar punto a Coordinación\"]"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
-                ".wizard-point-row:nth-child(5) > .wizard-point-controls > button:nth-child(1)"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
-                ".wizard-point-row:nth-child(5) > .wizard-point-controls > label > input[min=\"0\"][max=\"20\"][type=\"number\"]"
+                ".wizard-point-row:nth-child(6) > div:nth-child(1) > small"
               ],
               "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
             },
             {
               "target": [
-                ".wizard-point-row:nth-child(5) > .wizard-point-controls > button:nth-child(4)"
-              ],
-              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
-            },
-            {
-              "target": [
-                "#training-panel-2 > details > summary"
+                ".wizard-point-row:nth-child(6) > .wizard-point-controls > label"
               ],
               "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
             }
@@ -1898,25 +1857,13 @@
           "nodes": [
             {
               "target": [
-                "button[aria-label=\"Restar punto a Coordinación\"]"
-              ],
-              "summary": "Fix any of the following:\n  Unable to determine if the visible text is part of the accessible name"
-            },
-            {
-              "target": [
-                "button[aria-label=\"Sumar punto a Coordinación\"]"
-              ],
-              "summary": "Fix any of the following:\n  Unable to determine if the visible text is part of the accessible name"
-            },
-            {
-              "target": [
                 ".wizard-point-row:nth-child(5) > .wizard-point-controls > button:nth-child(1)"
               ],
               "summary": "Fix any of the following:\n  Unable to determine if the visible text is part of the accessible name"
             },
             {
               "target": [
-                "button[aria-label=\"Sumar punto a Dominio de Dagas\"]"
+                ".wizard-point-row:nth-child(5) > .wizard-point-controls > button:nth-child(3)"
               ],
               "summary": "Fix any of the following:\n  Unable to determine if the visible text is part of the accessible name"
             }
@@ -2354,7 +2301,7 @@
             },
             {
               "target": [
-                "#training-panel-2 > p"
+                "#training-panel-2 > p:nth-child(3)"
               ],
               "summary": "Fix any of the following:\n  Element's background color could not be determined because it's partially obscured by another element"
             }

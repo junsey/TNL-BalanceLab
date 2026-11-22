@@ -60,6 +60,27 @@ export const wizardDraftSchema = z.strictObject({
 });
 
 export type TrainingPoints = { id: string; amount: number }[];
+/** Show granted skills without allocating or rerolling their existing training. */
+export function creationTrainingPointRows(
+  result: CreationResult,
+  assigned: TrainingPoints,
+  allowed: readonly string[],
+): TrainingPoints {
+  const trained = result.skills
+    .filter(
+      (s) =>
+        s.origins.some((o) => o !== "free_points") && allowed.includes(s.id),
+    )
+    .map((s) => s.id);
+  const missing = trained
+    .filter((id) => !assigned.some((p) => p.id === id))
+    .map((id) => ({ id, amount: 0 }));
+  return [...assigned, ...missing].sort((a, b) => {
+    const ai = trained.indexOf(a.id),
+      bi = trained.indexOf(b.id);
+    return (ai < 0 ? trained.length : ai) - (bi < 0 ? trained.length : bi);
+  });
+}
 export function baseCreationTraining(result: CreationResult, id: string) {
   const skill = result.skills.find((s) => s.id === id);
   return (

@@ -117,15 +117,10 @@ try {
     }),
   );
   await q.getByRole("tab", { name: "6C · 20 puntos", exact: true }).click();
-  if (!artisan.input.choices.freePoints[skill.id]) {
-    await q.getByText("Añadir habilidad al reparto", { exact: true }).click();
-    await q
-      .getByLabel("Buscar habilidad para puntos", { exact: true })
-      .fill(skill.label);
-    await q
-      .getByRole("button", { name: "Añadir " + skill.label, exact: true })
-      .click();
-  }
+  const alreadyListed = q
+    .locator(".wizard-point-row")
+    .filter({ has: q.getByText(skill.label, { exact: true }) });
+  await expect(alreadyListed).toHaveCount(1);
   const row = q
     .locator(".wizard-point-row")
     .filter({ has: q.getByText(skill.label, { exact: true }) });

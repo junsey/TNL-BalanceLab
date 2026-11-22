@@ -93,6 +93,9 @@ try {
       await next(page);
       await confirmChange(page);
       await completeTrainingChoices(page);
+      await expect(page.locator(".wizard-budget")).toContainText(
+        "20 disponibles",
+      );
       await page
         .getByRole("button", {
           name: "Proponer reparto automático",
@@ -113,14 +116,21 @@ try {
         "complete",
       );
       const initialPoints = await page
-        .getByLabel("Puntos 1", { exact: true })
+        .locator(".wizard-point-row input[type=number]")
+        .first()
         .inputValue();
-      await page.getByLabel("Puntos 1", { exact: true }).fill("20");
+      await page
+        .locator(".wizard-point-row input[type=number]")
+        .first()
+        .fill("20");
       await apply.click();
       await expect(page.locator('.wizard-active [role="alert"]')).toContainText(
         "20 puntos",
       );
-      await page.getByLabel("Puntos 1", { exact: true }).fill(initialPoints);
+      await page
+        .locator(".wizard-point-row input[type=number]")
+        .first()
+        .fill(initialPoints);
       await apply.click();
       await expect(page.locator('.wizard-active [role="alert"]')).toHaveCount(
         0,
