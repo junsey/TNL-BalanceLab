@@ -1,0 +1,35 @@
+.creation-wizard {
+  --wizard-bg: #081923;
+  --wizard-surface: #102630;
+  --wizard-elevated: #17343d;
+  --wizard-border: #40636d;
+  --wizard-text: #e9f4f5;
+  --wizard-muted: #b8cdd1;
+  --wizard-accent: #7cded4;
+  --wizard-on-accent: #082129;
+  --wizard-warning: #efc27a;
+  --wizard-danger: #ff9e9e;
+  --wizard-success: #87dbc0;
+  --wizard-focus: #c5fff5;
+  --wizard-radius: 14px;
+  --wizard-control-radius: 9px;
+  color: var(--wizard-text);
+  background: var(--wizard-bg);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.creation-wizard :focus-visible {
+  outline: 3px solid var(--wizard-focus);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .creation-wizard *,
+  .creation-wizard *::before,
+  .creation-wizard *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

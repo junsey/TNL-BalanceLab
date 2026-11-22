@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "cases": 6,
+  "checks": [
+    "rutas legales en aleatorio asistido y manual",
+    "decisiones y confirmación",
+    "Rogue fuera de tablas",
+    "borrador y validación pendiente",
+    "390 px sin desborde",
+    "sin errores de página",
+    "equipo de dos manos, archivo exacto y rechazo de corrupción",
+    "sin guardar en servidor y recuperación de sesión",
+    "personaje creado en Laboratorio y Coliseo"
+  ]
+}
