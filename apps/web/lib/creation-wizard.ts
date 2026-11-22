@@ -33,9 +33,12 @@ export const wizardDraftSchema = z.strictObject({
   // Editing may temporarily be invalid; the applied result below stays canonical.
   input: creationInputSchema.extend({
     attributes: z.partialRecord(creationAttribute, z.number()).default({}),
-    choices: creationInputSchema.shape.choices.removeDefault().extend({
-      specializations: z.record(z.string(), z.string().max(120)).default({}),
-    }),
+    choices: creationInputSchema.shape.choices
+      .removeDefault()
+      .extend({
+        specializations: z.record(z.string(), z.string().max(120)).default({}),
+      })
+      .default(() => creationInputSchema.shape.choices.parse(undefined)),
   }),
   creation: z.json(),
   creationHash: z.string().length(64),

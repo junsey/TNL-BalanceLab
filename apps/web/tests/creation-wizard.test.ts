@@ -72,6 +72,16 @@ test("Wizard: borrador conserva paso, decisiones, errores editables y tiradas; r
   );
   assert.deepEqual(editing.creation, creation);
   assert.throws(() => generateCharacter(editing.input, creationCatalogData));
+  const withDefaults = restoreWizardDraft(
+    JSON.stringify({ ...draft, input: { ...draft.input, choices: undefined } }),
+  );
+  assert.deepEqual(withDefaults.input.choices, {
+    specializations: {},
+    originFaculties: [],
+    archetypeFaculties: [],
+    additionalSkills: [],
+    freePoints: {},
+  });
   assert.equal(wizardDataComplete(7, true, creation, false, false), false);
   assert.equal(wizardDataComplete(1, false, creation, false, false), false);
   assert.equal(wizardDataComplete(1, true, creation, false, false), true);
