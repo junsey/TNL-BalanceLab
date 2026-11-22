@@ -133,6 +133,15 @@ const opportunityState = z.strictObject({
   continuation: continuation.nullable(),
 });
 const stateSchema = z.strictObject({
+  counter: z
+    .strictObject({
+      actor: id,
+      target: id,
+      talent: z.enum(["riposte", "agile_counterattack"]),
+      weaponId: id.optional(),
+    })
+    .nullable()
+    .optional(),
   pairedAttack: z
     .strictObject({
       actor: id,
@@ -144,9 +153,10 @@ const stateSchema = z.strictObject({
     .optional(),
   setup: setupSchema,
   engineVersion: z.enum([
+    "0.10.0-dagger-pairs",
     "0.9.0-secondary-dagger",
     "0.8.0-core03-combat",
-    "0.10.0-dagger-pairs",
+    "0.11.0-counter-talents",
     "0.7.0-core03-sheet",
     "0.6.0-resistance-experimental",
     "0.1.0-tactical",
@@ -399,7 +409,7 @@ export function startHistoricalTacticalEncounter(input: unknown) {
   const state: TacticalState = {
     setup,
     engineVersion: setup.rules.combatVersion
-      ? "0.10.0-dagger-pairs"
+      ? "0.11.0-counter-talents"
       : setup.rules.calculationVersion
         ? "0.7.0-core03-sheet"
         : setup.rules.resistance
@@ -577,19 +587,39 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
         (id) => !ids.includes(id) || !opponents(id, queued.action.actor),
       ) ||
       new Set(queued.waiting).size !== queued.waiting.length ||
-      (!pending && (!queued.waiting.length || !!queued.prepared?.length)) ||
-      (pending && pending.defender !== queued.action.actor));
+      (!pending &&
+        !state.counter &&
+        (!queued.waiting.length || !!queued.prepared?.length)) ||
+      (pending &&
+        !pending.reaction &&
+        pending.defender !== queued.action.actor));
   if (
     !idsMatch(state.groups.flat()) ||
     (state.pairedAttack &&
-      (!state.pending ||
-        state.pending.sweep ||
-        state.pending.attacker !== state.pairedAttack.actor ||
-        state.pending.defender !== state.pairedAttack.target ||
+      ((!state.pending && !state.counter) ||
+        state.pending?.sweep ||
+        (state.pending &&
+          !state.pending.reaction &&
+          (state.pending.attacker !== state.pairedAttack.actor ||
+            state.pending.defender !== state.pairedAttack.target)) ||
         !state.actors.some(
           (a) =>
             a.fighter.id === state.pairedAttack?.actor &&
-            usesDaggerPair(a.fighter),
+            !!a.fighter.capabilities?.talents.some(
+              (t) => t.id === "two_daggers",
+            ),
+        ))) ||
+    (state.counter &&
+      (state.pending ||
+        !ids.includes(state.counter.actor) ||
+        !ids.includes(state.counter.target) ||
+        !opponents(state.counter.actor, state.counter.target) ||
+        !state.actors.some(
+          (a) =>
+            a.fighter.id === state.counter?.actor &&
+            a.fighter.capabilities?.talents.some(
+              (t) => t.id === state.counter?.talent,
+            ),
         ))) ||
     !idsMatch(state.actors.map((actor) => actor.fighter.id)) ||
     invalidActor ||
@@ -605,7 +635,8 @@ export function restoreTacticalEncounter(input: unknown): TacticalState {
         (!pending.thrown && striker.zone !== target.zone) ||
         !alive(striker.fighter) ||
         !alive(target.fighter) ||
-        (!state.opportunities?.continuation &&
+        (!pending.reaction &&
+          !state.opportunities?.continuation &&
           ((pending.actionCost === "minor" ? striker.minor : striker.major) ||
             striker.ended ||
             !state.groups[state.phase]?.includes(striker.fighter.id))) ||
@@ -638,6 +669,36 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
       kind: "defend",
       actor: id,
       defense,
+    }));
+  }
+  if (state.counter) {
+    if (state.counter.actor !== id) return [];
+    const target = state.actors.find(
+      (a) => a.fighter.id === state.counter!.target,
+    );
+    const entry = equippedAttacks(fighter).find(
+      (e) => e.weaponId === state.counter!.weaponId,
+    );
+    const available =
+      target &&
+      alive(target.fighter) &&
+      actor.zone === target.zone &&
+      canSee(state, actor.zone, target.zone) &&
+      !fighter.conditions?.some((c) => c.blocksReactions) &&
+      entry &&
+      canAttack(
+        {
+          ...fighter,
+          weapon: entry.item,
+          hands: undefined,
+          energy: entry.weaponId ? undefined : fighter.energy,
+        },
+        state.setup.rules,
+      );
+    return (available ? [true, false] : [false]).map((accept) => ({
+      kind: "opportunity",
+      actor: id,
+      accept,
     }));
   }
   if (state.opportunities?.continuation) {
@@ -1104,6 +1165,7 @@ function phaseActors(state: World) {
 function advance(state: World, details: Detail[]) {
   while (
     !state.outcome &&
+    !state.counter &&
     !state.pending &&
     phaseActors(state).every((actor) => actor.ended || !alive(actor.fighter))
   ) {
@@ -1641,6 +1703,25 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
       });
       break;
     case "opportunity": {
+      if (state.counter) {
+        const counter = state.counter;
+        state.counter = null;
+        details.push({
+          kind: "TALENT_DECISION",
+          actor: decision.actor,
+          talent: counter.talent,
+          accepted: decision.accept,
+        });
+        if (decision.accept) {
+          const target = state.actors.find(
+            (a) => a.fighter.id === counter.target,
+          )!;
+          executeAttack(actor, target, counter.weaponId);
+          const impact = state.pending as z.infer<typeof pendingImpact> | null;
+          if (impact) impact.reaction = "talent";
+        }
+        break;
+      }
       const opportunities = state.opportunities!;
       const queued = opportunities.continuation!;
       const target = state.actors.find(
@@ -1744,6 +1825,53 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
         });
       }
       reportUnresolved(state, details, result.unresolved);
+      const talentId =
+        decision.defense === "parry"
+          ? "riposte"
+          : decision.defense === "dodge"
+            ? "agile_counterattack"
+            : null;
+      const talent = actor.fighter.capabilities?.talents.find(
+        (t) => t.id === talentId,
+      );
+      const grade = result.event.grade;
+      if (
+        talent &&
+        (grade === "critical" ||
+          grade === "quarter" ||
+          (talent.level === 2 && grade === "half")) &&
+        alive(actor.fighter) &&
+        alive(attacker.fighter) &&
+        actor.zone === attacker.zone &&
+        !actor.fighter.conditions?.some((c) => c.blocksReactions)
+      ) {
+        const weapon = equippedAttacks(actor.fighter).find((e) =>
+          canAttack(
+            {
+              ...actor.fighter,
+              weapon: e.item,
+              hands: undefined,
+              energy: e.weaponId ? undefined : actor.fighter.energy,
+            },
+            state.setup.rules,
+          ),
+        );
+        if (weapon) {
+          state.counter = {
+            actor: actor.fighter.id,
+            target: attacker.fighter.id,
+            talent: talentId as "riposte" | "agile_counterattack",
+            ...(weapon.weaponId ? { weaponId: weapon.weaponId } : {}),
+          };
+          details.push({
+            kind: "TALENT_WINDOW",
+            actor: actor.fighter.id,
+            target: attacker.fighter.id,
+            talent: talentId,
+            level: talent.level,
+          });
+        }
+      }
       if (impact.sweep)
         sweepTargets(
           attacker,
@@ -2001,6 +2129,7 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
 
   while (
     state.opportunities?.continuation &&
+    !state.counter &&
     !state.pending &&
     !state.outcome
   ) {
@@ -2086,7 +2215,7 @@ export function stepTacticalAction(previous: TacticalState, input: unknown) {
     }
   }
   state.outcome ??= outcomeFor(state);
-  if (!state.pending && state.pairedAttack) {
+  if (!state.pending && !state.counter && state.pairedAttack) {
     const queued = state.pairedAttack;
     state.pairedAttack = null;
     const striker = state.actors.find((a) => a.fighter.id === queued.actor)!;
@@ -2154,6 +2283,7 @@ export function resolveAction(previous: TacticalState, input: unknown) {
         ),
         rng: state.rng,
         pending: state.pending,
+        ...(state.counter !== undefined && { counter: state.counter }),
         ...(state.pairedAttack !== undefined && {
           pairedAttack: state.pairedAttack,
         }),
@@ -2172,6 +2302,7 @@ const replayEvent = z.object({
   beforeHash: z.string().regex(/^[a-f0-9]{64}$/),
   afterHash: z.string().regex(/^[a-f0-9]{64}$/),
   changes: z.strictObject({
+    counter: stateSchema.shape.counter,
     pairedAttack: stateSchema.shape.pairedAttack,
     actors: z.array(combatant),
     rng: rngState,

@@ -725,6 +725,7 @@ export function Coliseum({
   );
   const actorId =
     state?.pending?.defender ??
+    state?.counter?.actor ??
     state?.opportunities?.continuation?.waiting[0] ??
     (legalIds.includes(selection)
       ? selection

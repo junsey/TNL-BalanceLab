@@ -64,7 +64,7 @@ export const capabilityCatalog = [
     shieldBlocks: false,
     roundLimit: null,
     cost: "normal_weapon_cost_after_defense",
-    execution: "pending_integration",
+    execution: "implemented",
   },
   {
     id: "agile_counterattack",
@@ -75,7 +75,7 @@ export const capabilityCatalog = [
     grades: { 1: "quarter", 2: "half" },
     roundLimit: null,
     cost: "normal_weapon_cost_after_defense",
-    execution: "pending_integration",
+    execution: "implemented",
   },
   {
     id: "two_daggers",

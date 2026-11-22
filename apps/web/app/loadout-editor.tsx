@@ -66,6 +66,31 @@ export function LoadoutEditor({
         Ensayar Talento Dos Dagas · 1 Vigor por pareja; requiere dos dagas
         equipadas y sin armadura pesada
       </label>
+      {(["riposte", "agile_counterattack"] as const).map((id) => (
+        <label key={id}>
+          {id === "riposte" ? "Riposta" : "Contraataque Ágil"} · ensayo
+          <select
+            aria-label={label(
+              id === "riposte"
+                ? "Talento Riposta"
+                : "Talento Contraataque Ágil",
+            )}
+            value={c.counterTalents?.find((t) => t.id === id)?.level ?? ""}
+            onChange={(e) => {
+              const chosen = (c.counterTalents ?? []).filter(
+                (t) => t.id !== id,
+              );
+              if (e.target.value)
+                chosen.push({ id, level: Number(e.target.value) as 1 | 2 });
+              update({ counterTalents: chosen });
+            }}
+          >
+            <option value="">Sin concesión de ensayo</option>
+            <option value="1">Nivel I · éxito a ¼</option>
+            <option value="2">Nivel II · éxito a ½ o mejor</option>
+          </select>
+        </label>
+      ))}
       <label>
         Arma principal
         <select

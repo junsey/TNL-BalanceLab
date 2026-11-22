@@ -20,6 +20,7 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | 3.4 Equipo y persistencia | Publicada | 0e0c890; CI correcto | docs/creation-persistence-3.4.md; 115 tests, archivos, sesión, DB y e2e |
 | 4.1 Contrato de capacidades | Publicada | 0f2abba | docs/combat-additions-4.1.md; 116 pruebas |
 | 4.2 Daga secundaria | Publicada | 6f6507f; CI correcto | docs/combat-additions-4.2.md; 118 pruebas y navegador |
-| 4.3 Dos Dagas | Publicada en este commit | base 6f6507f | docs/combat-additions-4.3.md; 121 pruebas y navegador |
-| Resto de ampliaciones | Pendientes | — | docs/queued-combat-additions.md |
+| 4.3 Dos Dagas | Publicada | 421d6f8 | docs/combat-additions-4.3.md; 121 pruebas y navegador |
+| 4.4 Contraataques | Publicada en este commit | base 421d6f8 | docs/combat-additions-4.4.md; pruebas y navegador |
+| IA, estados y maniobras restantes | En curso / pendientes de reglas por bloque | — | docs/queued-combat-additions.md |
 | Wizard WIZ-01–WIZ-06 | En cola después del combate | — | Especificación v1 del usuario, 21/11 |

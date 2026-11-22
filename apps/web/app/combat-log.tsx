@@ -300,6 +300,29 @@ export function Detail({
             " · " + detail.waiting.map((id) => name(print(id))).join(", ")}
         </p>
       );
+    case "DAGGER_PAIR":
+      return (
+        <p>
+          {name(print(detail.actor))} inicia una pareja de ataques de daga · 1
+          Vigor.
+        </p>
+      );
+    case "TALENT_WINDOW":
+      return (
+        <p>
+          {name(print(detail.actor))} puede usar{" "}
+          {detail.talent === "riposte" ? "Riposta" : "Contraataque Ágil"} ·
+          nivel {print(detail.level)}.
+        </p>
+      );
+    case "TALENT_DECISION":
+      return (
+        <p>
+          {name(print(detail.actor))}{" "}
+          {detail.accepted ? "activa" : "deja pasar"}{" "}
+          {detail.talent === "riposte" ? "Riposta" : "Contraataque Ágil"}.
+        </p>
+      );
     case "OPPORTUNITY_DECISION":
       return (
         <p>

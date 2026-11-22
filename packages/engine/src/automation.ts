@@ -40,7 +40,11 @@ export function chooseTacticalAction(
       action.kind === "opportunity" &&
       action.accept === profile.takeOpportunity,
   );
-  if (opportunity) return { action: opportunity, reason: "opportunity-policy" };
+  if (opportunity)
+    return {
+      action: opportunity,
+      reason: state.counter ? "talent-reaction-policy" : "opportunity-policy",
+    };
 
   const opponents = state.actors.filter(
     (other) =>

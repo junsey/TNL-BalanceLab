@@ -20,6 +20,7 @@
     "test:creation-ui": "node scripts/test-creation-ui.ts",
     "test:secondary-ui": "node scripts/test-secondary-ui.ts",
     "test:paired-ui": "node scripts/test-secondary-ui.ts --pairs",
+    "test:counter-ui": "node scripts/test-counter-ui.ts",
     "benchmark": "node scripts/benchmark.ts",
     "audit:rng": "node scripts/audit-rng.ts",
     "audit:integration": "node scripts/audit-integration.ts",

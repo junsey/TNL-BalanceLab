@@ -42,6 +42,7 @@ jobs:
           npm run test:creation-ui
           npm run test:secondary-ui
           npm run test:paired-ui
+          npm run test:counter-ui
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -50,4 +51,5 @@ jobs:
             reports/shared-combat-ui/
             reports/creation-ui/
             reports/secondary-dagger-ui/
+            reports/counter-ui/
           retention-days: 14

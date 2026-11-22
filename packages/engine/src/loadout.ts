@@ -8,6 +8,16 @@ export const loadoutSchema = z.strictObject({
   version: z.literal(loadoutVersion),
   source: z.literal("configuracion_de_laboratorio"),
   twoDaggers: z.boolean().optional(),
+  counterTalents: z
+    .array(
+      z.strictObject({
+        id: z.enum(["riposte", "agile_counterattack"]),
+        level: z.union([z.literal(1), z.literal(2)]),
+      }),
+    )
+    .max(2)
+    .refine((items) => new Set(items.map((i) => i.id)).size === items.length)
+    .optional(),
   primary: z.string().min(1),
   reserve: z.string().min(1).nullable(),
   armor: z.string().min(1).nullable(),
@@ -30,6 +40,16 @@ export function currentLoadout(f: Fighter): LabLoadout {
     source: "configuracion_de_laboratorio",
     ...(f.capabilities?.talents.some((t) => t.id === "two_daggers") && {
       twoDaggers: true,
+    }),
+    ...(f.capabilities?.talents.some(
+      (t) => t.id === "riposte" || t.id === "agile_counterattack",
+    ) && {
+      counterTalents: f.capabilities.talents
+        .filter((t) => t.id === "riposte" || t.id === "agile_counterattack")
+        .map((t) => ({
+          id: t.id as "riposte" | "agile_counterattack",
+          level: t.level,
+        })),
     }),
     primary: f.weapon.model.id,
     reserve: (f.reserveWeapon ?? f.stowedDagger)?.model.id ?? null,
@@ -93,6 +113,29 @@ export function applyLabLoadout(
       model.durability,
   });
   const f = structuredClone(original);
+  if (config.counterTalents !== undefined) {
+    const existing = f.capabilities ?? {
+      schemaVersion: 1 as const,
+      talents: [],
+      gifts: [],
+    };
+    const talents = existing.talents.filter(
+      (t) => t.provenance.sourceId !== "loadout-counter-talents",
+    );
+    for (const configured of config.counterTalents)
+      if (!talents.some((t) => t.id === configured.id))
+        talents.push({
+          ...configured,
+          provenance: {
+            source: "fixture",
+            sourceId: "loadout-counter-talents",
+            sourceDoc: "Diseño incremental: Riposta y Contraataque Ágil",
+            sourceSection: "Talento de ensayo elegido expresamente",
+            status: "BANCO_DE_PRUEBAS",
+          },
+        });
+    f.capabilities = { ...existing, talents };
+  }
   if (config.twoDaggers !== undefined) {
     const existing = f.capabilities ?? {
       schemaVersion: 1 as const,

@@ -755,6 +755,7 @@ export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
 
   const active =
     displayed.pending?.defender ??
+    displayed.counter?.actor ??
     displayed.opportunities?.continuation?.waiting[0] ??
     (getLegalActions(displayed, selection).length
       ? selection

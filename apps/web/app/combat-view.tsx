@@ -563,7 +563,24 @@ export function CommandMenu({
   const legal = getLegalActions(state, active);
   const current = state.actors.find((actor) => actor.fighter.id === active);
   const reason = actionBlockReasons(state, active);
-  const reaction = !!state.pending || !!state.opportunities?.continuation;
+  const reaction =
+    !!state.pending || !!state.counter || !!state.opportunities?.continuation;
+  const describeAction = (action: CombatAction) =>
+    action.kind === "opportunity" && state.counter
+      ? action.accept
+        ? "Ejecutar " +
+          (state.counter.talent === "riposte"
+            ? "Riposta"
+            : "Contraataque Ágil") +
+          " · " +
+          attackVigorCost(
+            equippedAttacks(current!.fighter).find(
+              (e) => e.weaponId === state.counter?.weaponId,
+            )!.item.model,
+          ) +
+          " Vigor"
+        : "Pasar reacción"
+      : actionName(action);
   const activeCategory = state.pending
     ? "defend"
     : reaction
@@ -991,7 +1008,7 @@ export function CommandMenu({
                           onAction(action);
                         }}
                       >
-                        {actionName(action)}
+                        {describeAction(action)}
                       </button>
                     ))}
                 </div>
@@ -1202,7 +1219,7 @@ export function CommandMenu({
                               onClick={() => onAction(action)}
                             >
                               <ActionIcon cost={cost?.action} />
-                              {actionName(action)}
+                              {describeAction(action)}
                               {cost && (
                                 <small>
                                   {cost.vigor} Vigor · {cost.energy} Energía
