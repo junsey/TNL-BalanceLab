@@ -203,6 +203,9 @@ function chooseBaseAction(context: DecisionContext): TacticalDecision | null {
       reason: state.counter ? "talent-reaction-policy" : "opportunity-policy",
     };
 
+  const stand = actions.find((a) => a.kind === "standUp");
+  if (stand) return { action: stand, reason: "stand-up" };
+
   const opponents = state.actors.filter(
     (other) =>
       other.fighter.health > 0 &&

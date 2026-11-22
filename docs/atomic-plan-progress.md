@@ -27,6 +27,7 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | IA-03 Intérprete declarativo | Publicada | 14b1c13 | docs/ai-03-interpreter.md; 134 pruebas |
 | IA-04 Azar y trazabilidad | Publicada | cc44d31 | docs/ai-04-rng.md; 137 pruebas y 360000 desempates |
 | IA-05 Coordinación reactiva | Publicada | 4adcca5 | docs/ai-05-coordination.md; 141 pruebas |
-| IA-06 Integración y regresión | Publicada en este commit | base 4adcca5 | docs/ai-06-integration.md; 1000 encuentros y navegador |
-| Estados y maniobras | En curso / pendientes de reglas por bloque | — | docs/queued-combat-additions.md |
-| Wizard WIZ-01–WIZ-06 | En cola después del combate | — | Especificación v1 del usuario, 21/11 |
+| IA-06 Integración y regresión | Publicada | 66a937a | docs/ai-06-integration.md; 1000 encuentros y navegador |
+| 4.5 Efectos cerrados | Publicada en este commit | base 66a937a | docs/combat-additions-4.5.md; 144 pruebas y navegador |
+| Estados y maniobras restantes | Pendientes de definiciones concretas | — | docs/queued-combat-additions.md; se continúa con wizard independiente |
+| Wizard WIZ-01–WIZ-06 | Siguiente bloque independiente | — | Especificación v1 del usuario, 21/11 |

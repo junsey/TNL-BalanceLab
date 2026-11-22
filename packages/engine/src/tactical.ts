@@ -161,11 +161,12 @@ const stateSchema = z.strictObject({
     .optional(),
   setup: setupSchema,
   engineVersion: z.enum([
+    "0.12.0-ai-directives",
     "0.11.0-counter-talents",
     "0.10.0-dagger-pairs",
     "0.9.0-secondary-dagger",
     "0.8.0-core03-combat",
-    "0.12.0-ai-directives",
+    "0.13.0-grade-effects",
     "0.7.0-core03-sheet",
     "0.6.0-resistance-experimental",
     "0.1.0-tactical",
@@ -421,7 +422,7 @@ export function startHistoricalTacticalEncounter(input: unknown) {
     }),
     setup,
     engineVersion: setup.rules.combatVersion
-      ? "0.12.0-ai-directives"
+      ? "0.13.0-grade-effects"
       : setup.rules.calculationVersion
         ? "0.7.0-core03-sheet"
         : setup.rules.resistance
@@ -444,12 +445,14 @@ export function startHistoricalTacticalEncounter(input: unknown) {
     opportunities: { used: [], continuation: null },
     outcome: null,
   };
+  if (setup.rules.gradeEffectsVersion)
+    for (const actor of state.actors) consumeStunnedMinor(actor, []);
   return { state, initiative };
 }
 
 export function restoreTacticalEncounter(input: unknown): TacticalState {
   const state = stateSchema.parse(input);
-  if (state.engineVersion === "0.12.0-ai-directives" && !state.aiRng)
+  if (state.engineVersion === "0.13.0-grade-effects" && !state.aiRng)
     throw new RangeError("Falta el flujo de azar de IA del encuentro actual");
   validateSetup(state.setup);
   const ids = state.setup.participants.map((actor) => actor.fighter.id).sort();
@@ -734,6 +737,8 @@ export function getLegalActions(state: TacticalState, id: string): Action[] {
   const actions: Action[] = [{ kind: "end", actor: id }];
   if (fighter.conditions?.some((condition) => condition.blocksActions))
     return actions;
+  if (actor.minor && fighter.conditions?.some((c) => c.id === "knocked_down"))
+    actions.push({ kind: "standUp", actor: id });
   for (const operation of weaponOperations) {
     const cost = weaponControlCost(fighter, operation);
     if (cost && (cost.action === "none" || actor[cost.action]))
@@ -1229,6 +1234,7 @@ function advance(state: World, details: Detail[]) {
         actor.fighter = rechargeEnergy(actor.fighter, "perRound");
         actor.major = true;
         actor.minor = true;
+        consumeStunnedMinor(actor, details);
         actor.ended = false;
         delete actor.kicked;
       }
@@ -1266,6 +1272,19 @@ function advance(state: World, details: Detail[]) {
 }
 
 type Actor = World["actors"][number];
+function consumeStunnedMinor(actor: Actor, details: Detail[]) {
+  if (
+    !actor.minor ||
+    !actor.fighter.conditions?.some((c) => c.id === "stunned")
+  )
+    return;
+  actor.minor = false;
+  actor.fighter = {
+    ...actor.fighter,
+    conditions: actor.fighter.conditions.filter((c) => c.id !== "stunned"),
+  };
+  details.push({ kind: "STUN_CONSUMED", actor: actor.fighter.id });
+}
 const reach = { short: 0, medium: 1, long: 2 };
 
 export function previewOpportunityActors(
@@ -1805,6 +1824,17 @@ export function stepTacticalAction(
       }
       break;
     }
+    case "standUp": {
+      actor.minor = false;
+      actor.fighter = {
+        ...actor.fighter,
+        conditions: actor.fighter.conditions?.filter(
+          (c) => c.id !== "knocked_down",
+        ),
+      };
+      details.push({ kind: "STAND_UP", actor: decision.actor });
+      break;
+    }
     case "defend": {
       const impact = state.pending!;
       const attacker = state.actors.find(
@@ -1826,6 +1856,7 @@ export function stepTacticalAction(
         destination !== undefined,
       );
       actor.fighter = result.defender;
+      consumeStunnedMinor(actor, details);
       state.pending = null;
       state.rng = result.rng;
       details.push({

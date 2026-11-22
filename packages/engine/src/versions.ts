@@ -24,13 +24,16 @@ export function simulationVersions(
     engineVersion:
       engineVersion ??
       (setup.rules.combatVersion
-        ? "0.12.0-ai-directives"
+        ? "0.13.0-grade-effects"
         : setup.rules.calculationVersion
           ? "0.7.0-core03-sheet"
           : "HISTORICO"),
     rulesVersion: [
       setup.rules.calculationVersion ?? "legacy-vulnerability",
       setup.rules.combatVersion ?? "legacy-actions",
+      ...(setup.rules.gradeEffectsVersion
+        ? [setup.rules.gradeEffectsVersion]
+        : []),
     ].join("/"),
     catalogVersion: [
       ...new Set(

@@ -240,6 +240,21 @@ export function Detail({
           ) : detail.defense === "dodge" && detail.success === true ? (
             <span>Esquiva exitosa. Impacto anulado antes de tirar daño.</span>
           ) : null}
+          {Array.isArray(detail.gradeEffects) &&
+            detail.gradeEffects.map((e, i) => {
+              const effect = record(e);
+              return effect ? (
+                <span key={"grade-" + i}>
+                  Efecto de grado:{" "}
+                  {effect.kind === "knocked_down"
+                    ? "Derribado"
+                    : effect.kind === "stunned"
+                      ? "Aturdido"
+                      : "Ignora reducción directa de armadura"}
+                  .
+                </span>
+              ) : null;
+            })}
           {Array.isArray(detail.consequences) &&
             detail.consequences.map((entry, index) => {
               const consequence = record(entry);
@@ -259,6 +274,17 @@ export function Detail({
           {name(print(detail.actor))} intentó escabullirse. Tirada{" "}
           {print(detail.roll)} contra Esquivar {print(detail.target)}.{" "}
           {grades[print(detail.grade)]}. Coste {print(detail.cost)} Vigor.
+        </p>
+      );
+    case "STAND_UP":
+      return (
+        <p>{name(print(detail.actor))} se levantó · Acción Menor · 0 Vigor.</p>
+      );
+    case "STUN_CONSUMED":
+      return (
+        <p>
+          {name(print(detail.actor))} perdió su próxima Acción Menor por
+          Aturdido. El estado terminó.
         </p>
       );
     case "KICK":

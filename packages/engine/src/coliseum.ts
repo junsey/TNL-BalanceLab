@@ -404,6 +404,9 @@ export function makeColiseumWave(
       },
     }),
     rules: {
+      ...(settings.combatVersion && {
+        gradeEffectsVersion: "approved-grade-effects-v1" as const,
+      }),
       ...(settings.combatVersion && { combatVersion: settings.combatVersion }),
       ...(settings.calculationVersion && {
         calculationVersion: settings.calculationVersion,

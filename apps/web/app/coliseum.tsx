@@ -768,6 +768,7 @@ export function Coliseum({
       move: "Mover",
       run: "Correr",
       breathe: "Respirar",
+      standUp: "Levantarse",
       recover: "Tomar Aliento",
       creatureRecover: "Recuperar fuerzas",
       end: "Pasar turno",

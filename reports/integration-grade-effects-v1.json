@@ -1,0 +1,281 @@
+{
+  "schemaVersion": 1,
+  "auditVersion": "integration-v1",
+  "baseSha": "66a937ab20c4162ce6de144b3546f0cf66bdd071",
+  "scope": "Consistencia técnica; no es calibración de balance. Semillas de lotes e individuales se comparan desde el mismo snapshot inicial capturado.",
+  "cases": [
+    {
+      "context": "laboratorio",
+      "seed": "integration-01",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"integration-01\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.13.0-grade-effects",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1/approved-grade-effects-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "4cdda0085e13cd427e859494ea68ff460371af5d8e276561599f361a88774386",
+      "finalHash": "a8f958b0e0e10a68dfe3b82989d220559acd3f5893275717795be5411564d6ff",
+      "actions": 55,
+      "draws": 48,
+      "metrics": {
+        "attacks": 16,
+        "hits": 4,
+        "criticalHits": 0,
+        "defenses": 3,
+        "dodges": 2,
+        "opportunities": 0,
+        "damageInflicted": 10,
+        "damageReceived": 1,
+        "damageMitigated": 0,
+        "vigorSpent": 22,
+        "vigorRecovered": 8,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 20,
+      "equalManualAutomaticBatchStudyReplay": true
+    },
+    {
+      "context": "coliseo",
+      "seed": "integration-01",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"[\\\\\\\"coliseum-lab-v1\\\\\\\",\\\\\\\"integration-01\\\\\\\",1]\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.13.0-grade-effects",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1/approved-grade-effects-v1",
+        "catalogVersion": "coliseum-catalog-2026-11-22-v5",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "6da216fc25fd51e70fcb29319eca71a9d8ff306d01c3547c26f1564afc62e4eb",
+      "finalHash": "ee4981aa11258bf4b3935d774eefa525f7bd439ca78f2ecd0e637c5758279a5e",
+      "actions": 26,
+      "draws": 27,
+      "metrics": {
+        "attacks": 9,
+        "hits": 2,
+        "criticalHits": 0,
+        "defenses": 0,
+        "dodges": 0,
+        "opportunities": 0,
+        "damageInflicted": 15,
+        "damageReceived": 0,
+        "damageMitigated": 0,
+        "vigorSpent": 5,
+        "vigorRecovered": 4,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 11,
+      "equalManualAutomaticBatchStudyReplay": true
+    },
+    {
+      "context": "laboratorio",
+      "seed": "integration-02",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"integration-02\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.13.0-grade-effects",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1/approved-grade-effects-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "ff23793c81c4e76d5d94aae9562d7ff186b028d23cb052774b7628f04ed02e33",
+      "finalHash": "19070b0b1cfcb2f10b59d47db448985bea2aa1c50366f02e241c23be49d2857e",
+      "actions": 54,
+      "draws": 56,
+      "metrics": {
+        "attacks": 16,
+        "hits": 8,
+        "criticalHits": 0,
+        "defenses": 3,
+        "dodges": 2,
+        "opportunities": 0,
+        "damageInflicted": 36,
+        "damageReceived": 2,
+        "damageMitigated": 0,
+        "vigorSpent": 22,
+        "vigorRecovered": 7,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 24,
+      "equalManualAutomaticBatchStudyReplay": true
+    },
+    {
+      "context": "coliseo",
+      "seed": "integration-02",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"[\\\\\\\"coliseum-lab-v1\\\\\\\",\\\\\\\"integration-02\\\\\\\",1]\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.13.0-grade-effects",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1/approved-grade-effects-v1",
+        "catalogVersion": "coliseum-catalog-2026-11-22-v5",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "952ba207cf96a1a70bdc40fa6929b211988ce6483604411611ad4afbeaeeab8a",
+      "finalHash": "df087f7f0cf8ac6e0b77389bd0e20dcda04473422eab94cf0ea489a6412bbbf4",
+      "actions": 16,
+      "draws": 18,
+      "metrics": {
+        "attacks": 5,
+        "hits": 2,
+        "criticalHits": 0,
+        "defenses": 0,
+        "dodges": 0,
+        "opportunities": 0,
+        "damageInflicted": 18,
+        "damageReceived": 0,
+        "damageMitigated": 0,
+        "vigorSpent": 3,
+        "vigorRecovered": 2,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 7,
+      "equalManualAutomaticBatchStudyReplay": true
+    },
+    {
+      "context": "laboratorio",
+      "seed": "integration-ñ",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"integration-ñ\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.13.0-grade-effects",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1/approved-grade-effects-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "0454ced53bd2e89ea50975d77f9f5426005de252cf48a80dbee75fbfa66c5058",
+      "finalHash": "4e31f24e77c0e4039d8ab77ccd3e60d881e22181bb19939cf3a48c3ba48ab1be",
+      "actions": 59,
+      "draws": 64,
+      "metrics": {
+        "attacks": 16,
+        "hits": 10,
+        "criticalHits": 1,
+        "defenses": 3,
+        "dodges": 1,
+        "opportunities": 0,
+        "damageInflicted": 20,
+        "damageReceived": 30,
+        "damageMitigated": 0,
+        "vigorSpent": 22,
+        "vigorRecovered": 7,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 26,
+      "equalManualAutomaticBatchStudyReplay": true
+    },
+    {
+      "context": "coliseo",
+      "seed": "integration-ñ",
+      "executionSeed": "[\"encounter-v1\",\"[\\\"batch-v1\\\",\\\"[\\\\\\\"coliseum-lab-v1\\\\\\\",\\\\\\\"integration-ñ\\\\\\\",1]\\\",0]\",0]",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.13.0-grade-effects",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1/approved-grade-effects-v1",
+        "catalogVersion": "coliseum-catalog-2026-11-22-v5",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "combat-metrics-v2",
+        "model": "tactical",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "initialHash": "a63c9673f520a16f9caf9951dea39757f520b66523aa3aa5db539578abca8a01",
+      "finalHash": "791a2c77e60c0b1e80b2c6986853e662c7d02a0935eb6887ce47cc34999603f8",
+      "actions": 31,
+      "draws": 28,
+      "metrics": {
+        "attacks": 11,
+        "hits": 2,
+        "criticalHits": 0,
+        "defenses": 0,
+        "dodges": 0,
+        "opportunities": 0,
+        "damageInflicted": 9,
+        "damageReceived": 0,
+        "damageMitigated": 0,
+        "vigorSpent": 6,
+        "vigorRecovered": 5,
+        "energySpent": 0,
+        "equipmentWear": 0,
+        "conditionsAdded": 0
+      },
+      "renderedFrames": 13,
+      "equalManualAutomaticBatchStudyReplay": true
+    }
+  ],
+  "passive": [
+    {
+      "seed": "passive-a",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.13.0-grade-effects",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "passive-metrics-v2",
+        "model": "passive-target",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "natural": 31,
+      "grade": "normal",
+      "equalComparisonDamageAndDraws": true
+    },
+    {
+      "seed": "passive-b",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.13.0-grade-effects",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "passive-metrics-v2",
+        "model": "passive-target",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "natural": 67,
+      "grade": "miss",
+      "equalComparisonDamageAndDraws": true
+    },
+    {
+      "seed": "passive-ñ",
+      "versions": {
+        "schemaVersion": 2,
+        "engineVersion": "0.13.0-grade-effects",
+        "rulesVersion": "core03-sheet-v1/core03-combat-v1",
+        "catalogVersion": "core-fixtures-v2",
+        "rngVersion": "mulberry32-utf8-v1",
+        "metricsVersion": "passive-metrics-v2",
+        "model": "passive-target",
+        "naturalOnePolicy": "BANCO_DE_PRUEBAS:requiresImpact"
+      },
+      "natural": 98,
+      "grade": "miss",
+      "equalComparisonDamageAndDraws": true
+    }
+  ],
+  "pass": true
+}

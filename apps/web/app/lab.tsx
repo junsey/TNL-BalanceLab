@@ -166,6 +166,7 @@ const actionName = (action: Action, name = label) => {
       return {
         end: "Terminar turno",
         breathe: "Respirar",
+        standUp: "Levantarse",
         recover: "Tomar aliento",
         flee: "Huir",
       }[action.kind];

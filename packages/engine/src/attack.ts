@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { capabilities } from "../../schemas/src/capabilities.ts";
+import { gradeEffectsFor, gradeEffectsVersion } from "./grade-effects.ts";
 import {
   armor,
   character,
@@ -223,6 +224,7 @@ export const fighterState = z
   });
 
 export const attackRules = z.strictObject({
+  gradeEffectsVersion: z.literal(gradeEffectsVersion).optional(),
   combatVersion: z.literal("core03-combat-v1").optional(),
   calculationVersion: z.literal(coreCalculationVersion).optional(),
   fumbleConsequences: z.boolean(),
@@ -876,6 +878,15 @@ export function resolveImpact(
       : attacker.weapon.model);
   if (impact.weaponId && model.id !== impact.weaponId)
     throw new RangeError("Arma del impacto inválida");
+  const finalGrade =
+    shieldCheck &&
+    shieldCheck.grade !== "miss" &&
+    shieldCheck.grade !== "fumble"
+      ? shieldCheck.grade
+      : impact.grade;
+  const effects = rules.gradeEffectsVersion
+    ? gradeEffectsFor(model.id, attacker.profileId, finalGrade)
+    : [];
   const roll = rollWeaponDamage(
     model,
     shieldCheck &&
@@ -887,13 +898,43 @@ export function resolveImpact(
     impact.thrown === true,
   );
   state = roll.rng;
-  const reduction = armorProfile(paid).reduction;
+  const armorReduction = armorProfile(paid).reduction;
+  const reduction = effects.some((e) => e.kind === "ignore_armor_reduction")
+    ? 0
+    : armorReduction;
   const damage = applyDamage(
     impact.sweep ? Math.floor(roll.total / 2) : roll.total,
     capacity,
     reduction,
   );
   let updated = { ...paid, health: paid.health - damage.effective };
+  const applied: typeof effects = [];
+  // A full interception prevents contact. Armor may absorb damage without cancelling contact.
+  if (damage.residual > 0)
+    for (const e of effects) {
+      applied.push(e);
+      if (e.kind === "ignore_armor_reduction") continue;
+      if (updated.conditions?.some((c) => c.id === e.kind)) continue;
+      if ((updated.conditions?.length ?? 0) >= 1000) {
+        unresolved.push("condition-limit");
+        continue;
+      }
+      updated = {
+        ...updated,
+        conditions: [
+          ...(updated.conditions ?? []),
+          {
+            id: e.kind,
+            label: e.kind === "knocked_down" ? "Derribado" : "Aturdido",
+            source: "grade-effect:" + model.id,
+            blocksActions: false,
+            blocksReactions: false,
+            roundHealthLoss: 0,
+            duration: { unit: "persistent" as const },
+          },
+        ],
+      };
+    }
   if (rules.equipmentWear) {
     if (success && defense === "parry") {
       const weapon = parryWeapon(updated)!;
@@ -933,6 +974,10 @@ export function resolveImpact(
     event: {
       ...defenseEvent,
       damage: { ...damage, reduction, dice: roll.dice },
+      ...(rules.gradeEffectsVersion && {
+        gradeEffects: applied,
+        armorReduction,
+      }),
       consequences,
     },
     unresolved,

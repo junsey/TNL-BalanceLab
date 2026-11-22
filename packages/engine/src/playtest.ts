@@ -202,14 +202,14 @@ export function runHistoricalPassiveTargetPlaytest(input: unknown) {
   const final = { vigor, health, rng: rngState.parse(rng), recovering };
   const result = {
     engineVersion: config.combatVersion
-      ? "0.12.0-ai-directives"
+      ? "0.13.0-grade-effects"
       : core
         ? "0.7.0-core03-sheet"
         : "0.0.1",
     ...(config.combatVersion && {
       versions: reportVersionsSchema.parse({
         schemaVersion: 2,
-        engineVersion: "0.12.0-ai-directives",
+        engineVersion: "0.13.0-grade-effects",
         rulesVersion: "core03-sheet-v1/core03-combat-v1",
         catalogVersion: config.catalogVersion,
         rngVersion,

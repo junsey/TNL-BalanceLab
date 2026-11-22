@@ -477,6 +477,7 @@ const commands = [
   { id: "attack", label: "Atacar" },
   { id: "equipHands", label: "Cambiar arma" },
   { id: "move", label: "Mover" },
+  { id: "standUp", label: "Levantarse" },
   { id: "run", label: "Correr" },
   { id: "breathe", label: "Respirar" },
   { id: "recover", label: "Tomar aliento" },
@@ -499,6 +500,7 @@ const commandAction: Partial<Record<Command, "major" | "minor">> = {
   attack: "major",
   equipHands: "minor",
   move: "minor",
+  standUp: "minor",
   run: "major",
   breathe: "minor",
   recover: "major",
@@ -620,7 +622,7 @@ export function CommandMenu({
     ? [{ label: "Reacción", ids: [state.pending ? "defend" : "opportunity"] }]
     : [
         { label: "Ataque", ids: ["attack", "equipHands", "weaponControl"] },
-        { label: "Movimiento", ids: ["move", "run", "flee"] },
+        { label: "Movimiento", ids: ["move", "run", "standUp", "flee"] },
         {
           label: "Habilidades y maniobras",
           ids: ["sneak", "kick", "sweep", "throwWeapon", "stabilize"],
@@ -712,6 +714,8 @@ export function CommandMenu({
                             const matching = legal.filter(
                               (action) => action.kind === item.id,
                             );
+                            if (item.id === "standUp" && !matching.length)
+                              return null;
                             if (item.id === "throwWeapon" && current) {
                               const slots = ["weapon", "reserve"] as const;
                               return slots.map((slot) => {
