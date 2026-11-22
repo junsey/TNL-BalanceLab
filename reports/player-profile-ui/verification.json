@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "scans": [
+    {
+      "width": 1440,
+      "violations": []
+    },
+    {
+      "width": 390,
+      "violations": []
+    }
+  ],
+  "checks": [
+    "inventario persistente sin reparar",
+    "atributos",
+    "creados en selector",
+    "cambio de activo",
+    "Coliseo usa activo",
+    "390/1440 y axe"
+  ]
+}

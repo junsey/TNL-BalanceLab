@@ -46,6 +46,7 @@ jobs:
           npm run test:creation-training-ui
           npm run test:creation-review-ui
           npm run test:creation-accessibility
+          npm run test:profile-ui
           npm run test:secondary-ui
           npm run test:paired-ui
           npm run test:counter-ui

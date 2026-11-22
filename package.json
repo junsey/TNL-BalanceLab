@@ -39,7 +39,8 @@
     "test:creation-route-ui": "node scripts/test-creation-route-ui.ts",
     "test:creation-training-ui": "node scripts/test-creation-training-ui.ts",
     "test:creation-review-ui": "node scripts/test-creation-review-ui.ts",
-    "test:creation-accessibility": "node scripts/test-creation-accessibility.ts"
+    "test:creation-accessibility": "node scripts/test-creation-accessibility.ts",
+    "test:profile-ui": "node scripts/test-player-profile-ui.ts"
   },
   "dependencies": {
     "@noble/hashes": "^2.4.0",

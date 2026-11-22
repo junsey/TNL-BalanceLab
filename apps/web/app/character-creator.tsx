@@ -60,7 +60,11 @@ export function CharacterCreator({
   onUnsavedChange,
 }: {
   shared: boolean;
-  onUse: (entry: ColiseumEntry, mode: "lab" | "coliseum") => void;
+  onUse: (
+    entry: ColiseumEntry,
+    mode: "lab" | "coliseum",
+    record?: CreationRecord,
+  ) => void;
   onUnsavedChange?: (unsaved: boolean) => void;
 }) {
   const [importedRecord, setImportedRecord] = useState<CreationRecord | null>(

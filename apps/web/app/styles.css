@@ -84,6 +84,61 @@ p {
   background: #15343d;
   flex: none;
 }
+.player-profile-trigger {
+  display: block;
+  max-width: min(260px, 35vw);
+  min-height: 32px;
+  padding: 5px 9px;
+  margin-top: 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+.player-profile-dialog {
+  width: min(720px, 96vw);
+}
+.player-profile-dialog .dialog-body {
+  display: grid;
+  gap: 16px;
+}
+.player-profile-dialog label {
+  display: grid;
+  gap: 8px;
+}
+.player-profile-dialog select {
+  width: 100%;
+  min-width: 0;
+}
+.player-profile-dialog article {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.player-profile-attributes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.player-profile-attributes dt {
+  font-size: 13px;
+}
+.player-profile-attributes dd {
+  font-size: 24px;
+  margin: 4px 0;
+}
+@media (max-width: 520px) {
+  .player-profile-trigger {
+    max-width: 230px;
+  }
+  .player-profile-attributes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .brand-icon span {
   width: 29px;
   height: 29px;

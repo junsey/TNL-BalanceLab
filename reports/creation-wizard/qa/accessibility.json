@@ -53,12 +53,6 @@
                 "li:nth-child(6) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
               ],
               "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
-                "li:nth-child(7) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
             }
           ]
         }
@@ -106,12 +100,6 @@
             {
               "target": [
                 "li:nth-child(6) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
-                "li:nth-child(7) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
               ],
               "summary": "Fix any of the following:\n  Element content contains only non-text characters"
             }
@@ -163,12 +151,6 @@
                 "li:nth-child(6) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
               ],
               "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
-                "li:nth-child(7) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
             }
           ]
         }
@@ -218,12 +200,6 @@
                 "li:nth-child(6) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
               ],
               "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
-                "li:nth-child(7) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
             }
           ]
         }
@@ -240,9 +216,9 @@
           "nodes": [
             {
               "target": [
-                "li:nth-child(1) > button[type=\"button\"] > span"
+                "li:nth-child(1) > button[type=\"button\"]"
               ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
             },
             {
               "target": [
@@ -295,9 +271,9 @@
           "nodes": [
             {
               "target": [
-                "li:nth-child(2) > button[type=\"button\"] > span"
+                "li:nth-child(2) > button[type=\"button\"]"
               ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
             },
             {
               "target": [
@@ -350,9 +326,9 @@
           "nodes": [
             {
               "target": [
-                "li:nth-child(2) > button[type=\"button\"] > span"
+                "li:nth-child(2) > button[type=\"button\"]"
               ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
             },
             {
               "target": [
@@ -405,9 +381,9 @@
           "nodes": [
             {
               "target": [
-                "li:nth-child(2) > button[type=\"button\"] > span"
+                "li:nth-child(2) > button[type=\"button\"]"
               ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
             },
             {
               "target": [
@@ -460,9 +436,9 @@
           "nodes": [
             {
               "target": [
-                "li:nth-child(2) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
+                "li:nth-child(2) > button[type=\"button\"]"
               ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
+              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
             },
             {
               "target": [
@@ -749,12 +725,6 @@
           "nodes": [
             {
               "target": [
-                "li:nth-child(1) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
                 "li:nth-child(2) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
               ],
               "summary": "Fix any of the following:\n  Element content contains only non-text characters"
@@ -796,12 +766,6 @@
         {
           "id": "color-contrast",
           "nodes": [
-            {
-              "target": [
-                "li:nth-child(2) > button[type=\"button\"] > span"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
             {
               "target": [
                 "li:nth-child(3) > button[type=\"button\"] > span"
@@ -847,12 +811,6 @@
           "nodes": [
             {
               "target": [
-                "li:nth-child(3) > button[type=\"button\"] > span"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
                 "li:nth-child(4) > button[type=\"button\"] > span"
               ],
               "summary": "Fix any of the following:\n  Element content contains only non-text characters"
@@ -894,12 +852,6 @@
         {
           "id": "color-contrast",
           "nodes": [
-            {
-              "target": [
-                "li:nth-child(3) > button[type=\"button\"] > span"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
             {
               "target": [
                 "li:nth-child(4) > button[type=\"button\"] > span"
@@ -945,12 +897,6 @@
           "nodes": [
             {
               "target": [
-                "li:nth-child(3) > button[type=\"button\"] > span"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
                 "li:nth-child(4) > button[type=\"button\"] > span"
               ],
               "summary": "Fix any of the following:\n  Element content contains only non-text characters"
@@ -992,12 +938,6 @@
         {
           "id": "color-contrast",
           "nodes": [
-            {
-              "target": [
-                "li:nth-child(3) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
             {
               "target": [
                 "li:nth-child(4) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
@@ -1043,12 +983,6 @@
           "nodes": [
             {
               "target": [
-                "li:nth-child(4) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
-            {
-              "target": [
                 "li:nth-child(5) > button[type=\"button\"] > span[aria-hidden=\"true\"]"
               ],
               "summary": "Fix any of the following:\n  Element content contains only non-text characters"
@@ -1084,12 +1018,6 @@
         {
           "id": "color-contrast",
           "nodes": [
-            {
-              "target": [
-                "li:nth-child(4) > button[type=\"button\"] > span"
-              ],
-              "summary": "Fix any of the following:\n  Element content contains only non-text characters"
-            },
             {
               "target": [
                 "li:nth-child(5) > button[type=\"button\"] > span"
@@ -1264,18 +1192,6 @@
             {
               "target": [
                 "fieldset:nth-child(4) > legend"
-              ],
-              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
-            },
-            {
-              "target": [
-                "fieldset:nth-child(4) > .wizard-option-grid > article:nth-child(1) > label > strong"
-              ],
-              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
-            },
-            {
-              "target": [
-                "fieldset:nth-child(4) > .wizard-option-grid > article:nth-child(2) > label > strong"
               ],
               "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
             }
@@ -1519,12 +1435,6 @@
             {
               "target": [
                 "article:nth-child(5) > small:nth-child(6)"
-              ],
-              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
-            },
-            {
-              "target": [
-                "article:nth-child(5) > label"
               ],
               "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
             },
@@ -1942,12 +1852,6 @@
             },
             {
               "target": [
-                "article:nth-child(4) > small"
-              ],
-              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
-            },
-            {
-              "target": [
                 "article:nth-child(5) > h4"
               ],
               "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
@@ -1960,12 +1864,6 @@
             },
             {
               "target": [
-                "article:nth-child(5) > small"
-              ],
-              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
-            },
-            {
-              "target": [
                 "article:nth-child(6) > h4"
               ],
               "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
@@ -1973,12 +1871,6 @@
             {
               "target": [
                 "article:nth-child(6) > strong"
-              ],
-              "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
-            },
-            {
-              "target": [
-                "article:nth-child(6) > small"
               ],
               "summary": "Fix any of the following:\n  Element's background color could not be determined because it is overlapped by another element"
             }

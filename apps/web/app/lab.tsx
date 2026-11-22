@@ -54,6 +54,7 @@ import { presetDiagnostics } from "../lib/preset-diagnostics";
 import { ConfigurationDetails } from "./configuration-details";
 import { Coliseum } from "./coliseum";
 import { CharacterCreator } from "./character-creator";
+import { PlayerProfileMenu, usePlayerProfiles } from "./player-profile";
 import { coliseumCatalog } from "../../../packages/fixtures/src/coliseum.ts";
 
 type Event = ReturnType<typeof resolveAction>["event"] & { reason?: string };
@@ -172,7 +173,12 @@ const actionName = (action: Action, name = label) => {
       }[action.kind];
   }
 };
-function newSession(seed: string, map: string, roundLimit?: number): Session {
+function newSession(
+  seed: string,
+  map: string,
+  roundLimit?: number,
+  active?: ColiseumEntry | null,
+): Session {
   const setup = tacticalDemo(seed, map);
   const { state } = startTacticalEncounter({
     ...setup,
@@ -182,8 +188,11 @@ function newSession(seed: string, map: string, roundLimit?: number): Session {
         ? {
             ...entry,
             fighter: {
-              ...entry.fighter,
-              injections: { stamina: 2, medical: 2 },
+              ...(active?.fighter ?? {
+                ...entry.fighter,
+                injections: { stamina: 2, medical: 2 },
+              }),
+              id: setup.player,
             },
           }
         : entry,
@@ -220,7 +229,11 @@ export function Lab({
   shared: boolean;
   initialMode?: "auto" | "creation";
 }) {
-  const [createdEntry, setCreatedEntry] = useState<ColiseumEntry | null>(null);
+  const playerProfiles = usePlayerProfiles(shared);
+  const createdEntry = playerProfiles.explicit
+    ? playerProfiles.active.entry
+    : null;
+  const sessionPlayerProfile = useRef<string | null>(null);
   const [seed, setSeed] = useState("vigilia-01");
   const [fixedSeed, setFixedSeed] = useState(false);
   const [map, setMap] = useState<string>(maps[0].id);
@@ -230,6 +243,29 @@ export function Lab({
   const [session, setSession] = useState(() =>
     newSession("vigilia-01", maps[0].id),
   );
+  useEffect(() => {
+    if (createdEntry && session.events.length === 0 && !scenario) {
+      sessionPlayerProfile.current = playerProfiles.active.id;
+      const next = newSession(seed, map, undefined, createdEntry);
+      setSession(next);
+    }
+  }, [createdEntry]);
+  useEffect(() => {
+    if (
+      session.events.length &&
+      sessionPlayerProfile.current &&
+      replay === null
+    ) {
+      const fighter = session.state.actors.find(
+        (a) => a.fighter.id === session.state.setup.player,
+      )?.fighter;
+      if (fighter)
+        playerProfiles.updateFromEncounter(
+          sessionPlayerProfile.current,
+          fighter,
+        );
+    }
+  }, [session.state]);
   const [selection, setSelection] = useState("vigia");
   const [attackActionCost, setAttackActionCost] = useState<
     "minor" | undefined
@@ -392,6 +428,8 @@ export function Lab({
   }, [shared]);
 
   function reset() {
+    sessionPlayerProfile.current =
+      playerProfiles.explicit && !scenario ? playerProfiles.active.id : null;
     const encounterSeed = fixedSeed ? seed : crypto.randomUUID();
     setSeed(encounterSeed);
     setPlaybackPaused(false);
@@ -420,7 +458,12 @@ export function Lab({
               ),
       });
     } else {
-      const next = newSession(encounterSeed, map, general?.roundLimit);
+      const next = newSession(
+        encounterSeed,
+        map,
+        general?.roundLimit,
+        createdEntry,
+      );
       const source: ConfigurationSource = generalSource
         ? {
             ...generalSource,
@@ -844,6 +887,7 @@ export function Lab({
         <div>
           <p className="series">THE NIGHT LAND RPG</p>
           <h1>Balance Lab</h1>
+          <PlayerProfileMenu roster={playerProfiles} />
         </div>
         <div className="modes" role="group" aria-label="Modo de simulación">
           {(
@@ -948,8 +992,10 @@ export function Lab({
         <CharacterCreator
           onUnsavedChange={setCreationUnsaved}
           shared={shared}
-          onUse={(entry, target) => {
-            setCreatedEntry(entry);
+          onUse={(entry, target, record) => {
+            sessionPlayerProfile.current = record
+              ? playerProfiles.activateCreated(record, entry)
+              : playerProfiles.activateEntry(entry);
             if (target === "coliseum") {
               switchMode("coliseum", true);
               return;

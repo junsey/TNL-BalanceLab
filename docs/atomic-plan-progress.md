@@ -37,3 +37,5 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | WIZ-04 Atributos y entrenamiento | Publicada | 855802c | docs/wizard-04-training.md; controles y regresiones |
 | WIZ-05 Revisión y archivos | Publicada | 3c3a360 | docs/wizard-05-review.md; JSON y equipo persistente |
 | WIZ-06 QA y accesibilidad | Implementada y verificada en este commit | base 3c3a360 | docs/wizard-06-qa.md; matriz de 26 casos y axe |
+| Perfil activo compartido | Implementado en esta etapa | base 418c68b | docs/player-profile.md; inventario, recuperación y pruebas UI |
+| Inicio simple de Coliseo | En curso | — | Personaje, dificultad, equipo y entrada directa; opciones avanzadas aparte |

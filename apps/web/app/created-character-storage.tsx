@@ -15,6 +15,7 @@ import {
 } from "../../../packages/engine/src/creation-record.ts";
 import type { ColiseumEntry } from "../../../packages/engine/src/coliseum.ts";
 import { LoadoutEditor } from "./loadout-editor";
+import { rememberCreatedCharacter } from "../lib/player-profile";
 const models = { weapons, armors },
   sessionKey = "tnl-created-character-session-v1";
 const handName = (slot: "weapon" | "reserve" | "shield" | null) =>
@@ -56,7 +57,11 @@ export function CreatedCharacterStorage({
   disabled: boolean;
   shared: boolean;
   onImport: (record: CreationRecord) => void;
-  onUse: (entry: ColiseumEntry, mode: "lab" | "coliseum") => void;
+  onUse: (
+    entry: ColiseumEntry,
+    mode: "lab" | "coliseum",
+    record?: CreationRecord,
+  ) => void;
 }) {
   const [notice, setNotice] = useState(""),
     [error, setError] = useState(""),
@@ -79,8 +84,8 @@ export function CreatedCharacterStorage({
     exportCreatedCharacter(record, creationCatalogData, models);
   const usePrepared = (mode: "lab" | "coliseum") => {
     const entry = prepareCreatedCharacter(record, models);
-    sessionStorage.setItem(sessionKey, serialized());
-    onUse(entry, mode);
+    rememberCreatedCharacter(record);
+    onUse(entry, mode, record);
   };
   const restore = (text: string) => {
     const candidate = JSON.parse(text);
@@ -179,7 +184,7 @@ export function CreatedCharacterStorage({
             className={!shared ? "accent" : undefined}
             onClick={() =>
               perform(() => {
-                sessionStorage.setItem(sessionKey, serialized());
+                rememberCreatedCharacter(record);
                 setNotice(
                   "Personaje conservado solo en esta sesión; no se guardó en servidor.",
                 );
