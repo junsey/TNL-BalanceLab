@@ -22,6 +22,7 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | 4.2 Daga secundaria | Publicada | 6f6507f; CI correcto | docs/combat-additions-4.2.md; 118 pruebas y navegador |
 | 4.3 Dos Dagas | Publicada | 421d6f8 | docs/combat-additions-4.3.md; 121 pruebas y navegador |
 | 4.4 Contraataques | Publicada | 012f641 | docs/combat-additions-4.4.md; pruebas y navegador |
-| IA-01 Contrato de directivas | Publicada en este commit | base 012f641 | docs/ai-01-contract.md; 128 pruebas |
-| IA-02–IA-06, estados y maniobras | En curso / pendientes de reglas por bloque | — | docs/queued-combat-additions.md |
+| IA-01 Contrato de directivas | Publicada | a77c85b | docs/ai-01-contract.md; 128 pruebas |
+| IA-02 Decisor base | Publicada en este commit | base a77c85b | docs/ai-02-base.md; 130 pruebas |
+| IA-03–IA-06, estados y maniobras | En curso / pendientes de reglas por bloque | — | docs/queued-combat-additions.md |
 | Wizard WIZ-01–WIZ-06 | En cola después del combate | — | Especificación v1 del usuario, 21/11 |

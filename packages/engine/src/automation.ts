@@ -18,14 +18,29 @@ import { collectCombatMetrics, emptyCombatMetrics } from "./metrics.ts";
 import { attackVigorCost, previewAttack } from "./attack.ts";
 import { simulationVersions } from "./versions.ts";
 
+type LegalAction = ReturnType<typeof getLegalActions>[number];
+export type TacticalDecision = { action: LegalAction; reason: string };
+type DecisionContext = {
+  state: TacticalState;
+  id: string;
+  profile: TacticalProfile;
+  actions: LegalAction[];
+  actor: TacticalState["actors"][number];
+};
+
+/** Exactly one legal-action query per decision; every consumer enters here. */
 export function chooseTacticalAction(
   state: TacticalState,
   id: string,
   profile: TacticalProfile,
-) {
+): TacticalDecision | null {
   const actions = getLegalActions(state, id);
-  const actor = state.actors.find((actor) => actor.fighter.id === id);
+  const actor = state.actors.find((a) => a.fighter.id === id);
   if (!actor || !actions.length) return null;
+  return chooseBaseAction({ state, id, profile, actions, actor });
+}
+function chooseBaseAction(context: DecisionContext): TacticalDecision | null {
+  const { state, id, profile, actions, actor } = context;
   const ordered = [...profile.defenses, "none"] as const;
   if (state.pending) {
     for (const defense of ordered) {
