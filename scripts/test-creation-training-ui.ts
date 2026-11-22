@@ -160,6 +160,30 @@ try {
     ),
   );
   await q.screenshot({ path: `${folder}/points-390.png`, fullPage: true });
+  await q
+    .locator(".wizard-stepper")
+    .getByRole("button", { name: /Atributos/ })
+    .click();
+  await q
+    .locator('.wizard-attributes input[type="number"]')
+    .first()
+    .fill("25.5");
+  await q.reload();
+  await expect(
+    q.locator('.wizard-attributes input[type="number"]').first(),
+  ).toHaveValue("25.5");
+  await expect(
+    q.locator(".wizard-attributes .wizard-field-error").first(),
+  ).toContainText("fuera de su categoría");
+  await q.locator('.wizard-attributes input[type="number"]').first().fill("");
+  await q.getByRole("button", { name: "Continuar", exact: true }).click();
+  await q.getByRole("tab", { name: "6B · Elecciones", exact: true }).click();
+  await q
+    .getByLabel(/^Elegí especialización:/)
+    .first()
+    .fill("");
+  await q.reload();
+  await expect(q.getByLabel(/^Elegí especialización:/).first()).toHaveValue("");
   await q.close();
   assert.deepEqual(errors, []);
   writeFileSync(
@@ -174,6 +198,7 @@ try {
           "especializada de arquetipo mejorable",
           "tope 50 y errores por fila",
           "borrador inválido recuperable",
+          "atributo decimal y especialización vacía recuperables sin alterar ficha aplicada",
           "propuesta legal editable",
           "390 px sin desborde",
         ],

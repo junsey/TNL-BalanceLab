@@ -47,4 +47,6 @@ Validación local: 149 pruebas aprobadas (incluye 10000 personajes y sus repetic
 
 Archivos de esta etapa: `character-creator.tsx`, `lab.tsx`, `creation-review.tsx`, `creation-wizard.css`, `scripts/test-creation-accessibility.ts`, `scripts/test-web.ts`, regresión de creación y CI. No cambia el generador, sus tablas, RNG, esquema nativo ni fixtures históricos; no hay migración de base de datos nueva. La prueba web usa base efímera local; no se modificó una base de producción.
 
+Seguimiento: el borrador de edición admite temporalmente atributos decimales inválidos y especializaciones vacías para recuperarlos y corregirlos. El resultado aplicado conserva su esquema estricto, hash y regeneración; esos valores no se convierten en una ficha legal ni se exportan como personaje confirmado.
+
 Permanecen tres localidades completas, cobertura mundial parcial sin reroll oculto, Resistencia natural sin regla y salud/mental provisionales. Ficino conserva el orden secuencial previo: la tirada condicional se presenta cuando está resuelta la rama de arquetipo. La ceguera no recibe una regla de combate inventada. El equipo de ensayo continúa separado de las posesiones. Las ampliaciones de combate pendientes de definición siguen registradas en `docs/queued-combat-additions.md`; no se declaran completas por terminar el wizard.

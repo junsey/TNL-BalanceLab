@@ -52,6 +52,26 @@ test("Wizard: borrador conserva paso, decisiones, errores editables y tiradas; r
     JSON.stringify({ ...draft, points: [{ id: "fuerza_bruta", amount: 21 }] }),
   );
   assert.equal(invalidPoints.points[0]!.amount, 21);
+  const editing = restoreWizardDraft(
+    JSON.stringify({
+      ...draft,
+      input: {
+        ...draft.input,
+        attributes: { strength: 25.5 },
+        choices: {
+          ...draft.input.choices,
+          specializations: { "archetype:Sapiencia": "" },
+        },
+      },
+    }),
+  );
+  assert.equal(editing.input.attributes.strength, 25.5);
+  assert.equal(
+    editing.input.choices.specializations["archetype:Sapiencia"],
+    "",
+  );
+  assert.deepEqual(editing.creation, creation);
+  assert.throws(() => generateCharacter(editing.input, creationCatalogData));
   assert.equal(wizardDataComplete(7, true, creation, false, false), false);
   assert.equal(wizardDataComplete(1, false, creation, false, false), false);
   assert.equal(wizardDataComplete(1, true, creation, false, false), true);

@@ -6,6 +6,7 @@ import {
 } from "../../../packages/engine/src/creation.ts";
 import { stateHash } from "../../../packages/engine/src/state.ts";
 import { creationCatalogData } from "../../../packages/fixtures/src/creation-catalog.ts";
+import { creationAttribute } from "../../../packages/engine/src/creation-catalog.ts";
 export const wizardSteps = [
   "Comenzar",
   "Procedencia",
@@ -29,7 +30,13 @@ export const wizardDraftSchema = z.strictObject({
   started: z.boolean(),
   confirmed: z.boolean(),
   dirty: z.boolean(),
-  input: creationInputSchema,
+  // Editing may temporarily be invalid; the applied result below stays canonical.
+  input: creationInputSchema.extend({
+    attributes: z.partialRecord(creationAttribute, z.number()).default({}),
+    choices: creationInputSchema.shape.choices.removeDefault().extend({
+      specializations: z.record(z.string(), z.string().max(120)).default({}),
+    }),
+  }),
   creation: z.json(),
   creationHash: z.string().length(64),
   requests: z.array(request).max(128),
