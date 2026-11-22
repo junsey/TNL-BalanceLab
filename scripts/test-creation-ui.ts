@@ -31,36 +31,49 @@ try {
       page.on("pageerror", (e) => errors.push(e.message));
       await page.goto(origin + "?mode=creation");
       await page
-        .getByLabel("Modo de creación", { exact: true })
-        .selectOption(mode);
+        .getByRole("radio", {
+          name:
+            mode === "manual" ? "Manual reglamentario" : "Aleatorio asistido",
+          exact: true,
+        })
+        .click();
+      await page
+        .getByText("Semilla y reproducibilidad", { exact: true })
+        .click();
       await page
         .getByLabel("Semilla de creación", { exact: true })
         .fill("creator-ui-" + city + "-" + mode);
       await page.getByRole("button", { name: "Empezar", exact: true }).click();
-      await page.getByLabel("Localidad", { exact: true }).selectOption(city);
+      await page
+        .getByRole("radio", {
+          name: creationCatalogData.cities.find((c) => c.id === city)!.label,
+          exact: true,
+        })
+        .click();
       await confirmChange(page);
       await next(page);
-      await page
-        .getByLabel("Sexo para tablas condicionales", { exact: true })
-        .selectOption("female");
-      await confirmChange(page);
+      if (city === "high_aerie") {
+        await page.getByRole("radio", { name: "Mujeres", exact: true }).click();
+        await confirmChange(page);
+      }
       if (mode === "manual") {
         await page
-          .getByLabel("Origen social", { exact: true })
-          .selectOption({ index: 1 });
+          .getByRole("group", { name: "Origen social", exact: true })
+          .getByRole("radio")
+          .first()
+          .click();
         await confirmChange(page);
       }
       await next(page);
       if (mode === "manual") {
         await page
-          .getByLabel("Arquetipo permitido", { exact: true })
-          .selectOption({ index: 1 });
+          .getByRole("group", { name: "Arquetipo permitido", exact: true })
+          .getByRole("radio")
+          .first()
+          .click();
         await confirmChange(page);
         assert.equal(
-          await page
-            .getByLabel("Arquetipo permitido", { exact: true })
-            .locator('option[value="rogue"]')
-            .count(),
+          await page.getByRole("radio", { name: "Rogue", exact: true }).count(),
           0,
         );
       }

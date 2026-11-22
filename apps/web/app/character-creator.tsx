@@ -1,12 +1,19 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import "./creation-wizard.css";
+import {
+  CreationStart,
+  CreationLocation,
+  CreationSocial,
+  CreationArchetype,
+} from "./creation-route-steps";
 import { CombatDialog } from "./combat-view";
 import {
   wizardSteps,
   wizardDraftKey,
   restoreWizardDraft,
   wizardDataComplete,
+  proposeCreationChoices,
 } from "../lib/creation-wizard";
 import { validateCreationRecord } from "../../../packages/engine/src/creation-record.ts";
 import { weapons, armors } from "../../../packages/fixtures/src/index.ts";
@@ -77,9 +84,13 @@ export function CharacterCreator({
     [archives, setArchives] = useState<string[]>([]),
     [saved, setSaved] = useState(false),
     [filesOpen, setFilesOpen] = useState(false);
+  const [automaticSuggestions, setAutomaticSuggestions] = useState(false),
+    [seedAuto, setSeedAuto] = useState(true);
   const [proposal, setProposal] = useState<{
     input: CreationInput;
     message: string;
+    after?: number;
+    restart?: boolean;
   } | null>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const snapshot = (revisions = archives) =>
@@ -96,6 +107,8 @@ export function CharacterCreator({
       points,
       importedText: importedRecord ? JSON.stringify(importedRecord) : null,
       revisions,
+      automaticSuggestions,
+      seedAuto,
     });
   const serialized = snapshot();
   useEffect(() => {
@@ -146,6 +159,8 @@ export function CharacterCreator({
   function restore(text: string) {
     const d = restoreWizardDraft(text);
     setInput(d.input);
+    setAutomaticSuggestions(d.automaticSuggestions);
+    setSeedAuto(d.seedAuto);
     setResult(d.creation);
     setRequests(d.requests);
     setPoints(d.points);
@@ -169,13 +184,8 @@ export function CharacterCreator({
     catalog.skills.find((s) => s.id === id)?.label ??
     result.skills.find((s) => s.id === id)?.label ??
     id;
-  const city = catalog.cities.find((c) => c.id === input.cityId);
-  const origins = catalog.socialOrigins.filter(
-    (o) => o.cityId === input.cityId && (o.sex === null || o.sex === input.sex),
-  );
-  const origin = origins.find((o) => o.id === input.socialOriginId);
-  const archetypeTable = catalog.archetypeTables.find(
-    (t) => t.id === origin?.archetypeTableId,
+  const origin = catalog.socialOrigins.find(
+    (o) => o.id === (input.socialOriginId ?? result.route.socialOriginId),
   );
   const archetype = catalog.archetypes.find(
     (a) => a.id === result.route.archetypeId,
@@ -209,7 +219,7 @@ export function CharacterCreator({
       });
     else change(next, true);
   }
-  function apply(next = input, usePoints = true) {
+  function apply(next = input, usePoints = true, propose = false) {
     try {
       const updated = structuredClone(next);
       if (usePoints && requests.some((q) => q.key === "freePoints")) {
@@ -224,8 +234,20 @@ export function CharacterCreator({
           ),
         };
       }
-      const generated = generateCharacter(updated, catalog);
-      setInput(updated);
+      const suggestions = propose ? proposeCreationChoices(updated) : null;
+      const generated =
+        suggestions?.result ?? generateCharacter(updated, catalog);
+      if (suggestions) {
+        if (suggestions.proposed.length) setAutomaticSuggestions(true);
+        if (suggestions.result.input.choices.freePoints)
+          setPoints(
+            Object.entries(suggestions.result.input.choices.freePoints).map(
+              ([id, amount]) => ({ id, amount }),
+            ),
+          );
+      }
+      setSeedAuto(false);
+      setInput(generated.input);
       setImportedRecord(null);
       setResult(generated);
       setDirty(false);
@@ -233,7 +255,11 @@ export function CharacterCreator({
       setNotice("");
       setRequests((previous) => [
         ...new Map(
-          [...previous, ...generated.requests].map((q) => [q.key, q]),
+          [
+            ...previous,
+            ...(suggestions?.requests ?? []),
+            ...generated.requests,
+          ].map((q) => [q.key, q]),
         ).values(),
       ]);
       return generated;
@@ -301,7 +327,28 @@ export function CharacterCreator({
       go(7);
       return;
     }
-    const next = apply(input, step === 5);
+    const prepared = {
+      ...input,
+      seed: seedAuto ? crypto.randomUUID() : input.seed,
+    };
+    if (started && prepared.seed !== result.input.seed) {
+      setProposal({
+        input: {
+          ...prepared,
+          choices: structuredClone(defaults.choices),
+          attributes: {},
+        },
+        message:
+          "Cambiar la semilla vuelve a tirar la rama completa. Conservaremos la revisión anterior.",
+        after: step === 0 ? 1 : step + 1,
+      });
+      return;
+    }
+    const next = apply(
+      prepared,
+      step === 5,
+      step === 0 && input.mode === "world",
+    );
     if (!next) return;
     if (step === 0) {
       setStarted(true);
@@ -435,6 +482,19 @@ export function CharacterCreator({
           >
             Archivos y biblioteca
           </button>
+          <button
+            onClick={() =>
+              setProposal({
+                input: { ...defaults, seed: crypto.randomUUID(), name: "" },
+                message:
+                  "Reiniciar crea un borrador nuevo y vuelve a tirar toda la rama. El personaje anterior se conserva como revisión; no se sobrescribe ninguna ficha de biblioteca.",
+                after: 0,
+                restart: true,
+              })
+            }
+          >
+            Reiniciar
+          </button>
         </div>
       </header>
       <progress
@@ -519,235 +579,67 @@ export function CharacterCreator({
           {notice && <p role="status">{notice}</p>}
           {dirty && (
             <p className="wizard-warning">
-              Cambios sin aplicar. Continuar valida este paso con las mismas
-              semillas y tablas.
+              Cambios sin aplicar. Continuar valida este paso con la semilla y
+              las decisiones elegidas.
             </p>
           )}
           {step === 0 && (
-            <div className="creator-fields">
-              {" "}
-              <label>
-                Nombre
-                <input
-                  value={input.name ?? ""}
-                  maxLength={120}
-                  onChange={(e) => change({ ...input, name: e.target.value })}
-                />
-              </label>
-              <label>
-                Modo de creación
-                <select
-                  aria-label="Modo de creación"
-                  value={input.mode}
-                  onChange={(e) => {
-                    const mode = e.target.value as CreationInput["mode"];
-                    route({
-                      mode,
-                      areaId: undefined,
-                      cityId: mode === "world" ? undefined : "augyre_siege",
-                      socialOriginId: undefined,
-                      archetypeId: undefined,
-                    });
-                  }}
-                >
-                  <option value="world">
-                    Aleatorio mundial · tabla parcial
-                  </option>
-                  <option value="assisted">
-                    Aleatorio asistido · localidad elegida
-                  </option>
-                  <option value="manual">Manual · resultados legales</option>
-                </select>
-              </label>
-              <label>
-                Semilla de creación
-                <input
-                  value={input.seed}
-                  maxLength={256}
-                  onChange={(e) => change({ ...input, seed: e.target.value })}
-                />
-              </label>
-            </div>
+            <CreationStart
+              input={{ ...input, seed: seedAuto ? "" : input.seed }}
+              onName={(name) => change({ ...input, name })}
+              onSeed={(seed) => {
+                setSeedAuto(!seed);
+                change({ ...input, seed: seed || input.seed });
+              }}
+              onMode={(mode) =>
+                route({
+                  mode,
+                  areaId: undefined,
+                  cityId:
+                    mode === "world"
+                      ? undefined
+                      : (input.cityId ?? result.route.cityId ?? "augyre_siege"),
+                  socialOriginId: undefined,
+                  archetypeId: undefined,
+                })
+              }
+            />
           )}
           {step === 1 && (
-            <>
-              <div className="creator-fields">
-                {" "}
-                {input.mode !== "world" && (
-                  <>
-                    <label>
-                      Área
-                      <select
-                        aria-label="Área"
-                        value={input.areaId ?? city?.areaId ?? ""}
-                        onChange={(e) =>
-                          route({
-                            areaId: e.target.value,
-                            cityId: undefined,
-                            socialOriginId: undefined,
-                            archetypeId: undefined,
-                          })
-                        }
-                      >
-                        <option value="">Elegir área</option>
-                        {catalog.areas.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.label}
-                            {a.id !== "upper_cities"
-                              ? " · tablas pendientes"
-                              : ""}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Localidad
-                      <select
-                        aria-label="Localidad"
-                        value={input.cityId ?? ""}
-                        onChange={(e) =>
-                          route({
-                            cityId: e.target.value,
-                            socialOriginId: undefined,
-                            archetypeId: undefined,
-                          })
-                        }
-                      >
-                        <option value="">Elegir localidad</option>
-                        {catalog.cities
-                          .filter(
-                            (c) => c.areaId === (input.areaId ?? city?.areaId),
-                          )
-                          .map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.label}
-                              {catalog.coverage.completeCityIds.includes(c.id)
-                                ? ""
-                                : " · tablas pendientes"}
-                            </option>
-                          ))}
-                      </select>
-                    </label>
-                  </>
-                )}
-              </div>
-              {input.mode === "world" && (
-                <>
-                  <p>
-                    La tabla mundial conserva sus probabilidades. Un resultado
-                    sin ruta implementada queda pendiente.
-                  </p>
-                  <p>{result.pending.join(" · ")}</p>
-                  <button
-                    onClick={() =>
-                      route({
-                        mode: "assisted",
-                        cityId: "augyre_siege",
-                        areaId: undefined,
-                        socialOriginId: undefined,
-                        archetypeId: undefined,
-                      })
-                    }
-                  >
-                    Elegir localidad implementada
-                  </button>
-                </>
-              )}
-              <details>
-                <summary>Ver localidades disponibles</summary>
-                <p>{catalog.coverage.note}</p>
-              </details>
-            </>
+            <CreationLocation
+              catalog={catalog}
+              input={input}
+              result={result}
+              onRoute={route}
+              onReroll={() =>
+                setProposal({
+                  input: {
+                    ...input,
+                    seed: crypto.randomUUID(),
+                    choices: structuredClone(defaults.choices),
+                    attributes: {},
+                  },
+                  message:
+                    "Nueva procedencia mundial: se cambia la semilla y se conservan las tiradas anteriores como revisión.",
+                })
+              }
+            />
           )}
           {step === 2 && (
-            <>
-              <div className="creator-fields">
-                {" "}
-                <label>
-                  Sexo para tablas condicionales
-                  <select
-                    aria-label="Sexo para tablas condicionales"
-                    value={input.sex ?? ""}
-                    onChange={(e) =>
-                      route({
-                        sex: e.target.value
-                          ? (e.target.value as "male" | "female")
-                          : undefined,
-                        socialOriginId: undefined,
-                        archetypeId: undefined,
-                      })
-                    }
-                  >
-                    <option value="">Sin declarar</option>
-                    <option value="female">Mujer</option>
-                    <option value="male">Hombre</option>
-                  </select>
-                </label>
-                {input.mode === "manual" && (
-                  <>
-                    {" "}
-                    <label>
-                      Origen social
-                      <select
-                        aria-label="Origen social"
-                        value={input.socialOriginId ?? ""}
-                        onChange={(e) =>
-                          route({
-                            socialOriginId: e.target.value,
-                            archetypeId: undefined,
-                          })
-                        }
-                      >
-                        <option value="">Elegir origen</option>
-                        {origins.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </>
-                )}
-              </div>
-              <p>
-                {
-                  catalog.socialOrigins.find(
-                    (o) => o.id === result.route.socialOriginId,
-                  )?.label
-                }
-              </p>
-            </>
+            <CreationSocial
+              catalog={catalog}
+              input={input}
+              result={result}
+              onRoute={route}
+            />
           )}
           {step === 3 && (
-            <>
-              {input.mode === "manual" && (
-                <div className="creator-fields">
-                  {" "}
-                  <label>
-                    Arquetipo permitido
-                    <select
-                      aria-label="Arquetipo permitido"
-                      value={input.archetypeId ?? ""}
-                      onChange={(e) => route({ archetypeId: e.target.value })}
-                    >
-                      <option value="">Elegir arquetipo</option>
-                      {archetypeTable?.rows.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-              )}
-              <p>{archetype?.label}</p>
-              {archetype && (
-                <details>
-                  <summary>Ver regla de la tabla</summary>
-                  <p>{archetype.rulesText}</p>
-                </details>
-              )}
-            </>
+            <CreationArchetype
+              catalog={catalog}
+              input={input}
+              result={result}
+              onRoute={route}
+            />
           )}
           {step === 4 && (
             <>
@@ -812,7 +704,13 @@ export function CharacterCreator({
           )}
           {step === 5 && (
             <>
-              {" "}
+              {automaticSuggestions && (
+                <p className="wizard-warning">
+                  Propuestas automáticas editables: revisá especializaciones,
+                  habilidades y puntos antes de confirmar. No son concesiones
+                  nuevas del CORE.
+                </p>
+              )}{" "}
               {!!requests.length && (
                 <fieldset>
                   <legend>Decisiones del personaje</legend>
@@ -1165,7 +1063,22 @@ export function CharacterCreator({
             className="accent"
             onClick={() => {
               setArchives([...archives, snapshot([])].slice(-10));
-              change(proposal.input, true);
+              setRequests([]);
+              setAutomaticSuggestions(false);
+              const generated = apply(
+                proposal.input,
+                false,
+                proposal.input.mode === "world",
+              );
+              if (!generated) return;
+              if (proposal.after !== undefined) go(proposal.after);
+              if (proposal.restart) {
+                setStarted(false);
+                setSaved(false);
+                setNotice(
+                  "Nuevo borrador. Podés deshacer para recuperar la revisión anterior.",
+                );
+              }
               setImportedRecord(null);
               setConfirmed(false);
               setProposal(null);

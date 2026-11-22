@@ -31,5 +31,6 @@ El usuario autorizó continuar todas las etapas en orden, publicando cada una en
 | 4.5 Efectos cerrados | Publicada | 84f5192 | docs/combat-additions-4.5.md; 144 pruebas y navegador |
 | Estados y maniobras restantes | Pendientes de definiciones concretas | — | docs/queued-combat-additions.md; se continúa con wizard independiente |
 | WIZ-01 Auditoría del creador | Publicada | e11b421 | docs/wizard-01-audit.md; referencias y compatibilidad |
-| WIZ-02 Shell y navegación | Publicada en este commit | base e11b421 | docs/wizard-02-shell.md; recorridos y compatibilidad |
-| WIZ-03–WIZ-06 | En curso | — | Especificación v1 del usuario, 21/11 |
+| WIZ-02 Shell y navegación | Publicada | e00ab13 | docs/wizard-02-shell.md; recorridos y compatibilidad |
+| WIZ-03 Procedencia y ramas | Publicada en este commit | base e00ab13 | docs/wizard-03-routes.md; 148 pruebas, 600 propuestas y Chrome |
+| WIZ-04–WIZ-06 | En curso | — | Especificación v1 del usuario, 21/11 |

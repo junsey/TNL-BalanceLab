@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "checks": [
+    "tres modos",
+    "áreas pendientes no seleccionables",
+    "descripción con fuente",
+    "High Aerie dos tablas y arquetipos legales",
+    "cambio de rama, invalidación y undo",
+    "mundo no renormalizado",
+    "reintento explícito conserva revisión",
+    "propuestas legales sin Resistencia inventada",
+    "390/1280 sin desborde"
+  ]
+}

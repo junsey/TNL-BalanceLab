@@ -62,8 +62,8 @@ try {
     ).toBeVisible();
     await p.getByRole("button", { name: "Atrás", exact: true }).click();
     await p
-      .getByRole("combobox", { name: "Localidad", exact: true })
-      .selectOption("ficino_city_982");
+      .getByRole("radio", { name: "Ficino, City 982", exact: true })
+      .click();
     await expect(
       p.getByRole("dialog", { name: "Revisar cambio de procedencia" }),
     ).toBeVisible();
@@ -71,11 +71,11 @@ try {
       .getByRole("button", { name: "Conservar decisiones", exact: true })
       .click();
     await expect(
-      p.getByRole("combobox", { name: "Localidad", exact: true }),
-    ).toHaveValue("augyre_siege");
+      p.getByRole("radio", { name: "Augyre Siege", exact: true }),
+    ).toBeChecked();
     await p
-      .getByRole("combobox", { name: "Localidad", exact: true })
-      .selectOption("ficino_city_982");
+      .getByRole("radio", { name: "Ficino, City 982", exact: true })
+      .click();
     await p
       .getByRole("button", { name: "Confirmar cambio", exact: true })
       .click();
@@ -83,8 +83,8 @@ try {
       .getByRole("button", { name: "Deshacer último cambio", exact: true })
       .click();
     await expect(
-      p.getByRole("combobox", { name: "Localidad", exact: true }),
-    ).toHaveValue("augyre_siege");
+      p.getByRole("radio", { name: "Augyre Siege", exact: true }),
+    ).toBeChecked();
     const dimensions = await p.evaluate(() => ({
       width: document.documentElement.clientWidth,
       scroll: document.documentElement.scrollWidth,
