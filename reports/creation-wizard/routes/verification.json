@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "cases": 6,
+  "checks": [
+    "tres localidades y dos modos",
+    "navegación y borrador",
+    "atributos inválidos rechazados",
+    "elecciones y puntos legales",
+    "nativo, equipo y corrupción",
+    "Laboratorio y Coliseo",
+    "390px sin desborde"
+  ]
+}

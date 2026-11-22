@@ -41,6 +41,7 @@ jobs:
           trap 'kill "$UI_SERVER_PID"' EXIT
           npm run test:ui
           npm run test:creation-ui
+          npm run test:wizard-shell-ui
           npm run test:secondary-ui
           npm run test:paired-ui
           npm run test:counter-ui
@@ -53,6 +54,7 @@ jobs:
           path: |
             reports/shared-combat-ui/
             reports/creation-ui/
+            reports/creation-wizard/
             reports/secondary-dagger-ui/
             reports/counter-ui/
             reports/ai-ui/

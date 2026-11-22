@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "checks": [
+    "ocho pasos",
+    "foco del título",
+    "navegar sin reroll",
+    "recuperar paso",
+    "confirmar/cancelar/deshacer dependencia",
+    "390/1440 sin desborde"
+  ]
+}

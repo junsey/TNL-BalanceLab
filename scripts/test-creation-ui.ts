@@ -3,12 +3,24 @@ import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { importCreatedCharacter } from "../packages/engine/src/creation-record.ts";
 import { creationCatalogData } from "../packages/fixtures/src/creation-catalog.ts";
 import { weapons, armors } from "../packages/fixtures/src/index.ts";
-import { chromium, expect } from "@playwright/test";
+import { chromium, expect, type Page } from "@playwright/test";
 const origin = process.env.TNL_UI_URL ?? "http://127.0.0.1:3000",
-  folder = "reports/creation-ui";
+  folder = "reports/creation-wizard/routes";
 mkdirSync(folder, { recursive: true });
-const browser = await chromium.launch({ channel: "chrome", headless: true });
-const errors: string[] = [];
+const browser = await chromium.launch({ channel: "chrome", headless: true }),
+  errors: string[] = [];
+async function confirmChange(page: Page) {
+  const dialog = page.getByRole("dialog", {
+    name: "Revisar cambio de procedencia",
+  });
+  if (await dialog.isVisible())
+    await dialog
+      .getByRole("button", { name: "Confirmar cambio", exact: true })
+      .click();
+}
+async function next(page: Page) {
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+}
 try {
   for (const mode of ["assisted", "manual"]) {
     for (const city of ["augyre_siege", "ficino_city_982", "high_aerie"]) {
@@ -17,30 +29,33 @@ try {
       });
       page.setDefaultTimeout(15000);
       page.on("pageerror", (e) => errors.push(e.message));
-      await page.goto(origin);
-      await page
-        .getByRole("button", { name: "Comenzar combate", exact: true })
-        .click();
-      await page
-        .getByRole("button", { name: "Crear personaje", exact: true })
-        .click();
+      await page.goto(origin + "?mode=creation");
       await page
         .getByLabel("Modo de creación", { exact: true })
         .selectOption(mode);
-      await page.getByLabel("Localidad", { exact: true }).selectOption(city);
-      await page
-        .getByLabel("Sexo para tablas condicionales", { exact: true })
-        .selectOption("female");
       await page
         .getByLabel("Semilla de creación", { exact: true })
         .fill("creator-ui-" + city + "-" + mode);
+      await page.getByRole("button", { name: "Empezar", exact: true }).click();
+      await page.getByLabel("Localidad", { exact: true }).selectOption(city);
+      await confirmChange(page);
+      await next(page);
+      await page
+        .getByLabel("Sexo para tablas condicionales", { exact: true })
+        .selectOption("female");
+      await confirmChange(page);
       if (mode === "manual") {
         await page
           .getByLabel("Origen social", { exact: true })
           .selectOption({ index: 1 });
+        await confirmChange(page);
+      }
+      await next(page);
+      if (mode === "manual") {
         await page
           .getByLabel("Arquetipo permitido", { exact: true })
           .selectOption({ index: 1 });
+        await confirmChange(page);
         assert.equal(
           await page
             .getByLabel("Arquetipo permitido", { exact: true })
@@ -49,29 +64,24 @@ try {
           0,
         );
       }
+      await next(page);
+      if (mode === "manual") {
+        const field = page.getByLabel(/^Conocimiento ·/);
+        const min = Number(await field.getAttribute("min")),
+          max = Number(await field.getAttribute("max"));
+        await field.fill(String(min - 5));
+        await next(page);
+        await expect(
+          page.locator('.wizard-active [role="alert"]'),
+        ).toContainText("categoría");
+        await field.fill(String(max));
+      }
+      await next(page);
       const apply = page.getByRole("button", {
-        name: "Generar / aplicar decisiones",
+        name: "Aplicar elecciones",
         exact: true,
       });
-      if (mode === "manual") {
-        await page.getByLabel(/^Conocimiento ·/).fill("5");
-        await apply.click();
-        await expect(
-          page.locator('.character-creator [role="alert"]'),
-        ).toContainText("categoría");
-        await page.getByLabel(/^Conocimiento ·/).fill("50");
-      }
-      await apply.click();
-      for (let step = 0; step < 8; step++) {
-        if (
-          await page
-            .getByText(
-              "Creación validada · Resistencia pendiente para combate",
-              { exact: true },
-            )
-            .isVisible()
-        )
-          break;
+      for (let iteration = 0; iteration < 8; iteration++) {
         const specs = await page.getByLabel(/^Elegí especialización:/).all();
         for (let i = 0; i < specs.length; i++)
           if (!(await specs[i]!.inputValue()))
@@ -80,8 +90,8 @@ try {
         for (const select of await page
           .locator(".character-creator select[multiple]")
           .all()) {
-          const text = await select.locator("..").textContent();
-          const count = Number(text!.match(/·\s*(\d+)/)![1]);
+          const label = await select.locator("..").textContent(),
+            count = Number(label!.match(/·\s*(\d+)/)![1]);
           const options = await select
             .locator("option")
             .evaluateAll((nodes) =>
@@ -90,62 +100,64 @@ try {
           const selected = await select.evaluate((n) =>
             [...(n as HTMLSelectElement).selectedOptions].map((o) => o.value),
           );
-          const next =
+          const values =
             selected.length === count
               ? selected
               : options.filter((id) => !chosen.has(id)).slice(0, count);
-          for (const id of next) chosen.add(id);
-          await select.selectOption(next);
+          values.forEach((id) => chosen.add(id));
+          await select.selectOption(values);
         }
         await apply.click();
-        await expect(
-          page.locator('.character-creator [role="alert"]'),
-        ).toHaveCount(0);
+        await expect(page.locator('.wizard-active [role="alert"]')).toHaveCount(
+          0,
+        );
+        if (
+          await page.evaluate(
+            () =>
+              JSON.parse(sessionStorage.getItem("tnl-creation-wizard-v1")!)
+                .creation.status === "complete",
+          )
+        )
+          break;
       }
-      assert.ok(
-        await page
-          .getByText("Creación validada · Resistencia pendiente para combate", {
-            exact: true,
-          })
-          .isVisible(),
-      );
-      assert.ok(
-        await page
-          .getByRole("button", { name: "Confirmar creación", exact: true })
-          .isEnabled(),
+      assert.equal(
+        await page.evaluate(
+          () =>
+            JSON.parse(sessionStorage.getItem("tnl-creation-wizard-v1")!)
+              .creation.status,
+        ),
+        "complete",
       );
       await page.getByLabel("Puntos 1", { exact: true }).fill("20");
       await apply.click();
-      await expect(
-        page.locator('.character-creator [role="alert"]'),
-      ).toContainText("20 puntos");
+      await expect(page.locator('.wizard-active [role="alert"]')).toContainText(
+        "20 puntos",
+      );
       await page.getByLabel("Puntos 1", { exact: true }).fill("10");
       await apply.click();
-      await expect(
-        page.locator('.character-creator [role="alert"]'),
-      ).toHaveCount(0);
-      await page
-        .getByRole("button", {
-          name: "Guardar borrador de sesión",
-          exact: true,
-        })
-        .click();
-      await page
-        .getByLabel("Nombre", { exact: true })
-        .fill("Cambio sin aplicar");
-      assert.ok(
-        await page
-          .getByRole("button", { name: "Confirmar creación", exact: true })
-          .isDisabled(),
+      await expect(page.locator('.wizard-active [role="alert"]')).toHaveCount(
+        0,
       );
+      await page
+        .getByRole("button", { name: "Guardar borrador", exact: true })
+        .click();
+      await page.reload();
       await page
         .getByRole("button", { name: "Recuperar borrador", exact: true })
         .click();
-      assert.ok(
-        await page
-          .getByRole("button", { name: "Confirmar creación", exact: true })
-          .isEnabled(),
-      );
+      await next(page);
+      await expect(
+        page.getByText(
+          "Creación validada · Resistencia pendiente para combate",
+          { exact: true },
+        ),
+      ).toBeVisible();
+      await page
+        .getByRole("button", { name: "Confirmar personaje", exact: true })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: "Personaje creado", exact: true }),
+      ).toBeVisible();
       await page.screenshot({
         path: `${folder}/${city}-${mode}.png`,
         fullPage: true,
@@ -219,8 +231,16 @@ try {
         await page
           .getByRole("button", { name: "Control total", exact: true })
           .click();
+        const begin = page.getByRole("button", {
+          name: "Comenzar combate",
+          exact: true,
+        });
+        await begin.click();
         await page
           .getByRole("button", { name: "Crear personaje", exact: true })
+          .click();
+        await page
+          .getByRole("button", { name: "Archivos y biblioteca", exact: true })
           .click();
         await page
           .getByRole("button", {
@@ -229,9 +249,11 @@ try {
           })
           .click();
         assert.equal(
-          await page
-            .getByLabel("Semilla de creación", { exact: true })
-            .inputValue(),
+          await page.evaluate(
+            () =>
+              JSON.parse(sessionStorage.getItem("tnl-creation-wizard-v1")!)
+                .creation.input.seed,
+          ),
           native.creation.input.seed,
         );
         const corrupt = JSON.parse(text);
@@ -247,9 +269,11 @@ try {
           page.locator('.creator-storage [role="alert"]'),
         ).toContainText("Hash");
         assert.equal(
-          await page
-            .getByLabel("Semilla de creación", { exact: true })
-            .inputValue(),
+          await page.evaluate(
+            () =>
+              JSON.parse(sessionStorage.getItem("tnl-creation-wizard-v1")!)
+                .creation.input.seed,
+          ),
           native.creation.input.seed,
         );
         await page
@@ -300,6 +324,9 @@ try {
           .getByRole("button", { name: "Crear personaje", exact: true })
           .click();
         await page
+          .getByRole("button", { name: "Archivos y biblioteca", exact: true })
+          .click();
+        await page
           .getByRole("button", {
             name: "Recuperar personaje de sesión",
             exact: true,
@@ -317,7 +344,7 @@ try {
           "existing",
         );
       }
-      console.log("Creación UI", mode, city);
+      console.log("Creación wizard UI", mode, city);
       await page.close();
     }
   }
@@ -329,20 +356,18 @@ try {
         passed: true,
         cases: 6,
         checks: [
-          "rutas legales en aleatorio asistido y manual",
-          "decisiones y confirmación",
-          "Rogue fuera de tablas",
-          "borrador y validación pendiente",
-          "390 px sin desborde",
-          "sin errores de página",
-          "equipo de dos manos, archivo exacto y rechazo de corrupción",
-          "sin guardar en servidor y recuperación de sesión",
-          "personaje creado en Laboratorio y Coliseo",
+          "tres localidades y dos modos",
+          "navegación y borrador",
+          "atributos inválidos rechazados",
+          "elecciones y puntos legales",
+          "nativo, equipo y corrupción",
+          "Laboratorio y Coliseo",
+          "390px sin desborde",
         ],
       },
       null,
       2,
-    ),
+    ) + "\n",
   );
 } finally {
   await browser.close();

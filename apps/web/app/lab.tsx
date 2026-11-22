@@ -211,12 +211,20 @@ function nextAuto(session: Session, profile: TacticalProfile) {
   };
 }
 
-export function Lab({ alias, shared }: { alias: string; shared: boolean }) {
+export function Lab({
+  alias,
+  shared,
+  initialMode = "auto",
+}: {
+  alias: string;
+  shared: boolean;
+  initialMode?: "auto" | "creation";
+}) {
   const [createdEntry, setCreatedEntry] = useState<ColiseumEntry | null>(null);
   const [seed, setSeed] = useState("vigilia-01");
   const [fixedSeed, setFixedSeed] = useState(false);
   const [map, setMap] = useState<string>(maps[0].id);
-  const [mode, setMode] = useState<Mode>("auto");
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [session, setSession] = useState(() =>
     newSession("vigilia-01", maps[0].id),
   );
